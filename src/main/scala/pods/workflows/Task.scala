@@ -48,7 +48,7 @@ private[pods] sealed trait TaskBehavior[I, O]:
 
 object TaskBehaviors:
   // behavior factory for handling an incoming event and context
-  def process[I, O](
+  def processor[I, O](
       onNext: (tctx: TaskContext[I, O], event: I) => TaskBehavior[I, O]
   ): TaskBehavior[I, O] =
     ProcessBehavior[I, O](onNext)
@@ -105,13 +105,13 @@ object Tasks:
     task1.tctx.oc.subscribe(task2.tctx.ic)
 
 @main def testTask() =
-  val task1 = Tasks(TaskBehaviors.process[Int, Int]({ (tctx, x) =>
+  val task1 = Tasks(TaskBehaviors.processor[Int, Int]({ (tctx, x) =>
     tctx.log.info(s"task1: $x")
     tctx.emit(x + 1)
     TaskBehaviors.same
   }))
 
-  val task2 = Tasks(TaskBehaviors.process[Int, Int]({ (tctx, x) =>
+  val task2 = Tasks(TaskBehaviors.processor[Int, Int]({ (tctx, x) =>
     tctx.log.info(s"task2: $x")
     tctx.emit(x + 1)
     TaskBehaviors.same
