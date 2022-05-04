@@ -13,4 +13,3 @@ private[pods] class IChannelImpl[T] extends IChannel[T]:
 
 object IChannel:
   def apply[T](): IChannel[T] = new IChannelImpl {}
-
