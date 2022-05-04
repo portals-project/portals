@@ -62,7 +62,7 @@ object TaskBehaviors:
   def map[I, O](f: I => O): TaskBehavior[I, O] =
     StatelessProcessBehavior[I, O]((tctx, x) => tctx.emit(f(x)))
 
-  def flatMap[I, O](f: I => Seq[O]): TaskBehavior[I, O] =
+  def flatMap[I, O](f: I => TraversableOnce[O]): TaskBehavior[I, O] =
     StatelessProcessBehavior[I, O]((tctx, x) => f(x).foreach(tctx.emit(_)))
 
   private[pods] case class StatelessProcessBehavior[I, O](
@@ -77,6 +77,14 @@ object TaskBehaviors:
 
   private[pods] case object SameBehavior extends TaskBehavior[Nothing, Nothing]
   // this is fine, the methods are ignored as we reuse the previous behavior
+
+  def identity[T]: TaskBehavior[T, T] =
+    IdentityBehavior[T]()
+
+  private[pods] case class IdentityBehavior[T]() extends TaskBehavior[T, T]:
+    override def onNext(tctx: TaskContext[T, T], event: T): TaskBehavior[T, T] =
+      tctx.emit(event)
+      TaskBehaviors.same
 
 sealed trait Task[I, O]:
   private[pods] val tctx: TaskContext[I, O]
