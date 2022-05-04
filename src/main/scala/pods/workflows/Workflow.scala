@@ -41,6 +41,17 @@ class WorkflowBuilder[I, O](val name: String):
     this.asInstanceOf[WorkflowBuilder[T, Nothing]]
 
   def processor[T](
+      f: TaskContext[O, T] ?=> O => TaskBehavior[O, T],
+      name: String
+  ): WorkflowBuilder[O, T] =
+    val behavior = TaskBehaviors.processor(f)
+    val taskName = nameFromName(name)
+    tasks = tasks + (taskName -> behavior)
+    connections = connections :+ (latest.get, taskName)
+    latest = Some(taskName)
+    this.asInstanceOf[WorkflowBuilder[O, T]]
+
+  def behavior[T](
       behavior: TaskBehavior[O, T],
       name: String
   ): WorkflowBuilder[I, T] =
@@ -85,9 +96,33 @@ class WorkflowBuilder[I, O](val name: String):
     .source[Int]("source")
     .map(x => { println(x); x * 2 }, "map")
     .map(_ * 2, "map2")
+    .processor(
+      { tctx ?=> x =>
+        tctx.log.info(x.toString)
+        tctx.emit(x)
+        TaskBehaviors.same
+      },
+      "processor"
+    )
     .sink[Int]("sink")
     .build()
 
-  wf.tasks("wf$source").tctx.ic.worker.submit(1)
-  wf.tasks("wf$source").tctx.ic.worker.submit(1)
+  Thread.sleep(100)
+
+  val wf2 = Workflows
+    .build("wf2")
+    .source[Int]("source2")
+    .processor[String](
+      { tctx ?=> x =>
+        tctx.log.info(x.toString)
+        // dynamic emit :), creates connection to other workflow
+        tctx.emit(wf.tasks("wf$source").tctx.ic, x)
+        tctx.emit(x.toString)
+        TaskBehaviors.same
+      },
+      "processor"
+    )
+    .build()
+
+  wf2.tasks("wf2$source2").tctx.ic.worker.submit(1)
   Thread.sleep(100)

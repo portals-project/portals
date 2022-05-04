@@ -24,6 +24,7 @@ private[pods] sealed trait TaskContext[I, O]:
   def self: IChannel[I]
   def emit(event: O): Unit
   def emit(oc: OChannel[O], event: O): Unit
+  def emit[T](ic: IChannel[T], event: T): Unit
   def state: TaskContextState[Any, Any]
   def log: Logger
 
@@ -34,6 +35,12 @@ private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
   def emit(event: O): Unit =
     oc.submit(event)
   def emit(oc: OChannel[O], event: O): Unit = oc.submit(event)
+  def emit[T](ic: IChannel[T], event: T): Unit =
+    val newoc = OChannel[T]()
+    newoc.subscribe(ic)
+    newoc.submit(event)
+    newoc.close()
+
   def state: TaskContextState[Any, Any] = TaskContextState()
   def log: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -49,15 +56,15 @@ private[pods] sealed trait TaskBehavior[I, O]:
 object TaskBehaviors:
   // behavior factory for handling an incoming event and context
   def processor[I, O](
-      onNext: (tctx: TaskContext[I, O], event: I) => TaskBehavior[I, O]
+      onNext: TaskContext[I, O] ?=> I => TaskBehavior[I, O]
   ): TaskBehavior[I, O] =
-    ProcessBehavior[I, O](onNext)
+    ProcessBehavior[I, O](tctx => onNext(using tctx))
 
   private[pods] case class ProcessBehavior[I, O](
-      _onNext: (tctx: TaskContext[I, O], event: I) => TaskBehavior[I, O]
+      _onNext: TaskContext[I, O] => I => TaskBehavior[I, O]
   ) extends TaskBehavior[I, O]:
     override def onNext(tctx: TaskContext[I, O], event: I): TaskBehavior[I, O] =
-      _onNext(tctx, event)
+      _onNext(tctx)(event)
 
   def map[I, O](f: I => O): TaskBehavior[I, O] =
     StatelessProcessBehavior[I, O]((tctx, x) => tctx.emit(f(x)))
@@ -73,7 +80,9 @@ object TaskBehaviors:
       TaskBehaviors.same
 
   def same[T, S]: TaskBehavior[T, S] =
-    SameBehavior.asInstanceOf // same behavior is compatible with previous behavior
+    SameBehavior.asInstanceOf[
+      TaskBehavior[T, S]
+    ] // same behavior is compatible with previous behavior
 
   private[pods] case object SameBehavior extends TaskBehavior[Nothing, Nothing]
   // this is fine, the methods are ignored as we reuse the previous behavior
@@ -113,21 +122,22 @@ object Tasks:
     task1.tctx.oc.subscribe(task2.tctx.ic)
 
 @main def testTask() =
-  val task1 = Tasks(TaskBehaviors.processor[Int, Int]({ (tctx, x) =>
-    tctx.log.info(s"task1: $x")
-    tctx.emit(x + 1)
-    TaskBehaviors.same
-  }))
+  ???
+  // val task1 = Tasks(TaskBehaviors.processor[Int, Int]({ (tctx, x) =>
+  //   tctx.log.info(s"task1: $x")
+  //   tctx.emit(x + 1)
+  //   TaskBehaviors.same
+  // }))
 
-  val task2 = Tasks(TaskBehaviors.processor[Int, Int]({ (tctx, x) =>
-    tctx.log.info(s"task2: $x")
-    tctx.emit(x + 1)
-    TaskBehaviors.same
-  }))
+  // val task2 = Tasks(TaskBehaviors.processor[Int, Int]({ (tctx, x) =>
+  //   tctx.log.info(s"task2: $x")
+  //   tctx.emit(x + 1)
+  //   TaskBehaviors.same
+  // }))
 
-  Tasks.connect(task1, task2)
-  task1.tctx.ic.worker.submit(1)
+  // Tasks.connect(task1, task2)
+  // task1.tctx.ic.worker.submit(1)
 
-  // should log twice, once for each task
+  // // should log twice, once for each task
 
-  Thread.sleep(100)
+  // Thread.sleep(100)
