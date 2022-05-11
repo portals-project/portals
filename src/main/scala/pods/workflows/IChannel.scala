@@ -1,6 +1,6 @@
 package pods.workflows
 
-sealed trait IChannel[T]:
+private[pods] sealed trait IChannel[T]:
   private[pods] val worker: Worker[T, T]
   def close(): Unit
 
@@ -11,5 +11,5 @@ private[pods] class IChannelImpl[T] extends IChannel[T]:
     .build()
   override def close(): Unit = worker.close()
 
-object IChannel:
+private[pods] object IChannel:
   def apply[T](): IChannel[T] = new IChannelImpl {}

@@ -41,20 +41,20 @@ object Workers:
     def withOnSubscribe(
         f: Worker[I, O] ?=> Subscription => Unit
     ): WorkerBuilder[I, O] =
-      worker.copy(_onSubscribe = (w: Worker[I, O]) => f(using w))
+      worker.copy(_onSubscribe = w => f(using w))
 
     def withOnNext(f: Worker[I, O] ?=> I => Unit): WorkerBuilder[I, O] =
-      worker.copy(_onNext = (w: Worker[I, O]) => f(using w))
+      worker.copy(_onNext = w => f(using w))
 
     def withOnError(
         f: Worker[I, O] ?=> Throwable => Unit
     ): WorkerBuilder[I, O] =
-      worker.copy(_onError = (w: Worker[I, O]) => f(using w))
+      worker.copy(_onError = w => f(using w))
 
     def withOnComplete(
         f: Worker[I, O] ?=> () => Unit
     ): WorkerBuilder[I, O] =
-      worker.copy(_onComplete = (w: Worker[I, O]) => f(using w))
+      worker.copy(_onComplete = w => f(using w))
 
     def build(): Worker[I, O] =
       new WorkerImpl[I, O] {
