@@ -249,7 +249,7 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
       .merge(cycle, merged)
       .map(identity)
       .processor({ tctx ?=> x =>
-        tctx.log.info("sink: " + x)
+        tctx.log.info("in cycle: " + x)
         tctx.emit(x)
         TaskBehaviors.same
       })
