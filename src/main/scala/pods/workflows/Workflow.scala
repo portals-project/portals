@@ -72,6 +72,18 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
         this
       case None => ??? // bad
 
+  def withLogger(): FlowBuilder[I, O] =
+    val behavior = TaskBehaviors.processor({ tctx ?=> x =>
+      tctx.log.info(x.toString)
+      tctx.emit(x)
+      TaskBehaviors.same
+    })
+    val taskName = nameFromName("")
+    workflow.tasks += (taskName -> behavior)
+    workflow.connections ::= (latest.get, taskName)
+    latest = Some(taskName)
+    this
+
   private[pods] def cycle(): FlowBuilder[I, O] =
     val behavior = TaskBehaviors.identity[O]
     val taskName = nameFromName("")
@@ -160,7 +172,7 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
   val wf1 = Workflows
     .builder()
     .source[Int]("source")
-    .processor({ tctx ?=> x =>
+    .processor({ tctx ?=> x => // this corresponds to `.withLogger()`
       tctx.log.info(x.toString)
       tctx.emit(x)
       TaskBehaviors.same
@@ -171,11 +183,7 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
   val wf2 = Workflows
     .builder()
     .source[Int]("source2")
-    .processor[Int]({ tctx ?=> x =>
-      tctx.log.info(x.toString)
-      tctx.emit(x)
-      TaskBehaviors.same
-    })
+    .withLogger()
     .sink[Int]("sink2")
     .build()
 
@@ -192,11 +200,7 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
   val wf1 = Workflows
     .builder()
     .source[Int]("source")
-    .processor({ tctx ?=> x =>
-      tctx.log.info(x.toString)
-      tctx.emit(x)
-      TaskBehaviors.same
-    })
+    .withLogger()
     .sink[Int]("sink")
     .build()
 
@@ -204,11 +208,11 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     .builder()
     .source[Int]("source2")
     .processor[Int]({ tctx ?=> x =>
-      tctx.log.info(x.toString)
       // dynamic emit :), creates connection to other workflow
       tctx.emit(wf1.tasks("source").tctx.ic, x)
       TaskBehaviors.same
     })
+    .withLogger()
     .sink[Int]("sink2")
     .build()
 
