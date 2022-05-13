@@ -61,10 +61,10 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
       case Some(name) =>
         val behavior = workflow.tasks(name)
         val newBehavior = new TaskBehavior[I, O] {
-          override def onNext(tctx: TaskContext[I, O], t: I): TaskBehavior[I, O] =
+          override def onNext(tctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] =
             _onNext(using tctx)(t)
-          override def onError(tctx: TaskContext[I, O], t: Throwable): TaskBehavior[I, O] =
-            behavior.onError(tctx.asInstanceOf, t).asInstanceOf
+          override def onError(tctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] =
+            behavior.onError(tctx.asInstanceOf)(t).asInstanceOf
           override def onComplete(tctx: TaskContext[I, O]): TaskBehavior[I, O] =
             behavior.onComplete(tctx.asInstanceOf).asInstanceOf
         }
@@ -135,8 +135,19 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     latest = None
     this.asInstanceOf[FlowBuilder[T, Nothing]]
 
-  def processor[T](
+  def vsm[T](
       f: TaskContext[O, T] ?=> O => TaskBehavior[O, T],
+      name: String = ""
+  ): FlowBuilder[O, T] =
+    val behavior = TaskBehaviors.vsm(f)
+    val taskName = nameFromName(name)
+    workflow.tasks = workflow.tasks + (taskName -> behavior)
+    workflow.connections = workflow.connections :+ (latest.get, taskName)
+    latest = Some(taskName)
+    this.asInstanceOf[FlowBuilder[O, T]]
+
+  def processor[T](
+      f: TaskContext[O, T] ?=> O => Unit,
       name: String = ""
   ): FlowBuilder[O, T] =
     val behavior = TaskBehaviors.processor(f)
@@ -175,7 +186,6 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     .processor({ tctx ?=> x => // this corresponds to `.withLogger()`
       tctx.log.info(x.toString)
       tctx.emit(x)
-      TaskBehaviors.same
     })
     .sink[Int]("sink")
     .build()
@@ -209,8 +219,8 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     .source[Int]("source2")
     .processor[Int]({ tctx ?=> x =>
       // dynamic emit :), creates connection to other workflow
-      tctx.emit(wf1.tasks("source").tctx.ic, x)
-      TaskBehaviors.same
+      tctx.send(wf1.tasks("source").tctx.ic, x.asInstanceOf)
+      tctx.emit(x)
     })
     .withLogger()
     .sink[Int]("sink2")
@@ -219,7 +229,12 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
   // this should result in two messages printed, one for each workflow
   wf2.tasks("source2").tctx.ic.worker.submit(1.asInstanceOf)
 
-  Thread.sleep(100)
+  Thread.sleep(200)
+
+// @main def testSerializableOP() =
+//     val wf = Workflows.builder()
+//       .source[Int]("source")
+//       .
 
 @main def testWorkflow() =
   // here we try out various DSL features
@@ -231,7 +246,12 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     .processor({ tctx ?=> x =>
       tctx.log.info("processor: " + x)
       tctx.emit(x)
-      TaskBehaviors.same
+      TaskBehaviors.same // perhaps simpler options for VSM, look at Erlang FSM model
+      // TaskBehaviors.processor[Int, Int]({ tctx ?=> x =>
+      //   tctx.log.info("new behavior: " + x)
+      //   tctx.emit(x)
+      //   TaskBehaviors.same
+      // }).asInstanceOf
     })
     .withOnNext({ tctx ?=> x =>
       // override the OnNext method, also works for other behavior methods
