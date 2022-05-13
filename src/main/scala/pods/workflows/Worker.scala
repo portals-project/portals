@@ -7,10 +7,7 @@ import java.util.concurrent.Flow.Publisher
 import java.util.concurrent.Flow.Subscription
 import java.util.logging.Logger
 
-private[pods] trait Worker[I, O]
-    extends Processor[I, O],
-      Subscriber[I],
-      Publisher[O]:
+private[pods] trait Worker[I, O] extends Processor[I, O], Subscriber[I], Publisher[O]:
   def onSubscribe(s: Subscription): Unit
   def onNext(t: I): Unit
   def onError(t: Throwable): Unit
@@ -19,13 +16,10 @@ private[pods] trait Worker[I, O]
   def submit(event: O): Int
   def close(): Unit
 
-private[pods] trait WorkerImpl[I, O]
-    extends SubmissionPublisher[O]
-    with Worker[I, O]
+private[pods] trait WorkerImpl[I, O] extends SubmissionPublisher[O] with Worker[I, O]
 
 private[pods] case class WorkerBuilder[I, O](
-    _onSubscribe: Worker[I, O] => Subscription => Unit = (_: Worker[I, O]) =>
-      _ => ???,
+    _onSubscribe: Worker[I, O] => Subscription => Unit = (_: Worker[I, O]) => _ => ???,
     _onNext: Worker[I, O] => I => Unit = (_: Worker[I, O]) => I => ???,
     _onError: Worker[I, O] => Throwable => Unit = (_: Worker[I, O]) => _ => ???,
     _onComplete: Worker[I, O] => () => Unit = (_: Worker[I, O]) => () => ???
@@ -33,9 +27,7 @@ private[pods] case class WorkerBuilder[I, O](
 
 object Workers:
   def apply[I, O](): WorkerBuilder[I, O] =
-    new WorkerBuilder().withOnSubscribe((s: Subscription) =>
-      s.request(Long.MaxValue)
-    )
+    new WorkerBuilder().withOnSubscribe((s: Subscription) => s.request(Long.MaxValue))
 
   extension [I, O](worker: WorkerBuilder[I, O]) {
     def withOnSubscribe(
@@ -59,15 +51,14 @@ object Workers:
     def build(): Worker[I, O] =
       new WorkerImpl[I, O] {
         self =>
-        override def onSubscribe(s: Subscription): Unit =
-          worker._onSubscribe(self)(s)
+        override def onSubscribe(s: Subscription): Unit = worker._onSubscribe(self)(s)
         override def onNext(t: I): Unit = worker._onNext(self)(t)
         override def onError(t: Throwable): Unit = worker._onError(self)(t)
         override def onComplete(): Unit = worker._onComplete(self)
       }
   }
 
-@main def workerExample(): Unit =
+@main def chainedWorkerExample(): Unit =
   import Workers.*
   type T = String
   val worker1 = Workers[T, T]()
