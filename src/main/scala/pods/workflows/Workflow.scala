@@ -3,7 +3,24 @@ package pods.workflows
 class Workflow(
     val tasks: Map[String, Task[_, _]],
     val connections: List[(String, String)]
-)
+):
+  def source(name: String): Task[_, _] =
+    tasks(name)
+
+  def sink(name: String): Task[_, _] = 
+    tasks(name)
+
+  def submit[T](name: String, event: T): Unit =
+    tasks(name)
+      .asInstanceOf[Task[T, _]]
+      .tctx
+      .ic
+      .worker
+      .submit(EventWithId(-1, event))
+
+  def close(): Unit =
+    Thread.sleep(500)
+    tasks.foreach((name, task) => task.close())
 
 object Workflows {
   def apply(): WorkflowBuilder =
@@ -61,9 +78,13 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
       case Some(name) =>
         val behavior = workflow.tasks(name)
         val newBehavior = new TaskBehavior[I, O] {
-          override def onNext(tctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] =
+          override def onNext(tctx: TaskContext[I, O])(
+              t: I
+          ): TaskBehavior[I, O] =
             _onNext(using tctx)(t)
-          override def onError(tctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] =
+          override def onError(tctx: TaskContext[I, O])(
+              t: Throwable
+          ): TaskBehavior[I, O] =
             behavior.onError(tctx.asInstanceOf)(t).asInstanceOf
           override def onComplete(tctx: TaskContext[I, O]): TaskBehavior[I, O] =
             behavior.onComplete(tctx.asInstanceOf).asInstanceOf
@@ -135,27 +156,35 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     latest = None
     this.asInstanceOf[FlowBuilder[T, Nothing]]
 
-  def vsm[T](
-      f: TaskContext[O, T] ?=> O => TaskBehavior[O, T],
-      name: String = ""
-  ): FlowBuilder[O, T] =
-    val behavior = TaskBehaviors.vsm(f)
-    val taskName = nameFromName(name)
+  def vsm[T](b: TaskBehavior[O, T], name: String = ""): FlowBuilder[O, T] =
+    val behavior = b
+    val taskName = nameFromName("")
     workflow.tasks = workflow.tasks + (taskName -> behavior)
     workflow.connections = workflow.connections :+ (latest.get, taskName)
     latest = Some(taskName)
     this.asInstanceOf[FlowBuilder[O, T]]
 
-  def processor[T](
-      f: TaskContext[O, T] ?=> O => Unit,
+  // def vsm[T](
+  //     f: TaskContext[O, T] ?=> O => TaskBehavior[O, T],
+  //     name: String = ""
+  // ): FlowBuilder[O, T] =
+  //   val behavior = TaskBehaviors.vsm(f)
+  //   val taskName = nameFromName(name)
+  //   workflow.tasks = workflow.tasks + (taskName -> behavior)
+  //   workflow.connections = workflow.connections :+ (latest.get, taskName)
+  //   latest = Some(taskName)
+  //   this.asInstanceOf[FlowBuilder[O, T]]
+
+  def processor[II, T](
+      f: TaskContext[II, T] ?=> II => Unit,
       name: String = ""
-  ): FlowBuilder[O, T] =
+  ): FlowBuilder[I, T] =
     val behavior = TaskBehaviors.processor(f)
     val taskName = nameFromName(name)
     workflow.tasks = workflow.tasks + (taskName -> behavior)
     workflow.connections = workflow.connections :+ (latest.get, taskName)
     latest = Some(taskName)
-    this.asInstanceOf[FlowBuilder[O, T]]
+    this.asInstanceOf[FlowBuilder[I, T]]
 
   def map[OO, T](f: O => T, name: String = ""): FlowBuilder[I, T] =
     val behavior = TaskBehaviors.map[O, T](f)
@@ -206,30 +235,30 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
 
   Thread.sleep(100)
 
-@main def testDynamicCall() =
-  val wf1 = Workflows
-    .builder()
-    .source[Int]("source")
-    .withLogger()
-    .sink[Int]("sink")
-    .build()
+// @main def testDynamicCall() =
+//   val wf1 = Workflows
+//     .builder()
+//     .source[Int]("source")
+//     .withLogger()
+//     .sink[Int]("sink")
+//     .build()
 
-  val wf2 = Workflows
-    .builder()
-    .source[Int]("source2")
-    .processor[Int]({ tctx ?=> x =>
-      // dynamic emit :), creates connection to other workflow
-      tctx.send(wf1.tasks("source").tctx.ic, x.asInstanceOf)
-      tctx.emit(x)
-    })
-    .withLogger()
-    .sink[Int]("sink2")
-    .build()
+//   val wf2 = Workflows
+//     .builder()
+//     .source[Int]("source2")
+//     .processor[Int]({ tctx ?=> x =>
+//       // dynamic emit :), creates connection to other workflow
+//       tctx.send(wf1.tasks("source").tctx.ic, x.asInstanceOf)
+//       tctx.emit(x)
+//     })
+//     .withLogger()
+//     .sink[Int]("sink2")
+//     .build()
 
-  // this should result in two messages printed, one for each workflow
-  wf2.tasks("source2").tctx.ic.worker.submit(EventWithId(0, 1.asInstanceOf))
+//   // this should result in two messages printed, one for each workflow
+//   wf2.tasks("source2").tctx.ic.worker.submit(EventWithId(0, 1.asInstanceOf))
 
-  Thread.sleep(200)
+//   Thread.sleep(200)
 
 // @main def testSerializableOP() =
 //     val wf = Workflows.builder()

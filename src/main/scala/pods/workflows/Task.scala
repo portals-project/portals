@@ -3,6 +3,10 @@ package pods.workflows
 sealed trait Task[I, O]:
   private[pods] val tctx: TaskContext[I, O]
   private[pods] val worker: Worker[I, O]
+  private[pods] def close(): Unit
+
+  def iref = tctx.ic
+  def oref = tctx.oc
 
 private[pods] class TaskImpl[I, O](taskBehavior: TaskBehavior[I, O]) extends Task[I, O]:
   import Workers.*
@@ -19,6 +23,13 @@ private[pods] class TaskImpl[I, O](taskBehavior: TaskBehavior[I, O]) extends Tas
   tctx.ic.worker.subscribe(this.worker.asInstanceOf)
   tctx.self.worker.subscribe(this.worker.asInstanceOf)
   this.worker.subscribe(tctx.oc.worker.asInstanceOf)
+
+  private[pods] def close(): Unit =
+    tctx.self.close()
+    tctx.ic.close()
+    worker.close()
+    tctx.oc.close()
+
 
 object Tasks:
   def apply[I, O](behavior: TaskBehavior[I, O]): Task[I, O] =
