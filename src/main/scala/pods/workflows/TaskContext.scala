@@ -2,7 +2,7 @@ package pods.workflows
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-// import scala.concurrent.Future
+import scala.concurrent.Future
 
 /** [[TaskContext]] */
 private[pods] sealed trait TaskContext[I, O]:
@@ -24,11 +24,15 @@ private[pods] sealed trait TaskContext[I, O]:
   /** send an event to the provided channel [[ic]] */
   def send[T](ic: IChannel[T], event: T): Unit
 
-  // /** request/response, send a request to [[ic]] and expect a response on a freshly created channel */
-  // def ask[T, U](ic: IChannel[T], requestFactory: IChannel[U] => T): Future[U]
+  /** request/response, send a request to [[ic]] and expect a response on a
+    * freshly created channel
+    */
+  def ask[T, U](ic: IChannel[T], requestFactory: IChannel[U] => T): Future[U]
 
-  // /** await the completion of the provided future */
-  // def await[T](future: Future[T]): Future[T]
+  /** await the completion of the provided future */
+  def await[T](future: Future[T])(
+      cnt: TaskContext[T, O] ?=> T => TaskBehavior[I, O]
+  ): TaskBehavior[I, O]
 
   /** logger */
   def log: Logger
@@ -45,6 +49,13 @@ private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
     newoc.subscribe(ic.asInstanceOf)
     newoc.submit(event)
     newoc.close()
+  def ask[T, U](ic: IChannel[T], requestFactory: IChannel[U] => T): Future[U] =
+    ???
+
+  def await[T](future: Future[T])(
+      cnt: TaskContext[T, O] ?=> T => TaskBehavior[I, O]
+  ): TaskBehavior[I, O] = ???
+
   def state: TaskState[Any, Any] = TaskState()
   def log: Logger = LoggerFactory.getLogger(this.getClass)
 

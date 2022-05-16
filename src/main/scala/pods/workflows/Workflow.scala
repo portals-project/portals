@@ -7,7 +7,7 @@ class Workflow(
   def source(name: String): Task[_, _] =
     tasks(name)
 
-  def sink(name: String): Task[_, _] = 
+  def sink(name: String): Task[_, _] =
     tasks(name)
 
   def submit[T](name: String, event: T): Unit =
@@ -36,6 +36,12 @@ object Workflows {
 class WorkflowBuilder:
   var tasks: Map[String, TaskBehavior[_, _]] = Map.empty
   var connections: List[(String, String)] = List.empty
+
+  def actor[T](
+      behavior: TaskBehavior[T, Nothing],
+      name: String
+  ): FlowBuilder[Nothing, Nothing] =
+    new FlowBuilder(this).actor[T](behavior, name)
 
   def source[T](name: String): FlowBuilder[Nothing, T] =
     new FlowBuilder(this).source[T](name)
@@ -70,6 +76,12 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     name match
       case s if s == "" => "$" + workflow.tasks.size
       case s            => s // + "$" + workflow.tasks.size
+
+  def actor[T](behavior: TaskBehavior[T, O], name: String): FlowBuilder[I, O] =
+    val taskName = nameFromName(name)
+    workflow.tasks = workflow.tasks + (taskName -> behavior)
+    // latest = Some(taskName)
+    this.asInstanceOf[FlowBuilder[I, O]]
 
   def withOnNext(
       _onNext: TaskContext[I, O] ?=> I => TaskBehavior[I, O]

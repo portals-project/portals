@@ -252,3 +252,45 @@ import pods.workflows.*
 
   pinger.close()
   ponger.close()
+
+/** Ask and Await */
+@main def exampleAskAwait() =
+  import DSL.*
+
+  case class Request(x: Int, replyTo: IChannel[Reply])
+  case class Reply(x: Int)
+  case class Start(x: Int, target: IChannel[Request])
+
+  val replyer = ActorBehaviors.receive[Request]({ case Request(x, replyTo) =>
+    replyTo ! Reply(x - 1)
+    ActorBehaviors.same
+  })
+
+  val asker = ActorBehaviors.receive[Reply | Start]({
+    case Start(x, target) =>
+      val future = ctx.ask(target, ref => Request(x, ref))
+      ctx.await(future)(r =>
+        ctx.log.info(r.toString)
+        ActorBehaviors.same
+      )
+    case _ =>
+      ??? // shouldn't happen
+  })
+
+  val wfReplyer = Workflows
+    .builder()
+    .actor(replyer, "replyer")
+    .build()
+
+  val wfAsker = Workflows
+    .builder()
+    .actor(asker, "asker")
+    .build()
+
+  wfAsker.submit(
+    "asker",
+    Start(8, wfReplyer.source("replyer").iref.asInstanceOf)
+  )
+
+  wfAsker.close()
+  wfReplyer.close()
