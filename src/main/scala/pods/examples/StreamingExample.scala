@@ -40,13 +40,16 @@ package pods.examples
     // we can implement keyBy by the following map operator. It explicitly sets the key using the context.:
     // .map(ctx ?=> (k, v) => ctx.key = k; (k, v))
     .keyBy(_._1)
+    // we compute the incrementally updated wordcount for each word using the 
+    // state provided by ctx
     .map(ctx ?=> (k, v) => 
       ctx.state.get(key)  match
         case Some(count) => 
-          ctx.state.set(key, count + v
-          ctx.emit(k, count + v)
+          ctx.state.set(key, count + v)
+          (k, count + v)
         case None =>
           ctx.state.set(key, v)
+          (k, count + v)
     )
     .sink[(String, Int)]
     .withName("counts")
