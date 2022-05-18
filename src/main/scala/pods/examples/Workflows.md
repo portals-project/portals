@@ -169,7 +169,8 @@ val identity = Tasks.processor { ctx ?=> event =>
   ctx.emit(event)
 }
 // Similarly, we have map, flatMap, and more as you would expect. These can easily
-// be built from stronger primitives such as the processor.
+// be built from stronger primitives such as the processor. It also supplies a 
+// factory from a taskBehavior, as it is convenient.
 
 // CONTINUE HERE:
 
@@ -224,7 +225,22 @@ trait TaskContext: // or sometimes it is just called context ;)
 // That is, a combiner can take two channel outputs, and combine them by ensuring
 // atom-purity by synchronization of atom-borders.
 
-// Taking 'steps' in the task
+// Lib: Taking 'steps' in the task
+// We can take steps in a task across atoms.
+// This is achieved by using the withStep( ... ) method on a task.
+// This will be translated to a task that cycles through the "steps".
+val task = Tasks.vsm { ctx ?=> event =>
+  ...
+}.withStep { ctx ?=> event =>
+  ...
+}.withStep { ctx ?=> event =>
+  ...
+}...
+
+
+
+
+
 
 ```
 
