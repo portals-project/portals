@@ -1,3 +1,5 @@
+# Workflows
+
 ```scala
 // A workflow is a DAG of tasks with sources and sinks.
 // Tasks are connected through channels. 
