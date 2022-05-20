@@ -1,17 +1,15 @@
 # Serializable Updates
 
 ```scala
-// manually executing a ser update
-
-implicit system = ...
-// ##################### how to define ser update in the workflow
+// Serializable updates can be executed using the onAtomCompleted 
+// Here we outline some options on how to do this using the existing API.
 
 // option 1: Explicitly define SER_OP command as an input
 // and manually define the ser update for every task
 val wf = Workflows.builder().withName("workflow")
   .source[String|SER_OP].withName("text")
   .map(word => (word, 1))
-  .withWrapper { ctx ?=> event => wrapped => // wrap the wrapped (map behavior) to catch ser updates
+  .withWrapper { ctx ?=> event => wrapped => // wrap the map behavior (wrapped) to handle ser updates
     event match
       case SER_OP => 
         ... // handle ser updates
@@ -25,12 +23,11 @@ val wf = Workflows.builder().withName("workflow")
 // option 2: Extend workflow to handle SER_OPs uniformly on all tasks
 val wf = ... // some workflow
   // this could be implemented with an allWithWrapper method if we also handle the wrapped event and emit SER_OP
-  .allWithSerUpdate { ctx ?=> ser_op => // handle ser updates on all tasks uniformly
-    ser_op match
-      case SER_OP(...) => 
-        ctx.state... // for example, do something with state
-        ... // handle ser updates
-        // we don't need to emit Ser_op as this is automatically done by allWithSerUpdate
+  .allWithSerUpdate { ctx ?=> ser_op => ser_op match // handle ser updates on all tasks uniformly
+    case SER_OP(...) => 
+      ctx.state... // for example, do something with state
+      ... // handle ser updates
+      // we don't need to emit Ser_op as this is automatically done by allWithSerUpdate
   }
   .build()
 
@@ -53,16 +50,17 @@ val wf = ... // some workflow
         ctx.emit(atom)
   }
 
-// ##################### How to send ser updates / ingest ser_ops into system
 
+// we also need a way to ingest the operations that we want to trigger
+// they can be ingested simply as simple events
 val ref = ... // get reference to workflow
 
 ref ! "hello world world hello"
 
 // option 1-2: encapsulate the SER_OP within its own atom
-ref ! Fuse // fuse the workflow
+ref ! FUSE // fuse the workflow
 ref ! SER_OP(op_data) // submit the update request
-ref ! Fuse // fuse the workflow, forms an atom with a single event the SER_OP
+ref ! FUSE // fuse the workflow, forms an atom with a single event the SER_OP
 
 // option 3:
 ref ! FUSE
