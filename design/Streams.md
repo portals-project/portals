@@ -1,4 +1,5 @@
 # Streams
+
 ```scala
 // Some event type
 type Event
