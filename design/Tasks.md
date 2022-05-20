@@ -39,6 +39,10 @@ val task = Tasks.vsm { event =>
     ctx.log.info("hello world") // ctx is a method call that summons the Context
     Tasks.same // don't forget to return a behavior :)
   }
+// we can even omit the "event =>" to use the pattern matchin cases straight away:
+val task = Tasks.vsm { // no need for "event =>" 
+  case Event1() => ...
+}
 
 // There are many more factory methods available, as most situations don't require
 // a virtual state machine abstraction.
