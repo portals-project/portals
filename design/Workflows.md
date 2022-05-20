@@ -75,8 +75,21 @@ stream.fuse()
 stream.complete()
 stream.close()
 
+```
 
 
-// TODO: cycles
+```scala
+val builder = Workflows.builder()
 
+val cycle = builder.cycle() // create cycle source
+
+val src = builder
+  .source[Int]
+
+val loop = builder
+  .merge(src, cycle)
+  .map(_ + 1)
+  .intoCycle(cycle)
+
+val wf = builder.build().launch()  
 ```
