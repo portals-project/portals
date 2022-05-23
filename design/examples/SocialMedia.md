@@ -1,3 +1,4 @@
+```scala
 /** Social Media Example
   *
   * The social media example shows how we can implement a blogging platform
@@ -57,3 +58,5 @@ object SocialMedia:
     .task(likesBehavior)
     .allWithWrapper(updateBehaviorWrapper)
     .build()
+
+```
