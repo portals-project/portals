@@ -34,7 +34,7 @@ object Inventory:
         case None => ctx.state.put(item, 1)
 
     // remove an item from inventory and reply
-    case RemoveItem(item) =>
+    case RemoveItem(item, replyTo) =>
       ctx.log.debug("Removing item {} from inventory", item)
 
       ctx.state.get(item) match
@@ -65,7 +65,7 @@ object UserShoppingCart:
   val cartFactory = inventory => Tasks.processor {
     case AddItem(user, item) =>
       ctx.log.debug("Adding item {} to cart of user {}", item, user)
-      val future = ctx.ask(inventory, RemoveItem(item))
+      val future = ctx.ask(inventory, ref => RemoveItem(item, ref))
       ctx.await(future) {
         // if item was removed successfully from inventory we can add it to cart
         case AddItemSuccess =>
