@@ -14,9 +14,9 @@ class Workflow(
     tasks(name)
       .asInstanceOf[Task[T, _]]
       .tctx
-      .ic
+      .mainiref
       .worker
-      .submit(EventWithId(-1, event))
+      .submit(event)
 
   def close(): Unit =
     Thread.sleep(500)
@@ -243,7 +243,7 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
   Workflows.connect(wf1.tasks("sink"), wf2.tasks("source2"))
 
   // this should now cause infinite loop, printing messages
-  wf2.tasks("source2").tctx.ic.worker.submit(EventWithId(0, 1.asInstanceOf))
+  wf2.tasks("source2").tctx.mainiref.worker.submit(1.asInstanceOf)
 
   Thread.sleep(100)
 
@@ -260,7 +260,7 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
 //     .source[Int]("source2")
 //     .processor[Int]({ tctx ?=> x =>
 //       // dynamic emit :), creates connection to other workflow
-//       tctx.send(wf1.tasks("source").tctx.ic, x.asInstanceOf)
+//       tctx.send(wf1.tasks("source").tctx.mainiref, x.asInstanceOf)
 //       tctx.emit(x)
 //     })
 //     .withLogger()
@@ -268,7 +268,7 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
 //     .build()
 
 //   // this should result in two messages printed, one for each workflow
-//   wf2.tasks("source2").tctx.ic.worker.submit(EventWithId(0, 1.asInstanceOf))
+//   wf2.tasks("source2").tctx.mainiref.worker.submit(EventWithId(0, 1.asInstanceOf))
 
 //   Thread.sleep(200)
 
@@ -326,6 +326,6 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
 
   val wf = builder.build()
 
-  wf.tasks("source").tctx.ic.worker.submit(EventWithId(0, 1.asInstanceOf))
+  wf.tasks("source").tctx.mainiref.worker.submit(1.asInstanceOf)
 
   Thread.sleep(100)

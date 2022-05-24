@@ -58,19 +58,19 @@ object Workers:
       }
   }
 
-@main def chainedWorkerExample(): Unit =
-  import Workers.*
-  type T = String
-  val worker1 = Workers[T, T]()
-    .withOnNext(worker ?=> event => worker.submit(event))
-    .build()
-  val worker2 = Workers[T, T]()
-    .withOnNext(worker ?=> event => worker.submit(event))
-    .build()
-  val worker3 = Workers[T, T]()
-    .withOnNext(event => println(event))
-    .build()
-  worker1.subscribe(worker2)
-  worker2.subscribe(worker3)
-  worker1.submit("hello world")
-  Thread.sleep(100)
+// @main def chainedWorkerExample(): Unit =
+//   import Workers.*
+//   type T = String
+//   val worker1 = Workers[T, T]()
+//     .withOnNext(worker ?=> event => worker.submit(event))
+//     .build()
+//   val worker2 = Workers[T, T]()
+//     .withOnNext(worker ?=> event => worker.submit(event))
+//     .build()
+//   val worker3 = Workers[T, T]()
+//     .withOnNext(event => println(event))
+//     .build()
+//   worker1.subscribe(worker2)
+//   worker2.subscribe(worker3)
+//   worker1.submit("hello world")
+//   Thread.sleep(100)
