@@ -24,7 +24,7 @@ package pods.examples
   * whitespace to form words, and from this we count the number of occurence of
   * each word.
   */
-@main def MapReduceExample() =
+@main def WordCount() =
   import pods.workflows.*
   import pods.workflows.DSL.*
 
@@ -42,7 +42,7 @@ package pods.examples
     .withName("wf")
     .source[String]()
     .withName("input")
-    // mapper
+    /* mapper */
     .flatMap(mapper)
     .withName("map")
     // reducer applied to word and state in the VSM
@@ -68,7 +68,7 @@ package pods.examples
     .withName("output")
     .build()
 
-  val system = Systems.Local()
+  val system = Systems.local()
   system.launch(wf)
 
   val testData = "the quick brown fox jumps over the lazy dog"
