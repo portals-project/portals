@@ -69,7 +69,6 @@ package pods.examples
     .build()
 
   val system = Systems.Local()
-  given system
   system.launch(wf)
 
   val testData = "the quick brown fox jumps over the lazy dog"
