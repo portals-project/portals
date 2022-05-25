@@ -39,6 +39,9 @@
       case _ => ??? // shouldn't occur
     }
 
+  // Alternative builder syntax, the workflow is built from within some implicit
+  // workflows context. Although I am personally not a fan of this type of 
+  // builder syntax.
   val wf = Worfklows.builder { wf =>
     import Workflows.DSL.builder.*
     import Workflows.DSL.!
