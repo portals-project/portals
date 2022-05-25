@@ -83,14 +83,14 @@ package pods.examples
     sealed trait Events
     case object Step extends Events
 
-    def stateA(counter: Int) = TaskBehaviors.processor[Events, Nothing] {
+    def stateA(counter: Int) = TaskBehaviors.vsm[Events, Nothing] {
       case Step =>
         ctx.log.info(s"stateA: $counter")
         val newCounter = counter + 1
         stateB(newCounter)
     }
 
-    def stateB(counter: Int) = TaskBehaviors.processor[Events, Nothing] {
+    def stateB(counter: Int) = TaskBehaviors.vsm[Events, Nothing] {
       case Step =>
         ctx.log.info(s"stateB: $counter")
         val newCounter = counter - 1
