@@ -50,6 +50,7 @@
     val asker = task(askerAwaiter).withName("awaiter")
     val awaiter = task(askerAwaiter).withName("awaiter")
 
+    // will trigger a message upon launch
     asker ! StartAsking("AnythinButAPalindrome", awaiter)
   }.build()
 
