@@ -1,0 +1,68 @@
+/** Ask Await 
+ *  
+ *  Ask Await is a common pattern in actors with futures. With this pattern an 
+ *  actor `a` can send a request (ask) to another actor `b`, to which `b` can 
+ *  reply with some result. Asking creates a future, which is later completed
+ *  when the reply arrives back at `a`. 
+*/
+
+/** Reverse Response
+ * 
+ *  A short example where we have two actors, and one actor sends a request to
+ *  the other other to reverse a string. The actor then waits for the response
+ *  until commencing with the processing.
+ */
+@main def exampleAskAwait() =
+  import pods.workflows.DSL.*
+
+  object AskerAwaiter:
+    sealed trait Events
+    case class Request(msg: String, replyTo: IRef[Reply]) extends Events
+    case class Reply(msg: String) extends Events
+    case class StartAsking(msg: String, other: IRef[Request]) extends Events
+
+    // use VSM behavior to block for the `await` per-key
+    val askerAwaiter = TaskBehaviors.vsm[Events, Nothing] {
+      case Request(msg, replyTo) =>
+        replyTo ! Reply(msg.reverse)
+        TaskBehaviors.same
+
+      case StartAsking(msg, other) =>
+        val future = ctx.ask(other, ref => Request(msg, ref))
+        ctx.log.info(s"Asking $msg")
+        ctx.await(future, {
+          case Reply(msg) =>
+            ctx.log.info(s"Got reply: $msg")
+            TaskBehaviors.same // same behavior as the outer behavior not await behavior
+        })
+
+      case _ => ??? // shouldn't occur
+    }
+
+  // Alternative builder syntax, the workflow is built from within some implicit
+  // workflows context. Although I am personally not a fan of this type of 
+  // builder syntax.
+  // TODO: discuss this alternative builder pattern.
+  val wf = Worfklows.builder { wf ?=>
+    import Workflows.DSL.builder.*
+    import AskerAwaiter.*
+
+    // TODO: discuss, how to explicitly define what is used as the contextual key.
+
+    val asker = headless()
+      .task(askerAwaiter)
+      .withName("asker")
+    val awaiter = headless()
+      .task(askerAwaiter)
+      .withName("awaiter")
+
+    // this line will trigger a message to the asker upon launch of the workflow
+    asker ! StartAsking("AnythinButAPalindrome", awaiter)
+  }.build()
+
+  val system = System.local()
+
+  // should log Asking and the Got reply answer.
+  system.launch(wf)
+
+  system.shutdown()
