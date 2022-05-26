@@ -17,6 +17,7 @@ package pods.workflows.examples
  *  pong message. This is typically done for some set number of rounds.
  */
 @main def PingPong() =
+  import pods.workflows.*
   import pods.workflows.DSL.ctx // import implicit resolution: def ctx = summon[Context]
   import pods.workflows.DSL.! // import the ! operator
 
@@ -75,6 +76,7 @@ package pods.workflows.examples
  *  decrements the counter by one, and logs the event (with a different message).
  */
 @main def AlternatingActor() =
+  import pods.workflows.*
   import pods.workflows.DSL.ctx
   import pods.workflows.DSL.!
 
