@@ -34,6 +34,7 @@ Example programs can be found in the [Examples](examples) page. Note that not al
   * [ ] More examples
     * [ ] Ask Await, examples created, not executable
     * [ ] Taking Steps
+    * [ ] Serializable updates, examples created, not executable
 * [ ] Create test suite.
 * [ ] Implement / make the examples executable.
 * [ ] Perform evaluation.
