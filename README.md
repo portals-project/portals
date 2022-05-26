@@ -25,10 +25,10 @@ Example programs can be found in the [Examples](examples) page. Note that not al
   * [ ] Serializable updates demonstration.
   * [ ] Common examples of stateful serverless: Shopping Cart; Bank Account; Social Media; Microservices.
   * [ ] Other programming models embedded in Pods Workflows.
-    * [ ] MapReduce
+    * [ ] MapReduce, examples created, not executable
     * [ ] BSP
     * [ ] Pregel/Menthor
-    * [ ] Actors
+    * [ ] Actors, examples created, not executable
     * [ ] Dataflow/Streaming
     * [ ] Dataframes
 * [ ] Create test suite.
