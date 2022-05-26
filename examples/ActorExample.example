@@ -1,0 +1,115 @@
+package pods.workflows.examples
+
+/** Actor Examples
+ * 
+ *  These examples show how we can implement actors in pods workflows.
+ * 
+ *  An actor-capable system has the following characteristics:
+ *  - Actors can send messages to other actors.
+ *  - Actors can receive messages, and change their behavior for the next receive.
+ *  - Actors can create other actors. (not supported by pods workflows)
+ */ 
+
+/** Ping Pong
+ * 
+ *  The canonical actor example is ping pong. It consists of two actors. The 
+ *  pinger actor sends a ping message to the ponger actor, that responds with a
+ *  pong message. This is typically done for some set number of rounds.
+ */
+@main def PingPong() =
+  import pods.workflows.DSL.ctx // import implicit resolution: def ctx = summon[Context]
+  import pods.workflows.DSL.! // import the ! operator
+
+  /** Factory for pinger and ponger actor behaviors */
+  object PingerPongerFactory:
+    sealed trait Events
+    case class Ping(x: Int, replyTo: IRef[Pong]) extends Events
+    case class Pong(x: Int, replyTo: IRef[Ping]) extends Events
+
+    // Actor is a task behavior that handles Events and emits Nothing
+    def behavior = TaskBehaviors.vsm[Events, Nothing] {
+      case event @ Ping(x, replyTo) if x > 0 =>
+        ctx.log.info(event)
+        replyTo ! Pong(x - 1, ctx.iref)
+        TaskBehaviors.same // use same behavior again
+
+      case event @ Pong(x, replyTo) if x > 0 =>
+        ctx.log.info(event)
+        replyTo ! Ping(x - 1, ctx.iref)
+        TaskBehaviors.same
+        
+      case _ =>
+        TaskBehaviors.same
+    }
+
+  import PingerPongerFactory.*
+
+  // create one workflow with both the pinger and ponger actors
+  // note: we can also create two workflows each with one actor
+  val builder = Workflows.builder().withName("wf")
+  // pinger and ponger as headless tasks as they are not bound to a source
+  // we can still address them as they are named tasks makes their external iref
+  // available in the registry
+  builder.headless().task(behavior).withName("pinger")
+  builder.headless().task(behavior).withName("ponger")
+
+  val system = Systems.local()
+  system.launch(builder.build())
+
+  // resolve the references to the actors
+  val pinger = system.registry("wf/pinger").resolve()
+  val ponger = system.registry("wf/ponger").resolve()
+
+  // this will log two concurrent runs from 8 to 0
+  pinger ! Ping(8, ponger)
+  pinger ! Ping(8, ponger)
+
+  // graceful shutdown
+  system.shutdown()
+
+
+/** Alternating Actor
+ * 
+ *  This example shows an actor that alternates between two behaviors. The first
+ *  behavior increments a counter b one, and logs the event, the second behavior
+ *  decrements the counter by one, and logs the event (with a different message).
+ */
+@main def AlternatingActor() =
+  import pods.workflows.DSL.ctx
+  import pods.workflows.DSL.!
+
+  object AlternatingActorFactory:
+    sealed trait Events
+    case object Step extends Events
+
+    def stateA(counter: Int) = TaskBehaviors.vsm[Events, Nothing] {
+      case Step =>
+        ctx.log.info(s"stateA: $counter")
+        val newCounter = counter + 1
+        stateB(newCounter) // new behavior is stateB
+    }
+
+    def stateB(counter: Int) = TaskBehaviors.vsm[Events, Nothing] {
+      case Step =>
+        ctx.log.info(s"stateB: $counter")
+        val newCounter = counter - 1
+        stateA(newCounter) // new behavior is stateA
+    }
+
+    def behavior: TaskBehavior[Events, Nothing] = stateA(0) // initial behavior
+
+  import AlternatingActorFactory.*
+
+  val wf = Workflows.builder().withName("wf")
+    .headless().task(behavior).withName("alternating")
+    .build()
+
+  val system = Systems.local()
+  system.launch(wf)
+
+  val alternating = system.registry("wf/alternating").resolve()
+  
+  // this should log alternating states between A and B
+  (0 until 8).foreach(_ => alternating ! Step)
+
+  system.shutdown()
