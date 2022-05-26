@@ -17,7 +17,7 @@ Example programs can be found in the [Examples](examples) page. Note that not al
 
 ## Milestones
 * [X] Create readme and start onboarding process. 
-* [ ] Create a description of the programming model.
+* [X] Create a description of the programming model.
 * [ ] Create an implementation-design document.
 * [ ] Define the interfaces and traits.
 * [ ] Write the use-cases and examples that we want to execute.
@@ -31,6 +31,9 @@ Example programs can be found in the [Examples](examples) page. Note that not al
     * [ ] Actors, examples created, not executable
     * [ ] Dataflow/Streaming
     * [ ] Dataframes
+  * [ ] More examples
+    * [ ] Ask Await, examples created, not executable
+    * [ ] Taking Steps
 * [ ] Create test suite.
 * [ ] Implement / make the examples executable.
 * [ ] Perform evaluation.
