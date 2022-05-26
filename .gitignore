@@ -1,7 +1,6 @@
 project/target
 project/project/target
 target/
-pods-db/
 .idea/
 .bsp/
 .bloop/
