@@ -43,7 +43,7 @@ class WorkflowBuilder:
   ): FlowBuilder[Nothing, Nothing] =
     new FlowBuilder(this).actor[T](behavior, name)
 
-  def source[T](name: String): FlowBuilder[Nothing, T] =
+  def source[T](name: String=""): FlowBuilder[Nothing, T] =
     new FlowBuilder(this).source[T](name)
 
   def from[I, O](flow: FlowBuilder[I, O]): FlowBuilder[Nothing, O] =
@@ -117,6 +117,12 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     latest = Some(taskName)
     this
 
+  def withName(name: String): FlowBuilder[I, O] =
+    val behavior = workflow.tasks(latest.get)
+    workflow.tasks -= latest.get
+    workflow.tasks += (name -> behavior)
+    this
+
   private[pods] def cycle(): FlowBuilder[I, O] =
     val behavior = TaskBehaviors.identity[O]
     val taskName = nameFromName("")
@@ -153,14 +159,14 @@ class FlowBuilder[I, O](workflow: WorkflowBuilder):
     latest = Some(taskName)
     this.asInstanceOf[FlowBuilder[Nothing, O]]
 
-  def source[T](name: String): FlowBuilder[Nothing, T] =
+  def source[T](name: String = ""): FlowBuilder[Nothing, T] =
     val behavior = TaskBehaviors.identity[T]
     val taskName = nameFromName(name)
     workflow.tasks = workflow.tasks + (taskName -> behavior)
     latest = Some(taskName)
     this.asInstanceOf[FlowBuilder[Nothing, T]]
 
-  def sink[T](name: String): FlowBuilder[T, Nothing] =
+  def sink[T](name: String = ""): FlowBuilder[T, Nothing] =
     val behavior = TaskBehaviors.identity[T]
     val taskName = nameFromName(name)
     workflow.tasks = workflow.tasks + (taskName -> behavior)

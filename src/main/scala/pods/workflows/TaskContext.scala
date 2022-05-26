@@ -12,7 +12,10 @@ private[pods] trait TaskContext[I, O]:
   private[pods] val mainoref: OStream[O]
 
   /** external input stream to this task, created dynamically on use */
-  val self: IStream[I]
+  val iref: IStream[I]
+
+  /** external output stream to this task, created dynamically on use */
+  val oref: OStream[I]
 
   /** state of the task */
   def state: TaskState[Any, Any]

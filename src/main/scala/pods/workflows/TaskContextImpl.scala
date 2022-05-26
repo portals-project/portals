@@ -8,7 +8,8 @@ import scala.concurrent.Future
 private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
   private[pods] val mainiref: IStream[I] = IStream[I]()
   private[pods] val mainoref: OStream[O] = OStream[O]()
-  val self: IStream[I] = IStream[I]()
+  val iref: IStream[I] = IStream[I]()
+  val oref: OStream[I] = OStream[I]()
   def emit(event: O): Unit =
     mainoref.submit(event)
   def send[T](ic: IStream[T], event: T): Unit =

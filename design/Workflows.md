@@ -76,7 +76,7 @@ val wf = builder.build().launch()
 val builder = Workflows.builder().withName("wf")
 
 val source = builder
-  .source[Int]()
+  .source[Int]().withName("source")
 
 val fromSource1 = builder
   .from(source)

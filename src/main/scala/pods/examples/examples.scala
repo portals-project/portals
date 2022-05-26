@@ -182,14 +182,14 @@ import pods.workflows.*
       event match
         case Reply(x) =>
           if (x > 0) then
-            val request = Request(x, ctx.self.asInstanceOf)
+            val request = Request(x, ctx.iref.asInstanceOf)
             val iref = microservice.source("src").iref
             ctx.send(iref, request.asInstanceOf)
             ctx.emit(x)
           else ctx.emit(x)
 
         case x: Int =>
-          val request = Request(x, ctx.self.asInstanceOf)
+          val request = Request(x, ctx.iref.asInstanceOf)
           val iref = microservice.source("src").iref
           ctx.send(iref, request.asInstanceOf)
     })
@@ -220,11 +220,11 @@ import pods.workflows.*
     def behavior = TaskBehaviors.vsm[Events, Events]({
       case e @ Ping(x, replyTo) if x > 0 =>
         ctx.log.info(e.toString)
-        replyTo ! Pong(x - 1, ctx.self.asInstanceOf)
+        replyTo ! Pong(x - 1, ctx.iref.asInstanceOf)
         TaskBehaviors.same
       case e @ Pong(x, replyTo) if x > 0 =>
         ctx.log.info(e.toString)
-        replyTo ! Ping(x - 1, ctx.self.asInstanceOf)
+        replyTo ! Ping(x - 1, ctx.iref.asInstanceOf)
         TaskBehaviors.same
       case _ =>
         TaskBehaviors.same

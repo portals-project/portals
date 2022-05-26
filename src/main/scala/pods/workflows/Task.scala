@@ -17,11 +17,11 @@ private[pods] class TaskImpl[I, O](taskBehavior: TaskBehavior[I, O]) extends Tas
     .withOnComplete(() => taskBehavior.onComplete(tctx))
     .build()
   tctx.mainiref.worker.subscribe(this.worker)
-  tctx.self.worker.subscribe(this.worker)
+  tctx.iref.worker.subscribe(this.worker)
   this.worker.subscribe(tctx.mainoref.worker)
 
   private[pods] def close(): Unit =
-    tctx.self.close()
+    tctx.iref.close()
     tctx.mainiref.close()
     worker.close()
     tctx.mainoref.close()
