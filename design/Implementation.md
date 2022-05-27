@@ -31,6 +31,8 @@ A workflow consists of tasks, sources, sinks, and the way in which they are conn
 The `WorkflowBuilder` can be used to build a workflow in a convenient API.
 This is then translated to a `Workflow` description, and submitted for execution by the `WorkflowRunner`.
 
+A workflow also has a `WorkflowManager` that synchronizes the sources, etc.
+
 ## Serializable Updates
 Are implemented on a high-level wrapping the behaviors. TaskBuilders allow for modifying the behavior of a task in a useful way.
 
