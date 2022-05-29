@@ -22,35 +22,35 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
   private[pods] def source[T](): FlowBuilder[Nothing, T] =
     val behavior = TaskBehaviors.identity[T]
     val _ = addTask(behavior)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[Nothing, T]]
 
   private[pods] def from[I, O](fb: FlowBuilder[I, O]): FlowBuilder[Nothing, O] = 
     latest = fb.latest
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[Nothing, O]]
 
   private[pods] def merge[I1, I2, O](fb1: FlowBuilder[I1, O], fb2: FlowBuilder[I2, O]): FlowBuilder[Nothing, O] = 
     val behavior = TaskBehaviors.identity[O]
     val name = addTask(behavior)
     workflow.connections = workflow.connections :+ (fb1.latest.get, name)
     workflow.connections = workflow.connections :+ (fb2.latest.get, name)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[Nothing, O]]
 
   private[pods] def cycle[T](): FlowBuilder[T, T] = 
     val behavior = TaskBehaviors.identity[T]
     val name = addTask(behavior)
     cycleIn = Some(name)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[T, T]]
 
   def sink(): FlowBuilder[I, Nothing] = 
     val behavior = TaskBehaviors.identity[O]
     val _ = addTask(behavior)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[I, Nothing]]
 
   def intoCycle(fb: FlowBuilder[O, O]): FlowBuilder[I, Nothing] =
     fb.cycleIn match
       case Some(into) =>
         workflow.connections = workflow.connections :+ (latest.get, into)
-        this.asInstanceOf
+        this.asInstanceOf[FlowBuilder[I, Nothing]]
       case None => ??? // shouldn't intoCycle if cycle entry does not exist
 
   // TODO: consider moving definitions and implementations of map, flatMap, etc.
@@ -58,31 +58,31 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
   def map[T](f: O => T): FlowBuilder[I, T] =
     val behavior = TaskBehaviors.map[O, T](f)
     val _ = addTask(behavior)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[I, T]]
 
   def behavior[T](b: TaskBehavior[O, T]): FlowBuilder[I, T] = 
     val _ = addTask(b)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[I, T]]
 
   def vsm[T](b: TaskBehavior[O, T]): FlowBuilder[I, T] =
     val _ = addTask(b)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[I, T]]
 
   def processor[T](f: TaskContext[O, T] ?=> O => Unit): FlowBuilder[I, T] =
     val behavior = TaskBehaviors.processor[O, T](f)
     val _ = addTask(behavior)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[I, T]]
 
   def flatMap[T](f: O => Seq[T]): FlowBuilder[I, T] = 
     val behavior = TaskBehaviors.flatMap[O, T](f)
     val _ = addTask(behavior)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[I, T]]
 
   def withName(name: String): FlowBuilder[I, O] =
     val behavior = workflow.tasks(latest.get)
     workflow.tasks = workflow.tasks.removed(latest.get)
     addTask(name, behavior)
-    this
+    this.asInstanceOf[FlowBuilder[I, O]]
   
   def withLogger(prefix: String = ""): FlowBuilder[I, O] =
     val behavior = TaskBehaviors.processor[O, O] { ctx ?=> x => 
@@ -90,7 +90,7 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
       ctx.emit(x)
     }
     val _ = addTask(behavior)
-    this.asInstanceOf
+    this.asInstanceOf[FlowBuilder[I, O]]
 
   def withOnNext(_onNext: TaskContext[I, O] ?=> I => TaskBehavior[I, O]): FlowBuilder[I, O] =
     // TODO: consider implementing factories for these in the TaskBehaviors file
@@ -107,7 +107,7 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
         behavior.onAtomComplete(ctx)
     }
     updateTask(name, newBehavior)
-    this
+    this.asInstanceOf[FlowBuilder[I, O]]
 
   def withOnError(_onError: TaskContext[I, O] ?=> Throwable => TaskBehavior[I, O]): FlowBuilder[I, O] = 
     val name = latest.get
@@ -123,7 +123,7 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
         behavior.onAtomComplete(ctx)
     }
     updateTask(name, newBehavior)
-    this
+    this.asInstanceOf[FlowBuilder[I, O]]
 
   def withOnComplete(_onComplete: TaskContext[I, O] ?=> TaskBehavior[I, O]): FlowBuilder[I, O] =
     val name = latest.get
@@ -139,7 +139,7 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
         behavior.onAtomComplete(ctx)
     }
     updateTask(name, newBehavior)
-    this
+    this.asInstanceOf[FlowBuilder[I, O]]
 
   def withOnAtomComplete(_onAtomComplete: TaskContext[I, O] ?=> TaskBehavior[I, O]): FlowBuilder[I, O] =
     val name = latest.get
@@ -155,6 +155,6 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
         _onAtomComplete(using ctx)
     }
     updateTask(name, newBehavior)
-    this
+    this.asInstanceOf[FlowBuilder[I, O]]
 
 end FlowBuilderImpl
