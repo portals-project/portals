@@ -1,16 +1,20 @@
 package pods.workflows
 
+import java.util.concurrent.SubmissionPublisher
+
 /** TaskContext */
 private[pods] trait TaskContext[I, O]:
   //////////////////////////////////////////////////////////////////////////////
   // Internals
   //////////////////////////////////////////////////////////////////////////////
 
+  private[pods] var submitter: SubmissionPublisher[O]
+
   /** The main input channel of this task, for internal use */
-  private[pods] val mainiref: IStreamRef[I]
+  private[pods] var mainiref: IStreamRef[I]
 
   /** The main output channel of this task, for internal use */
-  private[pods] val mainoref: OStreamRef[O]
+  private[pods] var mainoref: OStreamRef[O]
 
   //////////////////////////////////////////////////////////////////////////////
   // Execution Context
@@ -18,7 +22,7 @@ private[pods] trait TaskContext[I, O]:
 
   /** Contextual key for per-key execution */
   // note: should be var so that it can be swapped at runtime
-  private[pods] var key: Key
+  private[pods] var key: Key[Int]
 
   /** The `SystemContext` that this task belongs to */
   // note: should be var so that it can be swapped at runtime
@@ -62,12 +66,14 @@ private[pods] trait TaskContext[I, O]:
   /** Externally referencable input stream to this task. */
   // note: this stream is connected indirectly via mainiref
   // note: lazily created on use
+  private[pods] var _iref: IStreamRef[I]
   def iref: IStreamRef[I]
 
   /** Externally referencable output stream to this task. */
   // note: this stream is connected indirectly via mainoref
   // note: lazily created on use
-  def oref: OStreamRef[I]
+  private[pods] var _oref: OStreamRef[O]
+  def oref: OStreamRef[O]
 
   /** Send an event to the provided stream */
   // note: this creates a new OStreamRef that is then connected to the 
@@ -93,3 +99,6 @@ private[pods] trait TaskContext[I, O]:
   /** Omitted: create/terminate a new task */
     
   /** Omitted: create/terminate a new workflow */ 
+
+object TaskContext:
+  def apply[I, O](): TaskContext[I, O] = new TaskContextImpl[I, O]
