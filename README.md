@@ -19,7 +19,7 @@ Example programs can be found in the [Examples](examples) page. Note that not al
 * [X] Create readme and start onboarding process. 
 * [X] Create a description of the programming model.
 * [X] Create an implementation-design document.
-* [ ] Define the interfaces and traits.
+* [X] Define the interfaces and traits.
 * [ ] Write the use-cases and examples that we want to execute.
   * [ ] Killer application: something with microservices and serializable updates.
   * [ ] Serializable updates demonstration.
@@ -32,6 +32,7 @@ Example programs can be found in the [Examples](examples) page. Note that not al
     * [ ] Dataflow/Streaming
     * [ ] Dataframes
   * [ ] More examples
+    * [X] Hello World
     * [ ] Ask Await, examples created, not executable
     * [ ] Taking Steps
     * [ ] Serializable updates, examples created, not executable
