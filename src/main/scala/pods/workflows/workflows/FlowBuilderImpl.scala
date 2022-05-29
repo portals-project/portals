@@ -41,7 +41,7 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
     cycleIn = Some(name)
     this.asInstanceOf[FlowBuilder[T, T]]
 
-  def sink(): FlowBuilder[I, Nothing] = 
+  def sink[OO >: O <: O](): FlowBuilder[I, Nothing] = 
     val behavior = TaskBehaviors.identity[O]
     val _ = addTask(behavior)
     this.asInstanceOf[FlowBuilder[I, Nothing]]
@@ -53,9 +53,12 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
         this.asInstanceOf[FlowBuilder[I, Nothing]]
       case None => ??? // shouldn't intoCycle if cycle entry does not exist
 
+  def keyBy[T](f: O => T): FlowBuilder[I, O] =
+    processor[O]{ ctx ?=> event => { ctx.key = Key(f(event).hashCode()); ctx.emit(event) } }
+
   // TODO: consider moving definitions and implementations of map, flatMap, etc.
   // here instead of at the TaskBehaviors.
-  def map[T](f: O => T): FlowBuilder[I, T] =
+  def map[T](f: AttenuatedTaskContext[O, T] ?=> O => T): FlowBuilder[I, T] =
     val behavior = TaskBehaviors.map[O, T](f)
     val _ = addTask(behavior)
     this.asInstanceOf[FlowBuilder[I, T]]
@@ -73,15 +76,23 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
     val _ = addTask(behavior)
     this.asInstanceOf[FlowBuilder[I, T]]
 
-  def flatMap[T](f: O => Seq[T]): FlowBuilder[I, T] = 
+  def flatMap[T](f: AttenuatedTaskContext[O, T] ?=> O => Seq[T]): FlowBuilder[I, T] = 
     val behavior = TaskBehaviors.flatMap[O, T](f)
     val _ = addTask(behavior)
     this.asInstanceOf[FlowBuilder[I, T]]
 
   def withName(name: String): FlowBuilder[I, O] =
-    val behavior = workflow.tasks(latest.get)
-    workflow.tasks = workflow.tasks.removed(latest.get)
-    addTask(name, behavior)
+    val oldName = latest.get
+    val behavior = workflow.tasks(oldName)
+    workflow.tasks = workflow.tasks.removed(oldName)
+    // using addTask here breaks as it connects to itself
+    workflow.tasks = workflow.tasks + (name -> behavior)
+    latest = Some(name)
+    workflow.connections = workflow.connections.map{ (from, to) => (from, to) match
+      case (l, r) if r == oldName => (l, name)
+      case (l, r) if l == oldName => (name, r)
+      case (l, r)                 => (l, r)
+    }
     this.asInstanceOf[FlowBuilder[I, O]]
   
   def withLogger(prefix: String = ""): FlowBuilder[I, O] =

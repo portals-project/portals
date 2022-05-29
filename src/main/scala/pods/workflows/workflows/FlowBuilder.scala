@@ -12,11 +12,13 @@ trait FlowBuilder[I, O]:
 
   private[pods] def cycle[T](): FlowBuilder[T, T]
 
-  def sink(): FlowBuilder[I, Nothing]
+  def sink[OO >: O <: O](): FlowBuilder[I, Nothing]
 
   def intoCycle(wfb: FlowBuilder[O, O]): FlowBuilder[I, Nothing]
 
-  def map[T](f: O => T): FlowBuilder[I, T]
+  def keyBy[T](f: O => T): FlowBuilder[I, O]
+
+  def map[T](f: AttenuatedTaskContext[O, T] ?=> O => T): FlowBuilder[I, T]
 
   def behavior[T](b: TaskBehavior[O, T]): FlowBuilder[I, T]
 
@@ -24,7 +26,7 @@ trait FlowBuilder[I, O]:
 
   def processor[T](f: TaskContext[O, T] ?=> O => Unit): FlowBuilder[I, T]
 
-  def flatMap[T](f: O => Seq[T]): FlowBuilder[I, T] 
+  def flatMap[T](f: AttenuatedTaskContext[O, T] ?=> O => Seq[T]): FlowBuilder[I, T] 
 
   def withName(name: String): FlowBuilder[I, O]
   
