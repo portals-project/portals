@@ -1,0 +1,160 @@
+package pods.workflows
+
+class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]:
+  private def addTask(name: String, behavior: TaskBehavior[_, _]): Unit =
+    if latest.isDefined then
+      workflow.connections = workflow.connections :+ (latest.get, name)
+    workflow.tasks = workflow.tasks + (name -> behavior)
+    latest = Some(name)
+
+  private def addTask(behavior: TaskBehavior[_, _]): String =
+    val name = workflow.task_id()
+    if latest.isDefined then
+      workflow.connections = workflow.connections :+ (latest.get, name)
+    workflow.tasks = workflow.tasks + (name -> behavior)
+    latest = Some(name)
+    name
+
+  private def updateTask(name: String, newBehavior: TaskBehavior[_, _]): Unit =
+    workflow.tasks = workflow.tasks - name
+    workflow.tasks = workflow.tasks + (name -> newBehavior)
+
+  private[pods] def source[T](): FlowBuilder[Nothing, T] =
+    val behavior = TaskBehaviors.identity[T]
+    val _ = addTask(behavior)
+    this.asInstanceOf
+
+  private[pods] def from[I, O](fb: FlowBuilder[I, O]): FlowBuilder[Nothing, O] = 
+    latest = fb.latest
+    this.asInstanceOf
+
+  private[pods] def merge[I1, I2, O](fb1: FlowBuilder[I1, O], fb2: FlowBuilder[I2, O]): FlowBuilder[Nothing, O] = 
+    val behavior = TaskBehaviors.identity[O]
+    val name = addTask(behavior)
+    workflow.connections = workflow.connections :+ (fb1.latest.get, name)
+    workflow.connections = workflow.connections :+ (fb2.latest.get, name)
+    this.asInstanceOf
+
+  private[pods] def cycle[T](): FlowBuilder[T, T] = 
+    val behavior = TaskBehaviors.identity[T]
+    val name = addTask(behavior)
+    cycleIn = Some(name)
+    this.asInstanceOf
+
+  def sink(): FlowBuilder[I, Nothing] = 
+    val behavior = TaskBehaviors.identity[O]
+    val _ = addTask(behavior)
+    this.asInstanceOf
+
+  def intoCycle(fb: FlowBuilder[O, O]): FlowBuilder[I, Nothing] =
+    fb.cycleIn match
+      case Some(into) =>
+        workflow.connections = workflow.connections :+ (latest.get, into)
+        this.asInstanceOf
+      case None => ??? // shouldn't intoCycle if cycle entry does not exist
+
+  // TODO: consider moving definitions and implementations of map, flatMap, etc.
+  // here instead of at the TaskBehaviors.
+  def map[T](f: O => T): FlowBuilder[I, T] =
+    val behavior = TaskBehaviors.map[O, T](f)
+    val _ = addTask(behavior)
+    this.asInstanceOf
+
+  def behavior[T](b: TaskBehavior[O, T]): FlowBuilder[I, T] = 
+    val _ = addTask(b)
+    this.asInstanceOf
+
+  def vsm[T](b: TaskBehavior[O, T]): FlowBuilder[I, T] =
+    val _ = addTask(b)
+    this.asInstanceOf
+
+  def processor[T](f: TaskContext[O, T] ?=> O => Unit): FlowBuilder[I, T] =
+    val behavior = TaskBehaviors.processor[O, T](f)
+    val _ = addTask(behavior)
+    this.asInstanceOf
+
+  def flatMap[T](f: O => Seq[T]): FlowBuilder[I, T] = 
+    val behavior = TaskBehaviors.flatMap[O, T](f)
+    val _ = addTask(behavior)
+    this.asInstanceOf
+
+  def withName(name: String): FlowBuilder[I, O] =
+    val behavior = workflow.tasks(latest.get)
+    workflow.tasks = workflow.tasks.removed(latest.get)
+    addTask(name, behavior)
+    this
+  
+  def withLogger(prefix: String = ""): FlowBuilder[I, O] =
+    val behavior = TaskBehaviors.processor[O, O] { ctx ?=> x => 
+      ctx.log.info(prefix + x)
+      ctx.emit(x)
+    }
+    val _ = addTask(behavior)
+    this.asInstanceOf
+
+  def withOnNext(_onNext: TaskContext[I, O] ?=> I => TaskBehavior[I, O]): FlowBuilder[I, O] =
+    // TODO: consider implementing factories for these in the TaskBehaviors file
+    val name = latest.get
+    val behavior = workflow.tasks(name).asInstanceOf[TaskBehavior[I, O]]
+    val newBehavior = new TaskBehavior[I, O] {
+      override def onNext(ctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = 
+        _onNext(using ctx)(t)
+      override def onError(ctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] = 
+        behavior.onError(ctx)(t)
+      override def onComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+        behavior.onComplete(ctx)
+      override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+        behavior.onAtomComplete(ctx)
+    }
+    updateTask(name, newBehavior)
+    this
+
+  def withOnError(_onError: TaskContext[I, O] ?=> Throwable => TaskBehavior[I, O]): FlowBuilder[I, O] = 
+    val name = latest.get
+    val behavior = workflow.tasks(name).asInstanceOf[TaskBehavior[I, O]]
+    val newBehavior = new TaskBehavior[I, O] {
+      override def onNext(ctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = 
+        behavior.onNext(ctx)(t)
+      override def onError(ctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] = 
+        _onError(using ctx)(t)
+      override def onComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+        behavior.onComplete(ctx)
+      override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+        behavior.onAtomComplete(ctx)
+    }
+    updateTask(name, newBehavior)
+    this
+
+  def withOnComplete(_onComplete: TaskContext[I, O] ?=> TaskBehavior[I, O]): FlowBuilder[I, O] =
+    val name = latest.get
+    val behavior = workflow.tasks(name).asInstanceOf[TaskBehavior[I, O]]
+    val newBehavior = new TaskBehavior[I, O] {
+      override def onNext(ctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = 
+        behavior.onNext(ctx)(t)
+      override def onError(ctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] = 
+        behavior.onError(ctx)(t)
+      override def onComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+        _onComplete(using ctx)
+      override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+        behavior.onAtomComplete(ctx)
+    }
+    updateTask(name, newBehavior)
+    this
+
+  def withOnAtomComplete(_onAtomComplete: TaskContext[I, O] ?=> TaskBehavior[I, O]): FlowBuilder[I, O] =
+    val name = latest.get
+    val behavior = workflow.tasks(name).asInstanceOf[TaskBehavior[I, O]]
+    val newBehavior = new TaskBehavior[I, O] {
+      override def onNext(ctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = 
+        behavior.onNext(ctx)(t)
+      override def onError(ctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] = 
+        behavior.onError(ctx)(t)
+      override def onComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+        behavior.onComplete(ctx)
+      override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+        _onAtomComplete(using ctx)
+    }
+    updateTask(name, newBehavior)
+    this
+
+end FlowBuilderImpl
