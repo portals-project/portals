@@ -2,6 +2,8 @@ package pods.workflows
 
 /** IStreamRef */
 trait IStreamRef[T]:
+  private[pods] val subscriber: Subscriber[T]
+
   private[pods] def submit(event: T): Unit
 
   private[pods] def seal(): Unit // or close()
