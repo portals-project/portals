@@ -1,4 +1,7 @@
 package pods.workflows
 
 object Workflows:
-  def builder(): WorkflowBuilder = new WorkflowBuilderImpl()
+  class UnNamedWorkflowBuilder:
+    def withName(name: String): WorkflowBuilder = new WorkflowBuilderImpl(name)
+
+  def builder(): UnNamedWorkflowBuilder = new UnNamedWorkflowBuilder()

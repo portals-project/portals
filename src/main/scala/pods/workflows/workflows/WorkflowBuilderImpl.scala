@@ -1,8 +1,8 @@
 package pods.workflows
 
-private[pods] class WorkflowBuilderImpl extends WorkflowBuilder:
+private[pods] class WorkflowBuilderImpl(name: String) extends WorkflowBuilder:
   override def build(): Workflow =
-    new Workflow(this.tasks.toList, this.connections)
+    new Workflow(name, this.tasks.toList, this.connections)
 
   override def source[T](): FlowBuilder[Nothing, T] =
     new FlowBuilderImpl[Nothing, T](this).source()
