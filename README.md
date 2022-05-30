@@ -59,7 +59,7 @@ Contributions are welcome! To contribute please follow these guideines.
   * Actors: [Akka Typed Actors](https://doc.akka.io/docs/akka/2.5.32/typed/index.html).
   * Dataflow: [Flink](https://github.com/ververica/flink-training) and more [Flink](https://flink.apache.org/).
   * Stateful serverless: [Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/) and [Flink StateFun](https://nightlies.apache.org/flink/flink-statefun-docs-master/).
-  * Other projects: [Reactors](http://reactors.io/).
+  * Other projects: [Reactors](http://reactors.io/), [Kalix (Akka Serverless)](https://docs.kalix.io/java/).
 * To contribute we follow the [Akka guidelines](https://github.com/akka/akka/blob/main/CONTRIBUTING.md):
   1. Choose an issue (or create an issue).
   1. Fork the repo.
