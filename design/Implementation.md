@@ -13,7 +13,7 @@ This figure should add some additional guidance on the parts and how they are co
 The `SystemContext` holds the `ExecutionContext` and some `GlobalRegistry` where workflows and tasks are registered and can be recovered by name.
 
 ## Atomic Reactive Streams
-The core consists of `AtomicStreams` (Atomic Reactive Streams). Atomic Streams implement a reactive streams system with: `Processor`s; `Subscriber`s; `Publisher`s; `Subscription`s, together with `Atom`s. Although not natively suppoorted by the Reactive Streams spec, the Atomic Streams support multi-publishers and multi-subscribers. Fault-tolerance will be added later for the distributed execution.
+The core consists of `AtomicStreams` (Atomic Reactive Streams). Atomic Streams implement a reactive streams system with: `Processor`s; `Subscriber`s; `Publisher`s; `Subscription`s, together with `Atom`s. Although not natively supported by the Reactive Streams spec, the Atomic Streams support multi-publishers and multi-subscribers. Fault-tolerance will be added later for the distributed execution.
 
 ## Task Runner and Workflow Runner
 The `TaskRunner` translates `TaskBehavior`s into `AtomicProcessor`s. The TaskRunner also implements handling alignment. The `TaskRunner` is triggered by the `WorkflowRunner`.
