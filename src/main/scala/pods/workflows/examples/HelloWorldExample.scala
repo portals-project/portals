@@ -1,4 +1,4 @@
-package pods.workflows
+package pods.workflows.examples
 
 /** HelloWorld Example
   *

@@ -1,4 +1,4 @@
-package pods.examples
+package pods.workflows.examples
 
 /** MapReduce Examples
   *
