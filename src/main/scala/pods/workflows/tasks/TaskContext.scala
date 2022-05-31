@@ -1,19 +1,21 @@
 package pods.workflows
 
-import java.util.concurrent.SubmissionPublisher
-
 /** TaskContext */
 private[pods] trait TaskContext[I, O]:
   //////////////////////////////////////////////////////////////////////////////
   // Internals
   //////////////////////////////////////////////////////////////////////////////
 
-  private[pods] var submitter: SubmissionPublisher[O]
+  /** The submitter for the executed processor, for internal use */
+  // has to be var so that it can be swapped at runtime
+  private[pods] var submitter: Submitter[O]
 
   /** The main input channel of this task, for internal use */
+  // has to be var so that it can be swapped at runtime
   private[pods] var mainiref: IStreamRef[I]
 
   /** The main output channel of this task, for internal use */
+  // has to be var so that it can be swapped at runtime
   private[pods] var mainoref: OStreamRef[O]
 
   //////////////////////////////////////////////////////////////////////////////
@@ -21,11 +23,11 @@ private[pods] trait TaskContext[I, O]:
   //////////////////////////////////////////////////////////////////////////////
 
   /** Contextual key for per-key execution */
-  // note: should be var so that it can be swapped at runtime
+  // has to be var so that it can be swapped at runtime
   private[pods] var key: Key[Int]
 
   /** The `SystemContext` that this task belongs to */
-  // note: should be var so that it can be swapped at runtime
+  // has to be var so that it can be swapped at runtime
   private[pods] var system: SystemContext
 
   //////////////////////////////////////////////////////////////////////////////
@@ -66,12 +68,14 @@ private[pods] trait TaskContext[I, O]:
   /** Externally referencable input stream to this task. */
   // note: this stream is connected indirectly via mainiref
   // note: lazily created on use
+  // has to be var so that it can be swapped at runtime
   private[pods] var _iref: IStreamRef[I]
   def iref: IStreamRef[I]
 
   /** Externally referencable output stream to this task. */
   // note: this stream is connected indirectly via mainoref
   // note: lazily created on use
+  // has to be var so that it can be swapped at runtime
   private[pods] var _oref: OStreamRef[O]
   def oref: OStreamRef[O]
 

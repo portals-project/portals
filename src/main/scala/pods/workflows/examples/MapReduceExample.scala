@@ -17,76 +17,79 @@ package pods.workflows.examples
   * each step (map, shuffle, reduce).
   */
 
-// /** Word Count
-//   *
-//   * The first example is the canonical word count example. We have an input of
-//   * streams of strings, each string is a line of text, the strings are split on
-//   * whitespace to form words, and from this we count the number of occurence of
-//   * each word.
-//   */
-// @main def WordCount() =
-//   import pods.workflows.*
-//   import pods.workflows.DSL.*
+/** Word Count
+  *
+  * The first example is the canonical word count example. We have an input of
+  * streams of strings, each string is a line of text, the strings are split on
+  * whitespace to form words, and from this we count the number of occurence of
+  * each word.
+  */
+@main def WordCount() =
+  import pods.workflows.*
+  import pods.workflows.DSL.*
 
-//   // our map function takes an string and splits it to produce a list of words
-//   val mapper: String => Seq[(String, Int)] =
-//     line => line.split("\\s+").map(w => (w, 1))
+  // our map function takes an string and splits it to produce a list of words
+  val mapper: String => Seq[(String, Int)] =
+    line => line.split("\\s+").map(w => (w, 1))
 
-//   // our reduce function takes two mapped elements and adds the counts together
-//   val reducer: ((String, Int), (String, Int)) => (String, Int) = 
-//     ((x, y) =>  (x._1, x._2 + y._2))
+  // our reduce function takes two mapped elements and adds the counts together
+  val reducer: ((String, Int), (String, Int)) => (String, Int) = 
+    ((x, y) =>  (x._1, x._2 + y._2))
 
-//   // one naive implementation is to use local state for storing the counts
-//   val builder = Workflows
-//     .builder()
-//     .withName("wf")
+  // one naive implementation is to use local state for storing the counts
+  val builder = Workflows
+    .builder()
+    .withName("wf")
 
-//   val flow = builder
-//     .source[String]()
-//     .withName("input")
-//     /* mapper */
-//     .flatMap(mapper)
-//     .withName("map")
-//     // .keyBy(_._1) // sets the contextual key to the word
-//     // reducer applied to word and state in the VSM
-//     .processor { case (k, v) =>
-//       ctx.state.get(k) match
-//         case Some(n) =>
-//           // reduce to compute the next value
-//           val newN = reducer((k, v), (k, n.asInstanceOf))._2
-//           ctx.state.set(k, newN)
-//         case None => 
-//           ctx.state.set(k, v)
-//     }
-//     // we also install an onAtomComplete handler that is triggered on every atom
-//     // it will emit the final state of the VSM
-//     .withOnAtomComplete { ctx ?=>
-//       // emit final state
-//       ctx.state.iterator.foreach { case (k, v) => ctx.emit(k, v) } 
-//       ctx.state.clear()
-//       ctx.fuse() // emit next atom
-//       TaskBehaviors.same
-//     }
-//     .withLogger() // print the output to logger
-//     .sink[(String, Int)]()
-//     .withName("output")
+  val flow = builder
+    .source[String]()
+    .withName("input")
+    /* mapper */
+    .flatMap(mapper)
+    .withName("map")
+    .keyBy(_._1) // sets the contextual key to the word
+    // reducer applied to word and state in the VSM
+    .processor[(String, Int)] { x =>
+      x match
+        case (k, v) =>
+          ctx.state.get(k) match
+            case Some(n) =>
+              // reduce to compute the next value
+              // TODO: make it so we don't need to cast to Int
+              val newN = reducer((k, v), (k, n.asInstanceOf[Int]))._2
+              ctx.state.set(k, newN)
+            case None => 
+              ctx.state.set(k, v)
+    }
+    // we also install an onAtomComplete handler that is triggered on every atom
+    // it will emit the final state of the VSM
+    .withOnAtomComplete { ctx ?=>
+      // emit final state
+      ctx.state.iterator.foreach { case (k, v) => ctx.emit((k.asInstanceOf[String], v.asInstanceOf[Int])) } 
+      ctx.state.clear()
+      ctx.fuse() // emit next atom
+      TaskBehaviors.same
+    }
+    .withLogger() // print the output to logger
+    .sink() // make it possible to also write .sink[(String, Int)]() to check type
+    .withName("output")
   
-//   val wf = builder
-//     .build()
+  val wf = builder
+    .build()
 
-//   val system = Systems.local()
-//   system.launch(wf)
+  val system = Systems.local()
+  system.launch(wf)
 
-//   val testData = "the quick brown fox jumps over the lazy dog"
+  val testData = "the quick brown fox jumps over the lazy dog"
 
-//   // to get a reference of the workflow we look in the registry
-//   // resolve takes a shared ref and creates an owned ref that points to the shared ref
-//   val iref = system.registry[String]("wf/input").resolve(using system) 
+  // to get a reference of the workflow we look in the registry
+  // resolve takes a shared ref and creates an owned ref that points to the shared ref
+  val iref = system.registry[String]("wf/input").resolve(using system) 
 
-//   iref.submit(testData)
-//   // iref.submit(FUSE) // fuse the atom to trigger the onAtomComplete handler
-
-//   system.shutdown()
+  iref ! testData
+  iref ! FUSE // fuse the atom to trigger the onAtomComplete handler
+  
+  system.shutdown()
 
 
 /** Incremental Word Count
@@ -150,6 +153,6 @@ package pods.workflows.examples
   val iref = system.registry[String]("workflow/text").resolve()
 
   iref.submit(testData)
-  // iref.submit(FUSE)
+  iref.fuse()
 
   system.shutdown()

@@ -35,7 +35,7 @@ package pods.workflows.examples
   val iref: IStreamRef[String] = system.registry("wf/input").resolve()
 
   iref.submit(helloWorld)
-  // iref.submit(FUSE) // TODO: fuse atom to trigger processing
+  iref.fuse()
 
   system.shutdown()
     
@@ -73,7 +73,7 @@ package pods.workflows.examples
   val iref = system.registry[String]("wf/input").resolve()
 
   iref.submit(helloWorld)
-  // iref.submit(FUSE)
+  iref.fuse()
 
   system.shutdown()
   

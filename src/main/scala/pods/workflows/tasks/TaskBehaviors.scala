@@ -40,22 +40,48 @@ object TaskBehaviors:
 
   private[pods] case class VSMBehavior[I, O](
       _onNext: TaskContext[I, O] => I => TaskBehavior[I, O]
-  ) extends TaskBehaviorUnimpl[I, O]:
+  ) extends BaseTaskBehavior[I, O]:
     override def onNext(tctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = 
       _onNext(tctx)(t)
 
   private[pods] case class ProcessBehavior[I, O](
       _onNext: TaskContext[I, O] => I => Unit
-  ) extends TaskBehaviorUnimpl[I, O]:
+  ) extends BaseTaskBehavior[I, O]:
     override def onNext(tctx: TaskContext[I, O])(event: I): TaskBehavior[I, O] =
       _onNext(tctx)(event)
       TaskBehaviors.same
 
-  private[pods] case class IdentityBehavior[T]() extends TaskBehaviorUnimpl[T, T]:
+  private[pods] case class IdentityBehavior[T]() extends BaseTaskBehavior[T, T]:
     override def onNext(tctx: TaskContext[T, T])(event: T): TaskBehavior[T, T] =
       tctx.emit(event)
       TaskBehaviors.same
 
   private[pods] case object SameBehavior extends TaskBehaviorUnimpl[Nothing, Nothing]
   // this is fine, the methods are ignored as we reuse the previous behavior
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Base TaskBehaviors
+  //////////////////////////////////////////////////////////////////////////////
+
+  private[pods] class TaskBehaviorUnimpl[I, O] extends TaskBehavior[I, O]:
+    override def onNext(ctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = ???
+
+    override def onError(ctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] = ???
+    
+    override def onComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = ???
+    
+    override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = ???
+
+  private[pods] class BaseTaskBehavior[I, O] extends TaskBehavior[I, O]:
+    override def onNext(ctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = ???
+
+    // TODO: implement onError and onComplete to have base behavior, forwarding
+    // the completion, e.g.
+    override def onError(ctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] = ???
+    
+    override def onComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = ???
+    
+    override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+      ctx.fuse()
+      TaskBehaviors.same
 

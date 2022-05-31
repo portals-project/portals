@@ -1,9 +1,7 @@
 package pods.workflows
 
-import java.util.concurrent.SubmissionPublisher
-
 private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
-  private[pods] var submitter: SubmissionPublisher[O] = null
+  private[pods] var submitter: Submitter[O] = null
   
   private[pods] var mainiref: IStreamRef[I] = null
 
@@ -19,7 +17,8 @@ private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
   def emit(event: O): Unit =
     submitter.submit(event)
 
-  def log: Logger = Logger(this.getClass().toString())
+  def log: Logger = 
+    Logger(this.getClass().toString())
 
   def ask[T, U](iref: IStreamRef[T], requestFactory: IStreamRef[U] => T): Future[U] = 
     ???
@@ -28,14 +27,15 @@ private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
     ???
 
   def fuse(): Unit =
-    ???
-    // submitter.fuse()
+    submitter.fuse()
 
   private[pods] var _iref: IStreamRef[I] = null
-  def iref: IStreamRef[I] = _iref
+  def iref: IStreamRef[I] = 
+    _iref
 
   private[pods] var _oref: OStreamRef[O] = null
-  def oref: OStreamRef[O] = _oref
+  def oref: OStreamRef[O] = 
+    _oref
 
   def send[T](iref: IStreamRef[T], event: T): Unit = 
     iref.submit(event)

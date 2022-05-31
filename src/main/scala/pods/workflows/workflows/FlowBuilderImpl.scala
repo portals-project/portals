@@ -42,7 +42,22 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
     this.asInstanceOf[FlowBuilder[T, T]]
 
   def sink[OO >: O <: O](): FlowBuilder[I, Nothing] = 
-    val behavior = TaskBehaviors.identity[O]
+    // TODO: redo this once we have synchronized sources and sinks
+    // custom behavior that buffers all events until the atom barrier
+    val behavior = new TaskBehavior[O, O] {
+      var buffer = List.empty[O]
+      def onNext(ctx: TaskContext[O, O])(t: O): TaskBehavior[O, O] = 
+        buffer = buffer :+ t // append to buffer
+        TaskBehaviors.same
+      def onError(ctx: TaskContext[O, O])(t: Throwable): TaskBehavior[O, O] = ???
+      def onComplete(ctx: TaskContext[O, O]): TaskBehavior[O, O] = ???
+      def onAtomComplete(ctx: TaskContext[O, O]): TaskBehavior[O, O] = 
+        // emit buffer and clear buffer
+        buffer.foreach{ ctx.emit(_) }
+        buffer = buffer.empty
+        ctx.fuse() // emit atom marker
+        TaskBehaviors.same
+    }
     val _ = addTask(behavior)
     this.asInstanceOf[FlowBuilder[I, Nothing]]
 
