@@ -40,4 +40,11 @@ trait FlowBuilder[I, O]:
   
   def withOnAtomComplete(_onAtomComplete: TaskContext[I, O] ?=> TaskBehavior[I, O]): FlowBuilder[I, O]
 
+  /** Check the current type against the provided expected type.
+    *  
+    * Compares FlowBuilder[I, O] with FlowBuilder[II, OO], will succeed if 
+    * I <: II <: I and O <: OO <: O.
+    */
+  def checkExpectedType[OO >: O <: O](): FlowBuilder[I, O] = this
+
 end FlowBuilder

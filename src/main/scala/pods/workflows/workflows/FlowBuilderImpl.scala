@@ -183,4 +183,6 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
     updateTask(name, newBehavior)
     this.asInstanceOf[FlowBuilder[I, O]]
 
+  def checkExpectedType[OO >: O <: O](): FlowBuilder[I, O] = this
+
 end FlowBuilderImpl
