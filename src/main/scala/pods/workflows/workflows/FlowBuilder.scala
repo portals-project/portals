@@ -45,6 +45,6 @@ trait FlowBuilder[I, O]:
     * Compares FlowBuilder[I, O] with FlowBuilder[II, OO], will succeed if 
     * I <: II <: I and O <: OO <: O.
     */
-  def checkExpectedType[OO >: O <: O](): FlowBuilder[I, O] = this
+  def checkExpectedType[OO >: O <: O](): FlowBuilder[I, O]
 
 end FlowBuilder
