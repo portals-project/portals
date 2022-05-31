@@ -28,6 +28,8 @@ trait FlowBuilder[I, O]:
 
   def flatMap[T](f: AttenuatedTaskContext[O, T] ?=> O => Seq[T]): FlowBuilder[I, T] 
 
+  def identity(): FlowBuilder[I, O]
+
   def withName(name: String): FlowBuilder[I, O]
   
   def withLogger(prefix: String = ""): FlowBuilder[I, O]

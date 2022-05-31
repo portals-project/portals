@@ -96,6 +96,11 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends FlowBuilder[I, O]
     val _ = addTask(behavior)
     this.asInstanceOf[FlowBuilder[I, T]]
 
+  def identity(): FlowBuilder[I, O] = 
+    val behavior = TaskBehaviors.identity[O]
+    val _ = addTask(behavior)
+    this.asInstanceOf[FlowBuilder[I, O]]
+
   def withName(name: String): FlowBuilder[I, O] =
     val oldName = latest.get
     val behavior = workflow.tasks(oldName)
