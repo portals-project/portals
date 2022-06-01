@@ -12,12 +12,12 @@ trait WorkflowBuilder:
 
   def build(): Workflow
 
-  def source[T](): FlowBuilder[Nothing, T]
+  def source[T](): AtomicStream[Nothing, T]
 
-  def from[I, O](wfb: FlowBuilder[I, O]): FlowBuilder[Nothing, O]
+  def from[I, O](wfb: AtomicStream[I, O]): AtomicStream[Nothing, O]
 
-  def merge[I1, I2, O](wfb1: FlowBuilder[I1, O], wfb2: FlowBuilder[I2, O]): FlowBuilder[Nothing, O]
+  def merge[I1, I2, O](wfb1: AtomicStream[I1, O], wfb2: AtomicStream[I2, O]): AtomicStream[Nothing, O]
 
-  def cycle[T](): FlowBuilder[T, T]
+  def cycle[T](): AtomicStream[T, T]
 
 end WorkflowBuilder
