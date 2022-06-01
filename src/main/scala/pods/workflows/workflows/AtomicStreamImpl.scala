@@ -1,6 +1,6 @@
 package pods.workflows
 
-class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, O]:
+class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, O]:
   private def addTask(name: String, behavior: TaskBehavior[_, _]): Unit =
     if latest.isDefined then
       workflow.connections = workflow.connections :+ (latest.get, name)
@@ -67,6 +67,10 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, O
         workflow.connections = workflow.connections :+ (latest.get, into)
         this.asInstanceOf[AtomicStream[I, Nothing]]
       case None => ??? // shouldn't intoCycle if cycle entry does not exist
+  def identity(): AtomicStream[I, O] = 
+    val behavior = TaskBehaviors.identity[O]
+    val _ = addTask(behavior)
+    this.asInstanceOf[AtomicStream[I, O]]
 
   def keyBy[T](f: O => T): AtomicStream[I, O] =
     processor[O]{ ctx ?=> event => { ctx.key = Key(f(event).hashCode()); ctx.emit(event) } }
@@ -185,4 +189,4 @@ class FlowBuilderImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, O
 
   def checkExpectedType[OO >: O <: O](): AtomicStream[I, O] = this
 
-end FlowBuilderImpl
+end AtomicStreamImpl

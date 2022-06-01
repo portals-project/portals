@@ -14,6 +14,8 @@ trait AtomicStream[I, O]:
 
   def sink[OO >: O <: O](): AtomicStream[I, Nothing]
 
+  def identity(): AtomicStream[I, O]
+
   def intoCycle(wfb: AtomicStream[O, O]): AtomicStream[I, Nothing]
 
   def keyBy[T](f: O => T): AtomicStream[I, O]
