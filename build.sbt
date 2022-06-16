@@ -1,4 +1,5 @@
 val scala3Version = "3.1.2"
+lazy val junitInterfaceVersion = "0.11"
 
 // FIXME: do this in a better way, we require at least Java 9, or classVersion 53 for Flow
 initialize := {
@@ -18,5 +19,6 @@ lazy val root = project
     version := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
+      "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
     )
   )
