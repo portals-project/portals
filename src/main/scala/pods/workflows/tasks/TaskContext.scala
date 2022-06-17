@@ -8,7 +8,7 @@ private[pods] trait TaskContext[I, O]:
 
   /** The submitter for the executed processor, for internal use */
   // has to be var so that it can be swapped at runtime
-  private[pods] var submitter: Submitter[O]
+  private[pods] var opr: OpRef[I, O]
 
   /** The main input channel of this task, for internal use */
   // has to be var so that it can be swapped at runtime

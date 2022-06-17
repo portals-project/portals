@@ -8,3 +8,4 @@ target/
 .vscode/
 *metals.sbt
 ignoredir/
+*.DS_Store

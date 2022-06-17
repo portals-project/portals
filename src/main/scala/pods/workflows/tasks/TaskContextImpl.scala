@@ -1,7 +1,7 @@
 package pods.workflows
 
 private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
-  private[pods] var submitter: Submitter[O] = null
+  private[pods] var opr: OpRef[I, O] = null
   
   private[pods] var mainiref: IStreamRef[I] = null
 
@@ -15,7 +15,7 @@ private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
     TaskState()
 
   def emit(event: O): Unit =
-    submitter.submit(event)
+    opr.submit(event)
 
   def log: Logger = 
     Logger(this.getClass().toString())
@@ -27,7 +27,7 @@ private[pods] class TaskContextImpl[I, O] extends TaskContext[I, O]:
     ???
 
   def fuse(): Unit =
-    submitter.fuse()
+    opr.fuse()
 
   private[pods] var _iref: IStreamRef[I] = null
   def iref: IStreamRef[I] = 
