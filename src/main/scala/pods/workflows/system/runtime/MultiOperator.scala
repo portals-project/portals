@@ -21,4 +21,11 @@ trait MultiSubmitter[T]:
   
 trait MultiOperator[T, U] extends MultiSubscriber[T] with MultiPublisher[U] with MultiSubmitter[U]
 
+/** MultiOperatorWithAtom extension of MultiOperator with WrappedEvents.
+  *  
+  * For convenience, using the MultiOperatorWithAtom[T, U] corresponds to the
+  * implementation of using the MultiOperator on WrappedEvents of type T and U.
+  * This makes it easier to use as the user does not have to worry about 
+  * WrappedEvents.
+ */
 trait MultiOperatorWithAtom[T, U] extends MultiOperator[WrappedEvents[T], WrappedEvents[U]]

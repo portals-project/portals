@@ -11,7 +11,11 @@ private[pods] object TaskRunner:
 
     val opref = system.executionContext.execute[I, O](opSpec)
 
-    // FIXME: this is weird, perhaps it is better not to have IStreamRef/OStreamRef.
+    // FIXME: the way IStreamRef and OStreamRef work is weird. It is currently
+    // used both from within the TaskContext, but also from the outside by the 
+    // user. This dual use makes it rather confusing as to what exactly it is
+    // and what exactly it should be doing. Instead we should separate these 
+    // two.
     val iref = new IStreamRef[I]{
       val opr = opref
       def submit(event: I): Unit = 

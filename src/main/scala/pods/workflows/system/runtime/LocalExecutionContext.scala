@@ -92,9 +92,9 @@ object LocalExecutionContext:
         lock.unlock()
 
       def seal(): Unit = 
+        // wait for system to reach steady state, else force shutdown
         lock.lock()
         
-        // wait for system to reach steady state, else force shutdown
         import scala.concurrent.duration._
           
         val until = 500.milliseconds.fromNow

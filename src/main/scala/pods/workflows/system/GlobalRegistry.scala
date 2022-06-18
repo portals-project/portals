@@ -3,10 +3,7 @@ package pods.workflows
 class GlobalRegistry:
   private var map: Map[String, (IStreamRef[_], OStreamRef[_])] = Map()
 
-  def apply[T](name: String): RemoteIStreamRef[T] = 
-    RemoteIStreamRef[T](
-      map.get(name).get._1.asInstanceOf[IStreamRef[T]]
-    )
+  def apply[T](name: String): RemoteIStreamRef[T] = irefs(name)
 
   def irefs[T](name: String): RemoteIStreamRef[T] = 
     RemoteIStreamRef[T](
