@@ -25,23 +25,22 @@ class CycleTest:
 
     val loop = builder
       .merge(src, cycleSrc)
-      .withLogger()
       .processor[Int]{
-        i =>
+        ctx ?=> i =>
           if loopNum.get > 0 then
             println(s"loop: $i")
             println(s"loopNum: ${loopNum.get}")
             loopNum.set(loopNum.get() - 1)
-            i + 1
+            ctx.emit(i + 1)
           else
             println(s"loop: $i")
             println(s"loopNum: ${loopNum.get}")
-          var continue = true
-          while continue do
-            val oldV = output.get
-            val newV = i :: oldV
-            if output.compareAndSet(oldV, newV) then
-              continue = false
+            var continue = true
+            while continue do
+              val oldV = output.get
+              val newV = i :: oldV
+              if output.compareAndSet(oldV, newV) then
+                continue = false
       }
       .intoCycle(cycleSrc)
 
@@ -57,4 +56,7 @@ class CycleTest:
     system.shutdown()
 
     println(output.get)
-    // assertTrue(output.get.contains(3))
+    assertTrue(output.get.contains(3))
+    assertFalse(output.get.contains(2))
+    assertFalse(output.get.contains(1))
+
