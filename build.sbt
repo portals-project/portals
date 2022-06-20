@@ -1,5 +1,6 @@
 val scala3Version = "3.1.2"
-lazy val junitInterfaceVersion = "0.11"
+val junitInterfaceVersion = "0.11"
+val logbackversion = "1.2.11"
 
 // FIXME: do this in a better way, we require at least Java 9, or classVersion 53 for Flow
 initialize := {
@@ -20,5 +21,6 @@ lazy val root = project
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
       "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
+      "ch.qos.logback" % "logback-classic" % "1.2.11",
     )
   )

@@ -28,18 +28,23 @@ object ExecutionContexts:
 
       // 1. execute the processor on the underlying streams processor
       val executedProcessor = new FSubmissionPublisher[WrappedStreamEvents[O]] with FSubscriber[WrappedStreamEvents[I]] {
-        def onNext(t: WrappedStreamEvents[I]): Unit = 
+        val _lock = new AnyRef{} // make it thread-safe (hack for now)
+        def onNext(t: WrappedStreamEvents[I]): Unit = _lock.synchronized {
           t match
             case Event(event) => 
               processor.onNext(event)
             case Atom(id) => 
               processor.onAtomComplete(id)
-        def onError(t: Throwable): Unit = 
+        }
+        def onError(t: Throwable): Unit = _lock.synchronized {
           processor.onError(t)
-        def onComplete(): Unit = 
+        }
+        def onComplete(): Unit = _lock.synchronized {
           processor.onComplete()
-        def onSubscribe(s: FSubscription): Unit = 
+        }
+        def onSubscribe(s: FSubscription): Unit = _lock.synchronized {
           processor.onSubscribe(s)
+        }
       }
 
       // append to executed processors
