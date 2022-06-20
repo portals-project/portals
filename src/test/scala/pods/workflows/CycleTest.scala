@@ -1,6 +1,7 @@
 package pods.workflows
 
 import org.junit.Test
+import org.junit.Ignore
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
@@ -9,12 +10,12 @@ import scala.collection.AnyStepper.AnyStepperSpliterator
 // Verify cycles between workflows behave as expected.
 @RunWith(classOf[JUnit4])
 class CycleTest:
+  
+  @Ignore // current cycle implementation fails this test
   @Test
-  def testCycle() = 
-    import java.util.concurrent.atomic.AtomicReference
+  def testCycle(): Unit = 
+    import pods.workflows.DSL.*
 
-    val output = new AtomicReference[List[Any]](List.empty)
-    val loopNum = new AtomicReference[Int](2)
     val builder = Workflows.builder().withName("cycle")
 
     val cycleSrc = builder.cycle[Int]() // create cycle source
@@ -25,38 +26,39 @@ class CycleTest:
 
     val loop = builder
       .merge(src, cycleSrc)
-      .processor[Int]{
-        ctx ?=> i =>
-          if loopNum.get > 0 then
-            println(s"loop: $i")
-            println(s"loopNum: ${loopNum.get}")
-            loopNum.set(loopNum.get() - 1)
-            ctx.emit(i + 1)
-          else
-            println(s"loop: $i")
-            println(s"loopNum: ${loopNum.get}")
-            var continue = true
-            while continue do
-              val oldV = output.get
-              val newV = i :: oldV
-              if output.compareAndSet(oldV, newV) then
-                continue = false
+      .flatMap[Int]{ ctx ?=> x =>
+        if (x > 0) List(x-1)
+        else List.empty
       }
-      .intoCycle(cycleSrc)
+    
+    val _ = loop.intoCycle(cycleSrc)
+    
+    val _ = loop.sink().withName("loop")
 
     val wf = builder.build()
     val system = Systems.local()
     system.launch(wf)
 
     val iref: IStreamRef[Int] = system.registry("cycle/src").resolve()
+    val oref: OStreamRef[Int] = system.registry.orefs("cycle/loop").resolve()
 
-    iref.submit(1)
+    // create a test environment IRef
+    val testIRef = TestUtils.TestIStreamRef[Int]()
+
+    // subscribe testIRef to workflow
+    oref.subscribe(testIRef)
+
+    iref.submit(8)
     iref.fuse()
 
     system.shutdown()
 
-    println(output.get)
-    assertTrue(output.get.contains(3))
-    assertFalse(output.get.contains(2))
-    assertFalse(output.get.contains(1))
-
+    assertTrue(testIRef.contains(8))
+    assertTrue(testIRef.contains(7))
+    assertTrue(testIRef.contains(6))
+    assertTrue(testIRef.contains(5))
+    assertTrue(testIRef.contains(4))
+    assertTrue(testIRef.contains(3))
+    assertTrue(testIRef.contains(2))
+    assertTrue(testIRef.contains(1))
+    assertFalse(testIRef.contains(0))

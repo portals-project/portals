@@ -5,16 +5,14 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
-// Verify that atom fusing works as expected.
+
 @RunWith(classOf[JUnit4])
 class AtomTest:
+
   @Test
-  def testAtom = 
-    import java.util.concurrent.atomic.AtomicReference
+  def basicAtomTest(): Unit = 
     import pods.workflows.DSL.*
 
-    val output = new AtomicReference[List[Any]](List.empty)
-    
     val builder = Workflows
       .builder()
       .withName("wf")
@@ -27,49 +25,34 @@ class AtomTest:
       .sink()
       .withName("output")
 
-    val builder2 = Workflows
-      .builder()
-      .withName("wf2")
-
-    val flow2 = builder2
-      .source[String]()
-      .withName("input")
-      .processor[String] {
-        ctx ?=> s =>
-          var continue = true
-          while continue do
-            val oldV = output.get
-            val newV = s :: oldV
-            if output.compareAndSet(oldV, newV) then
-              continue = false
-      }
-      .sink()
-      .withName("output")
-
     val wf = builder.build()
-    val wf2 = builder2.build()
 
-    given system: SystemContext = Systems.local()
+    val system = Systems.local()
 
     system.launch(wf)
-    system.launch(wf2)
-
+    
     val iref = system.registry[String]("wf/input").resolve() 
     val oref = system.registry.orefs[String]("wf/output").resolve()
-    val iref2 = system.registry[String]("wf2/input").resolve()
+    
+    // create a test environment IRef
+    val testIRef = TestUtils.TestIStreamRef[String]()
+    
+    // subscribe the testIref to the workflow
+    oref.subscribe(testIRef)
 
-    oref.subscribe(iref2)
-
-    // ingest some test data into the input
     val testData = "testData"
     iref ! testData
 
-    println(output.get)
-    assertTrue(output.get.isEmpty)
+    // let us wait for 1 second
     Thread.sleep(1000)
 
-    // fuse the atom, expect this to trigger the computation
+    // nothing is happening yet, the atom is not complete (we need to fuse it first)
+    assertTrue(testIRef.isEmpty())
+
+    // now we trigger the atom barrier which will trigger the fusion
     iref ! FUSE 
     system.shutdown()
-    println(output.get)
-    assertTrue(output.get.contains(testData))
+    
+    // we should now expect to observe some output from the workflow
+    testIRef.receiveAssert(testData)
+    
