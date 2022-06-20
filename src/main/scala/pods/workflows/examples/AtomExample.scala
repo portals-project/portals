@@ -53,7 +53,7 @@ package pods.workflows.examples
   val oref = system.registry.orefs[String]("wf/output").resolve()
 
   // create a logger and subscribe it to the oref of the workflow
-  val logger = TestUtils.loggingWorkflow[String]()
+  val logger = Utils.loggingWorkflow[String]()
   oref.subscribe(logger)
 
   // ingest some test data into the input
