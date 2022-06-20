@@ -28,25 +28,25 @@ trait AtomicStream[I, O]:
 
   def processor[T](f: TaskContext[O, T] ?=> O => Unit): AtomicStream[I, T]
 
-  def flatMap[T](f: AttenuatedTaskContext[O, T] ?=> O => Seq[T]): AtomicStream[I, T] 
+  def flatMap[T](f: AttenuatedTaskContext[O, T] ?=> O => Seq[T]): AtomicStream[I, T]
 
   def withName(name: String): AtomicStream[I, O]
-  
+
   def withLogger(prefix: String = ""): AtomicStream[I, O]
 
   def withOnNext(_onNext: TaskContext[I, O] ?=> I => TaskBehavior[I, O]): AtomicStream[I, O]
 
   def withOnError(_onError: TaskContext[I, O] ?=> Throwable => TaskBehavior[I, O]): AtomicStream[I, O]
-  
+
   def withOnComplete(_onComplete: TaskContext[I, O] ?=> TaskBehavior[I, O]): AtomicStream[I, O]
-  
+
   def withOnAtomComplete(_onAtomComplete: TaskContext[I, O] ?=> TaskBehavior[I, O]): AtomicStream[I, O]
 
   /** Check the current type against the provided expected type.
-    *  
-    * Compares FlowBuilder[I, O] with FlowBuilder[II, OO], will succeed if 
-    * I <: II <: I and O <: OO <: O.
-    */
+   *
+   * Compares FlowBuilder[I, O] with FlowBuilder[II, OO], will succeed if
+   * I <: II <: I and O <: OO <: O.
+   */
   def checkExpectedType[OO >: O <: O](): AtomicStream[I, O]
 
 end AtomicStream
