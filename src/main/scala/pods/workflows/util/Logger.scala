@@ -1,8 +1,9 @@
 package pods.workflows
 
-import java.util.logging.{Logger => JLogger}
+import org.slf4j.LoggerFactory
 
-type Logger = JLogger
+type Logger = org.slf4j.Logger
 
 object Logger:
-  def apply(name: String): Logger = JLogger.getLogger(name)
+  def apply(name: String): Logger = 
+    LoggerFactory.getLogger(name)
