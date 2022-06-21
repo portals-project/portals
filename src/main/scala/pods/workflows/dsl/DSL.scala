@@ -14,7 +14,7 @@ object DSL:
   sealed trait Events
   case object FUSE extends Events
 
-  object TestUtils:
+  object Utils:
     // launch a workflow that logs all inputs 
     def loggingWorkflow[T]()(using system: SystemContext): IStreamRef[T] =
       val builder = Workflows
