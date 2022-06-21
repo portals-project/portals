@@ -1,4 +1,7 @@
 # Pods Workflows
+
+[![Build Status](https://github.com/jonasspenger/pods-workflows/actions/workflows/test.yaml/badge.svg)](https://github.com/jonasspenger/pods-workflows/actions/workflows/test.yaml)
+
 Welcome to the Pods Workflows repo!
 
 This is a fresh start, to find the old repo look through the branches for [!old-dump](https://github.com/jonasspenger/pods-workflows/tree/!old-dump).
