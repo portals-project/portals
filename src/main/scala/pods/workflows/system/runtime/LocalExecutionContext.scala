@@ -15,6 +15,7 @@ private[pods] class LocalExecutionContext extends ExecutionContext:
     opRef
 
   def shutdown(): Unit = 
+    Thread.sleep(500)
     executed.foreach(_.seal())
 end LocalExecutionContext // class
 
@@ -92,21 +93,22 @@ object LocalExecutionContext:
         lock.unlock()
 
       def seal(): Unit = 
-        // wait for system to reach steady state, else force shutdown
-        lock.lock()
+        this.publishers.foreach{ _.close() }
+        // // wait for system to reach steady state, else force shutdown
+        // lock.lock()
         
-        import scala.concurrent.duration._
+        // import scala.concurrent.duration._
           
-        val until = 500.milliseconds.fromNow
-        var break = false
+        // val until = 500.milliseconds.fromNow
+        // var break = false
 
-        while(until.hasTimeLeft && !break) {
-          if this.publishers.forall{ publisher =>
-            publisher.estimateMaximumLag() != 0
-          } then
-            break = true
-            this.publishers.foreach{ _.close() }
-        }
+        // while(until.hasTimeLeft && !break) {
+        //   if this.publishers.forall{ publisher =>
+        //     publisher.estimateMaximumLag() != 0
+        //   } then
+        //     break = true
+        //     this.publishers.foreach{ _.close() }
+        // }
 
-        lock.unlock()
+        // lock.unlock()
     }
