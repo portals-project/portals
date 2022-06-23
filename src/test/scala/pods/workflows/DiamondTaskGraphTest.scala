@@ -5,13 +5,18 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
-
+/** Diamond task graph pattern test
+  * We can create a DAG and not just a sequence the following way
+  * this creates a diamond shaped workflow
+  *         |------> map _ + 1 ---->
+  * source -->                      |---> sink
+  *         |------> map _ + 2 ---->
+  */
 @RunWith(classOf[JUnit4])
 class DiamondTaskGraphTest:
 
   @Test
   def testDiamondTaskGraph(): Unit = 
-    import pods.workflows.*
 
     val builder = Workflows
       .builder()
