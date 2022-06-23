@@ -5,7 +5,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
-
 /** MapReduce tests
   *
   * These tests show how we can model the MapReduce paradigm with the Pods

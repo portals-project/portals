@@ -5,6 +5,18 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
+/** HelloWorld Test
+  *
+  * This is a collection of canonical hello world tests.
+  */
+
+
+/** Logged Hello World
+  *
+  * This example creates a workflow that prints all the ingested events to the
+  * logger. We submit the event containing the message "Hello, World!" and 
+  * expect it to be printed.
+  */
 @RunWith(classOf[JUnit4])
 class HelloWorldTest:
 
@@ -20,6 +32,7 @@ class HelloWorldTest:
       .source[String]()
       .withName("input")
       .map[String] { x => x }
+      // .withLogger() // print the output to logger
       .sink()
       .withName("output")
 
