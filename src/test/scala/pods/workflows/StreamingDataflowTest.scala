@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
+
 /** Streaming Dataflow tests
   *
   * These tests show how we can model Streaming Dataflow in our model.
@@ -16,6 +17,7 @@ import org.junit.Assert._
   * streaming dataflow, such as Map, FlatMap, Windowing, etc.
   */
 
+  
 /** Incremental Word Count
   * 
   * The incremental word count test computes the wordcount of a stream of 
@@ -64,7 +66,7 @@ class IncrementalWordCountTest:
             ctx.state.set(key, value)
             (key, value)
       )
-      .withLogger()
+      // .withLogger()
       .sink()
       .withName("counts")
       

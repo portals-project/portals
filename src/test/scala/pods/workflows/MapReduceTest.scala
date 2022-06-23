@@ -4,6 +4,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
+
+
 /** MapReduce tests
   *
   * These tests show how we can model the MapReduce paradigm with the Pods
@@ -20,6 +22,7 @@ import org.junit.Assert._
   * A MapReduce job is simply modeled as a workflow with three tasks, one for
   * each step (map, shuffle, reduce).
   */
+
 
 /** Word Count
   *
@@ -93,7 +96,7 @@ class WordCountTest:
 
     // to get a reference of the workflow we look in the registry
     // resolve takes a shared ref and creates an owned ref that points to the shared ref
-    val iref: IStreamRef[String] = system.registry[String]("wf/input").resolve(using system) 
+    val iref: IStreamRef[String] = system.registry[String]("wf/input").resolve() 
     val oref: OStreamRef[(String, Int)] = system.registry.orefs("wf/output").resolve()
     
     // create a test environment IRef
