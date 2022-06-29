@@ -1,0 +1,241 @@
+import pods.workflows.*
+
+def Tasks = TaskBehaviors
+
+/** Shopping Cart Example
+  * 
+  * This application implements a shopping cart using microservices. The 
+  * shopping cart constist of one workflow (the `Cart`) for handling incoming 
+  * requests: AddToCart(item); RemoveFromCart(Item); Checkout(). The `Inventory`
+  * workflow manages the inventory, and replies to the requests: AddToInventory;
+  * RemoveFromInventory. The last workflow manages the `Order`s and order 
+  * history of the users.
+ */
+@main def ShoppingCart() = 
+  val builder = Workflows.builder()
+
+
+  // Shared definitions
+  object Shared:
+    case class Item(id: String)
+    case class User(id: String)
+    case class Cart(items: Map[Item, Int])
+
+
+  // Inventory
+  object Inventory:
+    import Shared.*
+    import UserShoppingCart.* 
+
+    case class Item(name: String, price: Double)
+
+    sealed trait Command(user: User)
+    case class AddItem(user: User, item: Item) extends Command(user)
+    case class RemoveItem(user: User, item: Item) extends Command(user)
+
+    sealed trait Reply(user: User)
+    case class RemoveItemSuccess(user: User) extends Reply(user)
+    case class RemoveItemFailure(user: User) extends Reply(user)
+
+    // define the inventory behavior
+    def inventory = Tasks.init[Command, Reply] {
+      val count = states.perKey[Int](0) 
+
+      Tasks.processor[Command, Reply] { 
+        // add item to the inventory
+        case AddItem(item) =>
+          log.debug("Adding item {} to inventory", item)
+          count.set(count.get() + 1)
+
+        // remove an item from inventory and reply
+        case RemoveItem(item, replyTo) =>
+          log.debug("Removing item {} from inventory", item)
+          if count.get() > 0 then
+            log.debug("Item {} is in inventory, removing it", item)
+            count.set(count.get() - 1)
+            emit(RemoveItemSuccess)
+          else
+            log.debug("Item {} is not in inventory or out of stock, not removing it", item)
+            emit(RemoveItemFailure)
+      }
+    }  
+
+    def workflow: Workflow = 
+      val builder = Workflows.builder()
+
+      val _ = builder
+        .sourceReplyStream[Command, Reply]("source") // create a source from a replyStream
+        .withKey( _.item )
+        .task(inventory)
+        .reply() // reply to the source
+    
+  end Inventory // object
+
+
+  // Shopping cart
+  object UserShoppingCart:
+    import Shared.*
+    import Inventory.*
+
+    sealed trait Command(user: User)
+    case class AddItem(user: User, item: Item) extends Command(user)
+    case class ClearCart(user: User) extends Command(user)
+    case class Checkout(user: User) extends Command(user)
+
+    sealed trait Emit
+    case class CheckoutSuccess(user: User, cart: Cart) extends Emit
+
+    def cart = Tasks.init[Command, Emit] {
+      val cart = states.perKey[Cart](Cart(Map.empty))
+
+      Tasks.processor {
+        // try to add item to the user's cart
+        case AddItem(user, item) => 
+          log.debug("Adding item {} to cart of user {}", item, user)
+          // We will ask the inventory to remove the item from the inventory.
+          emit(RemoveItem(item))
+
+        // handle RemoveItemSuccess reply from the inventory
+        case RemoveItemSuccess(user) =>
+          log.debug("Item {} added to cart of user {}", item, user)
+          // FIXME: this looks horrible :S
+          cart.set(cart.get().updated(item, cart.get().get(item) + 1))
+            
+        // handle RemoveItemFailure reply from the inventory
+        case RemoveItemFailure(user) =>
+          log.debug("Item {} not added to cart of user {}", item, user)
+
+        // clear the cart, remove all items from user cart and add back to inventory
+        case ClearCart(user) => 
+          log.debug("Clearing cart of user {}", user)
+          cart.get().foreach { case (item, count) =>
+            log.debug("Adding {} items of item {} back to inventory", count, item)
+            emit(inventory, AddItem(item)) // will complete because exactly once, we don't need to confirm delivery
+          }
+          log.debug("Cart of user {} cleared", user)
+        
+        // checkout, emit checkout event and clear cart
+        case Checkout(user) => 
+          log.debug("Checking out cart of user {}", user)
+          emit(CheckoutSuccess(user, cart.get()))
+          cart.set(Cart(Map.empty))
+      }
+    }
+
+    def workflow: Workflow = 
+      val builder = Workflows.builder().withName("UserShoppingCart")
+
+      val source = builder
+        .source[Command]("source")
+
+      val portal = builder
+        .portal[Reply]("reply")
+
+      val task = builder
+        .merge(source, portal)
+        .withKey( _.user )
+        .task(cart) // task factory from TaskBehavior
+
+      // split into requests and checkouts
+      // FIXME: add split operator ;) to make more succint
+
+      val requests = builder
+        .from(task)
+        .filter{
+          case Inventory.Command => true
+          case _ => false
+        }
+
+      val checkouts = builder
+        .from(task)
+        .filter{
+          case CheckoutSuccess => true
+          case _ => false
+        }
+      
+      // create ReplyStream from requests
+      val _ = builder
+        .from(requests)
+        .sinkReplyStream(portal)
+
+      // create sink for checkout events
+      val _ = builder
+        .from(checkouts)
+        .sink("checkout")
+      
+      // return built workflow
+      builder.build() 
+
+  end UserShoppingCart // object
+
+
+  // Order history
+  object Orders:
+    import Shared.*
+    import Inventory.*
+    import UserShoppingCart.*
+
+    def orders = Tasks.init[CheckoutSuccess, Nothing] {
+      val orders = states.perKey[List[Cart]](List.empty)
+
+      Tasks.processor[CheckoutSuccess] {
+        case CheckoutSuccess(user, cart) =>
+          log.debug("Registering successfull checkout for user and cart {} : {}", user, cart)
+          orders.set(orders.get() :+ cart)
+      }
+    }
+
+    def workflow: Workflow = 
+      val builder = Workflows
+        .builder()
+        .withName("Orders")
+
+      val source = builder
+        .source[CheckoutSuccess]("source")
+        .withKey( _.user )
+        .task(orders)
+        // no sink ;) 
+
+  end Orders // object
+
+
+  // Shopping cart app
+  object ShoppingCartApp:
+    import Shared.*
+    import UserShoppingCart.*
+    import Inventory.*
+    import Orders.*
+
+    // Connections Workflow
+    object Connections:
+      def workflow: Workflow = 
+        val builder = Workflows.builder()
+
+        val cartSource = builder
+          .system.registry.sources("cart/source")
+        val cartCheckouts = builder
+          .system.registry.sinks("cart/checkout")
+        val cartRequests = builder
+          .system.registry.sinks("cart/request")
+        val inventorySource = builder
+          .system.registry.sources("inventory/source")
+        val ordersSource = builder
+          .system.registry.sources("orders/source")
+        
+        val _ = builder.connect(cartCheckouts, ordersSource)
+
+        val _ = builder.connect(cartRequests, inventorySource)
+    end Connections // object
+        
+    def launchAll(system: System): Unit =
+      // launch the workflows together
+      val _ = system.launch(UserShoppingCart.workflow, Inventory.workflow, Orders.workflow, Connections.workflow)
+
+  end ShoppingCartApp // object
+
+
+  // run app
+  val system = Systems.local()
+  ShoppingCartApp.launchAll(system)
+
+end ShoppingCart // main
