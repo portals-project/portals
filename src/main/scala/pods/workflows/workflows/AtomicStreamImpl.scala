@@ -1,5 +1,7 @@
 package pods.workflows
 
+import java.util.concurrent.locks.ReentrantLock
+
 class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, O] :
   private def addTask(name: String, behavior: TaskBehavior[_, _]): AtomicStream[I, O] =
     if latest.isDefined then
@@ -39,26 +41,27 @@ class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, 
   def sink[OO >: O <: O](): AtomicStream[I, Nothing] =
     // TODO: redo this once we have synchronized sources and sinks
     // custom behavior that buffers all events until the atom barrier
-    val behavior = new TaskBehavior[O, O] {
-      var buffer = List.empty[O]
+    val behavior = TaskBehaviors.identity[I]
+    // val behavior = new TaskBehavior[O, O] {
+    //   var buffer = List.empty[O]
 
-      def onNext(ctx: TaskContext[O, O])(t: O): TaskBehavior[O, O] =
-        buffer = buffer :+ t // append to buffer
-        TaskBehaviors.same
+    //   def onNext(ctx: TaskContext[O, O])(t: O): TaskBehavior[O, O] =
+    //     buffer = buffer :+ t // append to buffer
+    //     TaskBehaviors.same
 
-      def onError(ctx: TaskContext[O, O])(t: Throwable): TaskBehavior[O, O] = ???
+    //   def onError(ctx: TaskContext[O, O])(t: Throwable): TaskBehavior[O, O] = ???
 
-      def onComplete(ctx: TaskContext[O, O]): TaskBehavior[O, O] = ???
+    //   def onComplete(ctx: TaskContext[O, O]): TaskBehavior[O, O] = ???
 
-      def onAtomComplete(ctx: TaskContext[O, O]): TaskBehavior[O, O] =
-        // emit buffer and clear buffer
-        buffer.foreach {
-          ctx.emit(_)
-        }
-        buffer = buffer.empty
-        ctx.fuse() // emit atom marker
-        TaskBehaviors.same
-    }
+    //   def onAtomComplete(ctx: TaskContext[O, O]): TaskBehavior[O, O] =
+    //     // emit buffer and clear buffer
+    //     buffer.foreach {
+    //       ctx.emit(_)
+    //     }
+    //     buffer = buffer.empty
+    //     ctx.fuse() // emit atom marker
+    //     TaskBehaviors.same
+    // }
     addTask(behavior).asInstanceOf[AtomicStream[I, Nothing]]
 
   def intoCycle(fb: AtomicStream[O, O]): AtomicStream[I, Nothing] =

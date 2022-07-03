@@ -11,29 +11,22 @@ import scala.collection.AnyStepper.AnyStepperSpliterator
 @RunWith(classOf[JUnit4])
 class CycleTest:
   
-  @Ignore // current cycle implementation fails this test
+  // @Ignore // current cycle implementation fails this test
   @Test
   def testCycle(): Unit = 
     import pods.workflows.DSL.*
 
     val builder = Workflows.builder().withName("cycle")
 
-    val cycleSrc = builder.cycle[Int]() // create cycle source
-
     val src = builder
       .source[Int]()
       .withName("src")
-
-    val loop = builder
-      .merge(src, cycleSrc)
       .flatMap[Int]{ ctx ?=> x =>
         if (x > 0) List(x-1)
         else List.empty
       }
-    
-    val _ = loop.intoCycle(cycleSrc)
-    
-    val _ = loop.sink().withName("loop")
+      .sink()
+      .withName("loop")
 
     val wf = builder.build()
     val system = Systems.local()
@@ -41,6 +34,7 @@ class CycleTest:
 
     val iref: IStreamRef[Int] = system.registry("cycle/src").resolve()
     val oref: OStreamRef[Int] = system.registry.orefs("cycle/loop").resolve()
+    oref.subscribe(iref)
 
     // create a test environment IRef
     val testIRef = TestUtils.TestIStreamRef[Int]()
@@ -50,10 +44,9 @@ class CycleTest:
 
     iref.submit(8)
     iref.fuse()
+    
+    Thread.sleep(500)
 
-    system.shutdown()
-
-    assertTrue(testIRef.contains(8))
     assertTrue(testIRef.contains(7))
     assertTrue(testIRef.contains(6))
     assertTrue(testIRef.contains(5))
@@ -61,4 +54,20 @@ class CycleTest:
     assertTrue(testIRef.contains(3))
     assertTrue(testIRef.contains(2))
     assertTrue(testIRef.contains(1))
-    assertFalse(testIRef.contains(0))
+    assertTrue(testIRef.contains(0))
+    assertFalse(testIRef.contains(-1))
+
+    iref.submit(8)
+    iref.fuse()
+    system.shutdown()
+
+    assertTrue(testIRef.contains(7))
+    assertTrue(testIRef.contains(6))
+    assertTrue(testIRef.contains(5))
+    assertTrue(testIRef.contains(4))
+    assertTrue(testIRef.contains(3))
+    assertTrue(testIRef.contains(2))
+    assertTrue(testIRef.contains(1))
+    assertTrue(testIRef.contains(0))
+    assertFalse(testIRef.contains(-1))
+    

@@ -5,39 +5,85 @@ import java.util.concurrent.Flow.Subscriber
 import java.util.concurrent.Flow.Subscription
 import java.util.concurrent.Flow.Publisher
 import collection.convert.ImplicitConversions.`collection asJava`
+import java.util.concurrent.locks.ReentrantLock
+import scala.collection.mutable.Queue
 
   object TestUtils:
-    
+
+    def forwardingWorkflow[T, U](name: String)(using system: SystemContext): (IStreamRef[T], OStreamRef[U]) =
+      val builder = Workflows
+        .builder()
+        .withName(name)
+      
+      val flow = builder
+        .source[T]()
+        .withName("source")
+        .sink()
+        .withName("sink")
+
+      val wf = builder.build()
+      
+      system.launch(wf)
+
+      val iref = system.registry[T](name + "/source").resolve() 
+      val oref = system.registry.orefs[U](name + "/sink").resolve() 
+      (iref, oref)
+
+
     class TestIStreamRef[T] extends IStreamRef[T]:
-      private val queue = new ConcurrentLinkedQueue[T]()
+      val lock = ReentrantLock()
+
+      // private val queue = new ConcurrentLinkedQueue[T]()
+      private val queue: Queue[T] = Queue[T]()
 
       def receiveAssert(event: T): this.type = 
-        assert(event == queue.poll())
+        lock.lock()
+        assert(event == queue.dequeue())
+        lock.unlock()
         this
 
       def receive(): Option[T] = 
-        Option(queue.poll())
+        lock.lock()
+        val res = Option(queue.dequeue())
+        lock.unlock()
+        res
 
       def peek(): Option[T] =
-        Option(queue.peek())
+        lock.lock()
+        val res = Option(queue.front)
+        lock.unlock()
+        res
 
       def receiveAll(): Seq[T] = 
-        queue.toArray.asInstanceOf[Array[T]].toSeq
+        lock.lock()
+        // queue.toArray.asInstanceOf[Array[T]].toSeq
+        val res = queue.toSeq
+        lock.unlock()
+        res
 
       def isEmpty(): Boolean = 
-        queue.isEmpty()
+        lock.lock()
+        val res = queue.isEmpty()
+        lock.unlock()
+        res
 
       def contains(el: T): Boolean = 
-        queue.contains(el)
+        lock.lock()
+        val res = queue.contains(el)
+        lock.unlock()
+        res
 
       private[pods] val opr: OpRef[T, Nothing] = new OpRef[T, Nothing]{
         val mop = new MultiOperatorWithAtom[T, Nothing]{
           private[pods] def freshSubscriber(): Subscriber[WrappedEvents[T]] = new Subscriber[WrappedEvents[T]]{
             def onSubscribe(s: Subscription): Unit =
               s.request(Long.MaxValue)
-            def onNext(t: WrappedEvents[T]): Unit = t match
-              case Event(e) => queue.add(e)
-              case Atom() => () // probably do something
+            def onNext(t: WrappedEvents[T]): Unit = 
+              lock.lock()
+              val res = t match
+                case Event(e) => queue.enqueue(e)
+                case Atom() => () // probably do something
+              lock.unlock()
             def onError(t: Throwable): Unit = ???
             def onComplete(): Unit = ???
           }
