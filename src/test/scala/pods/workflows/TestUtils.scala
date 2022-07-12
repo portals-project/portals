@@ -10,7 +10,7 @@ import scala.collection.mutable.Queue
 
   object TestUtils:
 
-    def forwardingWorkflow[T, U](name: String)(using system: SystemContext): (IStreamRef[T], OStreamRef[U]) =
+    def forwardingWorkflow[T, U](name: String)(using system: SystemContext): (IStreamRef[T], OStreamRef[U], Workflow) =
       val builder = Workflows
         .builder()
         .withName(name)
@@ -27,7 +27,7 @@ import scala.collection.mutable.Queue
 
       val iref = system.registry[T](name + "/source").resolve() 
       val oref = system.registry.orefs[U](name + "/sink").resolve() 
-      (iref, oref)
+      (iref, oref, wf)
 
 
     class TestIStreamRef[T] extends IStreamRef[T]:

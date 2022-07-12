@@ -35,7 +35,7 @@ class BasicTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val testIRef = TestUtils.TestIStreamRef[Int]()
@@ -52,6 +52,7 @@ class BasicTest:
     }
 
     Thread.sleep(500)
+    system.stepAll()
     system.shutdown()
     Thread.sleep(500)
 
@@ -76,7 +77,7 @@ class BasicTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val testIRef = TestUtils.TestIStreamRef[Int]()
@@ -92,6 +93,7 @@ class BasicTest:
       iref.fuse()
     }
 
+    system.stepAll()
     system.shutdown()
 
     assertEquals(testDatas, testIRef.receiveAll())

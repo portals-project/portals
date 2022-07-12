@@ -4,9 +4,9 @@ package pods.workflows
 // only consists of tasks.
 class Workflow(
     private[pods] val name: String,
-    private[pods] val tasks: List[(String, TaskBehavior[_, _])],
-    // private[pods] val sources: List[String],
-    // private[pods] val sinks: List[String],
+    private[pods] val tasks: Map[String, TaskBehavior[_, _]],
+    private[pods] val sources: Map[String, TaskBehavior[_, _]],
+    private[pods] val sinks: Map[String, TaskBehavior[_, _]],
     private[pods] val connections: List[(String, String)],
 ):
   override def toString(): String = 

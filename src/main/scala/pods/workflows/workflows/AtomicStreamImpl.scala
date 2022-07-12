@@ -20,7 +20,9 @@ class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, 
 
   private[pods] def source[T](): AtomicStream[Nothing, T] =
     val behavior = TaskBehaviors.identity[T]
-    addTask(behavior).asInstanceOf[AtomicStream[Nothing, T]]
+    val name = workflow.task_id()
+    workflow.sources = workflow.sources + (name -> behavior)
+    addTask(name, behavior).asInstanceOf[AtomicStream[Nothing, T]]
 
   private[pods] def from[I, O](fb: AtomicStream[I, O]): AtomicStream[Nothing, O] =
     fb.asInstanceOf[AtomicStream[Nothing, O]]
@@ -39,30 +41,10 @@ class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, 
     newStream.asInstanceOf[AtomicStream[T, T]]
 
   def sink[OO >: O <: O](): AtomicStream[I, Nothing] =
-    // TODO: redo this once we have synchronized sources and sinks
-    // custom behavior that buffers all events until the atom barrier
     val behavior = TaskBehaviors.identity[I]
-    // val behavior = new TaskBehavior[O, O] {
-    //   var buffer = List.empty[O]
-
-    //   def onNext(ctx: TaskContext[O, O])(t: O): TaskBehavior[O, O] =
-    //     buffer = buffer :+ t // append to buffer
-    //     TaskBehaviors.same
-
-    //   def onError(ctx: TaskContext[O, O])(t: Throwable): TaskBehavior[O, O] = ???
-
-    //   def onComplete(ctx: TaskContext[O, O]): TaskBehavior[O, O] = ???
-
-    //   def onAtomComplete(ctx: TaskContext[O, O]): TaskBehavior[O, O] =
-    //     // emit buffer and clear buffer
-    //     buffer.foreach {
-    //       ctx.emit(_)
-    //     }
-    //     buffer = buffer.empty
-    //     ctx.fuse() // emit atom marker
-    //     TaskBehaviors.same
-    // }
-    addTask(behavior).asInstanceOf[AtomicStream[I, Nothing]]
+    val name = workflow.task_id()
+    workflow.sinks = workflow.sinks + (name -> behavior)
+    addTask(name, behavior).asInstanceOf[AtomicStream[I, Nothing]]
 
   def intoCycle(fb: AtomicStream[O, O]): AtomicStream[I, Nothing] =
     fb.cycleIn match
@@ -82,9 +64,7 @@ class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, 
     }
     }
 
-  // TODO: consider moving definitions and implementations of map, flatMap, etc.
-  // here instead of at the TaskBehaviors.
-  def map[T](f: AttenuatedTaskContext[O, T] ?=> O => T): AtomicStream[I, T] =
+  def map[T](f: ReducedTaskContext[O, T] ?=> O => T): AtomicStream[I, T] =
     val behavior = TaskBehaviors.map[O, T](f)
     addTask(behavior).asInstanceOf[AtomicStream[I, T]]
 
@@ -98,7 +78,7 @@ class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, 
     val behavior = TaskBehaviors.processor[O, T](f)
     addTask(behavior).asInstanceOf[AtomicStream[I, T]]
 
-  def flatMap[T](f: AttenuatedTaskContext[O, T] ?=> O => Seq[T]): AtomicStream[I, T] =
+  def flatMap[T](f: ReducedTaskContext[O, T] ?=> O => Seq[T]): AtomicStream[I, T] =
     val behavior = TaskBehaviors.flatMap[O, T](f)
     addTask(behavior).asInstanceOf[AtomicStream[I, T]]
 
@@ -108,6 +88,14 @@ class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, 
     workflow.tasks = workflow.tasks.removed(oldName)
     // using addTask here breaks as it connects to itself
     workflow.tasks = workflow.tasks + (name -> behavior)
+    if (workflow.sources.contains(oldName)) {
+      workflow.sources = workflow.sources.removed(oldName)
+      workflow.sources = workflow.sources + (name -> behavior)
+    }
+    if (workflow.sinks.contains(oldName)) {
+      workflow.sinks = workflow.sinks.removed(oldName)
+      workflow.sinks = workflow.sinks + (name -> behavior)
+    }
     latest = Some(name)
     workflow.connections = workflow.connections.map { (from, to) =>
       (from, to) match

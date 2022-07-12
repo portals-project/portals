@@ -2,7 +2,7 @@ package pods.workflows
 
 private[pods] class WorkflowBuilderImpl(name: String) extends WorkflowBuilder:
   override def build(): Workflow =
-    new Workflow(name, this.tasks.toList, this.connections)
+    new Workflow(name, this.tasks,this.sources, this.sinks, this.connections)
 
   override def source[T](): AtomicStream[Nothing, T] =
     new AtomicStreamImpl[Nothing, T](this).source()

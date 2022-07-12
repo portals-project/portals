@@ -15,7 +15,7 @@ import org.junit.Ignore
 @RunWith(classOf[JUnit4])
 class MultiProducerTest:
 
-  @Ignore
+  // @Ignore
   @Test
   def testMultiProducer(): Unit =
     val builder = Workflows
@@ -67,7 +67,7 @@ class MultiProducerTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val iref1: IStreamRef[Int] = system.registry("wf/input1").resolve()
@@ -99,14 +99,15 @@ class MultiProducerTest:
     t1.join()
     t2.join()
 
+    system.stepAll()
     system.shutdown()
 
     // check that the output is correct
-    for (i <- 1 to 1000) {
+    for (i <- 1 to 2000) {
       assertTrue(testIRef1.contains(i))
       assertTrue(testIRef2.contains(i))
     }
     assertFalse(testIRef1.contains(0))
     assertFalse(testIRef2.contains(0))
-    assertFalse(testIRef1.contains(20001))
-    assertFalse(testIRef2.contains(20001))
+    assertFalse(testIRef1.contains(2001))
+    assertFalse(testIRef2.contains(2001))

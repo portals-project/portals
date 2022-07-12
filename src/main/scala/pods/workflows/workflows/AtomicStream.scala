@@ -20,7 +20,7 @@ trait AtomicStream[I, O]:
 
   def keyBy[T](f: O => T): AtomicStream[I, O]
 
-  def map[T](f: AttenuatedTaskContext[O, T] ?=> O => T): AtomicStream[I, T]
+  def map[T](f: ReducedTaskContext[O, T] ?=> O => T): AtomicStream[I, T]
 
   def behavior[T](b: TaskBehavior[O, T]): AtomicStream[I, T]
 
@@ -28,7 +28,7 @@ trait AtomicStream[I, O]:
 
   def processor[T](f: TaskContext[O, T] ?=> O => Unit): AtomicStream[I, T]
 
-  def flatMap[T](f: AttenuatedTaskContext[O, T] ?=> O => Seq[T]): AtomicStream[I, T]
+  def flatMap[T](f: ReducedTaskContext[O, T] ?=> O => Seq[T]): AtomicStream[I, T]
 
   def withName(name: String): AtomicStream[I, O]
 

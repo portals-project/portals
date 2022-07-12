@@ -1,6 +1,10 @@
 package pods.workflows
 
 object TaskBehaviors:
+  //////////////////////////////////////////////////////////////////////////////
+  // TaskBehavior Factories
+  //////////////////////////////////////////////////////////////////////////////
+  
   /** behavior factory for handling incoming event and context with a virtual state machine */
   def vsm[I, O](
       onNext: TaskContext[I, O] ?=> I => TaskBehavior[I, O]
@@ -14,18 +18,20 @@ object TaskBehaviors:
     ProcessBehavior[I, O](tctx => onNext(using tctx))
 
   /** behavior factory for map */
-  def map[I, O](f: AttenuatedTaskContext[I, O] ?=> I => O): TaskBehavior[I, O] =
+  def map[I, O](f: ReducedTaskContext[I, O] ?=> I => O): TaskBehavior[I, O] =
+    // todo: reduce context initialization to once per task with init behavior
     ProcessBehavior[I, O](tctx => x => 
-      val ctx = AttenuatedTaskContext.fromTaskContext(tctx)  
+      val ctx = ReducedTaskContext.fromTaskContext(tctx)  
       tctx.emit(
         f(using ctx)(x)
       )
     )
 
   /** behavior factory for flatMap */
-  def flatMap[I, O](f: AttenuatedTaskContext[I, O] ?=> I => TraversableOnce[O]): TaskBehavior[I, O] =
+  def flatMap[I, O](f: ReducedTaskContext[I, O] ?=> I => TraversableOnce[O]): TaskBehavior[I, O] =
+    // todo: reduce context initialization to once per task with init behavior
     ProcessBehavior[I, O](tctx => x => 
-      val ctx = AttenuatedTaskContext.fromTaskContext(tctx)  
+      val ctx = ReducedTaskContext.fromTaskContext(tctx)  
       f(using ctx)(x).foreach(tctx.emit(_))
     )
 
@@ -37,6 +43,11 @@ object TaskBehaviors:
   def same[T, S]: TaskBehavior[T, S] =
     // same behavior is compatible with previous behavior
     SameBehavior.asInstanceOf[TaskBehavior[T, S]]
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  // TaskBehavior Implementations
+  //////////////////////////////////////////////////////////////////////////////
 
   private[pods] case class VSMBehavior[I, O](
       _onNext: TaskContext[I, O] => I => TaskBehavior[I, O]
@@ -58,6 +69,7 @@ object TaskBehaviors:
 
   private[pods] case object SameBehavior extends TaskBehaviorUnimpl[Nothing, Nothing]
   // this is fine, the methods are ignored as we reuse the previous behavior
+
 
   //////////////////////////////////////////////////////////////////////////////
   // Base TaskBehaviors

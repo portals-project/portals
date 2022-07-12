@@ -3,6 +3,8 @@ package pods.workflows
 trait WorkflowBuilder:
   private[pods] var tasks: Map[String, TaskBehavior[_, _]] = Map.empty
   private[pods] var connections: List[(String, String)] = List.empty
+  private[pods] var sources: Map[String, TaskBehavior[_, _]] = Map.empty
+  private[pods] var sinks: Map[String, TaskBehavior[_, _]] = Map.empty
 
   private[pods] var _task_id: Int = 0
   private[pods] def task_id(): String = {

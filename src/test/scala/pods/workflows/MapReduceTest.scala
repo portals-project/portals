@@ -88,7 +88,7 @@ class WordCountTest:
     val wf = builder
       .build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val testData = "the quick brown fox jumps over the lazy dog"
@@ -106,6 +106,7 @@ class WordCountTest:
     iref ! testData
     iref ! FUSE // fuse the atom to trigger the onAtomComplete handler
     
+    system.stepAll()
     system.shutdown()
 
     // check that the output is correct

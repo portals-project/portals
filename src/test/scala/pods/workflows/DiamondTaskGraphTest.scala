@@ -45,7 +45,7 @@ class DiamondTaskGraphTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     // create a test environment IRef
@@ -59,6 +59,7 @@ class DiamondTaskGraphTest:
     iref.submit(1)
     iref.fuse()
 
+    system.stepAll()
     system.shutdown()
 
     assertTrue(testIRef.contains(2) && testIRef.contains(3))

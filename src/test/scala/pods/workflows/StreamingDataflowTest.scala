@@ -72,7 +72,7 @@ class IncrementalWordCountTest:
       
     val workflow = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(workflow)
 
     val testData = "the quick brown fox jumps over the lazy dog"
@@ -89,6 +89,7 @@ class IncrementalWordCountTest:
     iref.submit(testData)
     iref.fuse()
 
+    system.stepAll()
     system.shutdown()
 
     // check that the output is correct

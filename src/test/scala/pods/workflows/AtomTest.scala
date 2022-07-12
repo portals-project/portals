@@ -50,7 +50,7 @@ class AtomTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
 
     system.launch(wf)
     
@@ -74,6 +74,7 @@ class AtomTest:
 
     // now we trigger the atom barrier which will trigger the fusion
     iref ! FUSE 
+    system.stepAll()
     system.shutdown()
     
     // we should now expect to observe some output from the workflow

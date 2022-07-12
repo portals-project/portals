@@ -1,8 +1,8 @@
-# Pods Workflows
+# Portals Workflows
 
 [![Build Status](https://github.com/jonasspenger/pods-workflows/actions/workflows/test.yaml/badge.svg)](https://github.com/jonasspenger/pods-workflows/actions/workflows/test.yaml)
 
-Welcome to the Pods Workflows repo!
+Welcome to the Portals Workflows repo!
 
 This is a fresh start, to find the old repo look through the branches for [!old-dump](https://github.com/jonasspenger/pods-workflows/tree/!old-dump).
 
@@ -13,47 +13,10 @@ We recommend the following steps to get started.
 * Compile the project `sbt compile`, run all tests `sbt test`, or execute a main class for the project `sbt run <argument>*`.
 
 ## Design Documents
-To find out more about Pods Workflows and the programming model, please visit the [Design Documents](design) page. There you will find a walkthrough through the model.
+To find out more about Portals Workflows and the programming model, please visit the [Design Documents](design) page. There you will find a walkthrough through the model.
 
 ## Examples
 Example programs can be found in the [Examples](examples) page. Note that not all of the examples are executable yet, but will be later on. Executable examples can also be found in the [examples](src/main/scala/pods/workflows/examples) directory.
-
-## Milestones
-* [X] Create readme and start onboarding process. 
-* [X] Create a description of the programming model.
-* [X] Create an implementation-design document.
-* [X] Define the interfaces and traits.
-* [ ] Write the use-cases and examples that we want to execute.
-  * [ ] Killer application: something with microservices and serializable updates.
-  * [ ] Serializable updates demonstration.
-  * [ ] Common examples of stateful serverless: Shopping Cart; Bank Account; Social Media; Microservices.
-  * [ ] Other programming models embedded in Pods Workflows.
-    * [ ] MapReduce, examples created, not executable
-    * [ ] BSP
-    * [ ] Pregel/Menthor
-    * [ ] Actors, examples created, not executable
-    * [ ] Dataflow/Streaming
-    * [ ] Dataframes
-  * [ ] More examples
-    * [X] Hello World
-    * [ ] Ask Await, examples created, not executable
-    * [ ] Taking Steps
-    * [ ] Serializable updates, examples created, not executable
-* [ ] Create test suite.
-* [ ] Implement / make the examples executable.
-* [ ] Perform evaluation.
-* [ ] Create a release.
-
-## Milestones for [Onward!](https://2022.splashcon.org/track/splash-2022-Onward-papers) 22 Paper
-* [X] Write *introduction*
-* [X] Write *contributions* 
-* [ ] (06.06) Describe Challenges
-* [ ] (06.13) Describe Programming Model
-* [ ] Operational Semantics
-* [ ] Evaluation
-* [ ] Abstract, Conclusion (Paris, Philipp)
-* [ ] (06.16) First Draft
-* [ ] (07.15) Final Draft
 
 ## Contributing
 Contributions are welcome! To contribute please follow these guideines.

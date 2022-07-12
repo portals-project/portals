@@ -32,7 +32,7 @@ private[pods] object TaskRunner:
     }
 
     ctx.opr = opref
-    ctx.mainiref = iref
-    ctx.mainoref = oref
+    // ctx.mainiref = iref
+    // ctx.mainoref = oref
 
     (iref, oref)

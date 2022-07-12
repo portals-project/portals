@@ -23,7 +23,7 @@ class AtomAlignmentTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val iref: IStreamRef[Int] = system.registry("wf/input").resolve()
@@ -41,6 +41,7 @@ class AtomAlignmentTest:
       iref.fuse()
     }
 
+    system.stepAll()
     system.shutdown()
     
     (0 until n).foreach { i =>
@@ -69,7 +70,7 @@ class AtomAlignmentTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     
@@ -93,6 +94,7 @@ class AtomAlignmentTest:
     iref1.fuse()
     iref2.fuse()
 
+    system.stepAll()
     system.shutdown()
     
     (0 until n).foreach { i =>
@@ -124,7 +126,7 @@ class AtomAlignmentTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val iref1: IStreamRef[Int] = system.registry("wf2/input1").resolve()
@@ -150,6 +152,7 @@ class AtomAlignmentTest:
     fwd1._1.fuse()
     fwd2._1.fuse()
 
+    system.stepAll()
     system.shutdown()
     
     (0 until n).foreach { i =>
@@ -187,7 +190,7 @@ class AtomAlignmentTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val iref: IStreamRef[Int] = system.registry("wf/source").resolve()
@@ -203,6 +206,7 @@ class AtomAlignmentTest:
       iref.fuse()
     }
 
+    system.stepAll()
     system.shutdown()
 
     (0 until n).foreach { i =>
@@ -238,7 +242,7 @@ class AtomAlignmentTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val iref: IStreamRef[Int] = system.registry("wf/source").resolve()
@@ -259,6 +263,7 @@ class AtomAlignmentTest:
     }
     iref.fuse()
 
+    system.stepAll()
     system.shutdown()
 
     var receives = Set.empty[Int]

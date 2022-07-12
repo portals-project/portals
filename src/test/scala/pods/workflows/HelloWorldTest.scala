@@ -10,7 +10,6 @@ import org.junit.Assert._
   * This is a collection of canonical hello world tests.
   */
 
-
 /** Logged Hello World
   *
   * This example creates a workflow that prints all the ingested events to the
@@ -38,7 +37,7 @@ class HelloWorldTest:
 
     val wf = builder.build()
 
-    val system = Systems.local()
+    val system = Systems.syncLocal()
     system.launch(wf)
 
     val iref: IStreamRef[String] = system.registry("wf/input").resolve()
@@ -52,6 +51,7 @@ class HelloWorldTest:
     iref.submit(helloWorld)
     iref.fuse()
 
+    system.stepAll()
     system.shutdown()
 
     testIRef.receiveAssert(helloWorld)
