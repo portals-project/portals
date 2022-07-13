@@ -1,22 +1,17 @@
-# Portals Workflows
+# Portals
 
-[![Build Status](https://github.com/jonasspenger/pods-workflows/actions/workflows/test.yaml/badge.svg)](https://github.com/jonasspenger/pods-workflows/actions/workflows/test.yaml)
+[![Build Status](https://github.com/jonasspenger/portals/actions/workflows/build-test.yaml/badge.svg)](https://github.com/jonasspenger/portals/actions/workflows/build-test.yaml)
 
-Welcome to the Portals Workflows repo!
-
-This is a fresh start, to find the old repo look through the branches for [!old-dump](https://github.com/jonasspenger/pods-workflows/tree/!old-dump).
+Welcome to the Portals repo!
 
 ## Getting Started Guide
 We recommend the following steps to get started.
 * [Install Scala](https://www.scala-lang.org/download/), we recommend working with sbt, together with [Metals](https://scalameta.org/metals/docs/editors/vscode/) on VS Code. 
-* Clone the repository `git clone https://github.com/jonasspenger/pods-workflows.git`.
+* Clone the repository `git clone https://github.com/jonasspenger/portals.git`.
 * Compile the project `sbt compile`, run all tests `sbt test`, or execute a main class for the project `sbt run <argument>*`.
 
-## Design Documents
-To find out more about Portals Workflows and the programming model, please visit the [Design Documents](design) page. There you will find a walkthrough through the model.
-
 ## Examples
-Example programs can be found in the [Examples](examples) page. Note that not all of the examples are executable yet, but will be later on. Executable examples can also be found in the [examples](src/main/scala/pods/workflows/examples) directory.
+Examples can be found in the [examples](src/main/scala/portals/examples) directory, or in the [test](src/test/scala/portals) directory.
 
 ## Contributing
 Contributions are welcome! To contribute please follow these guideines.
@@ -33,3 +28,9 @@ Contributions are welcome! To contribute please follow these guideines.
   1. [Group/squash commit](https://github.com/akka/akka/blob/main/CONTRIBUTING.md#creating-commits-and-writing-commit-messages).
   1. Submit a pull-request (include a reference to the issue).
   1. After review and approval (LGTM) the pull-request will be merged. 
+
+# Portals Legacy
+To find the old repo look through the branches for [!old-dump](https://github.com/jonasspenger/portals/tree/!old-dump), and for [legacy](https://github.com/jonasspenger/portals/tree/legacy).
+
+## Design Documents
+To find out more about Portals and the programming model, please visit the [Portals-Meta](https://github.com/jonasspenger/portals-meta) page. There you will find a walkthrough through the model.

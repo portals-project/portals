@@ -1,0 +1,314 @@
+package portals
+
+import scala.collection.mutable
+import java.util.concurrent.Flow.Subscriber
+import java.util.LinkedList
+import scala.util.control.Breaks._
+
+class SyncLocalSystem extends LocalSystemContext:
+  val executionContext: ExecutionContext = new ExecutionContext {
+    def execute[T, U](opSpec: OperatorSpec[T, U]): OpRef[T, U] = ???
+    def shutdown(): Unit = ???
+  }
+  val registry: GlobalRegistry = GlobalRegistry()
+
+  var workflows = Map[String, RuntimeWorkflow]()
+
+  def launch(workflow: Workflow): Unit =
+    workflows += (workflow.name -> RuntimeWorkflow.fromStaticWorkflow(this, workflow))
+
+  override def step(): Unit = workflows.filter(!_._2.isEmpty()).head._2.step()
+  override def step(wf: Workflow): Unit = workflows(wf.name).step()
+  override def stepAll(): Unit = isEmpty() match {
+    case true =>
+    case false => {
+      workflows.filter(!_._2.isEmpty()).head._2.stepAll()
+      stepAll()
+    }
+  }
+  override def stepAll(wf: Workflow): Unit = workflows(wf.name).stepAll()
+  override def isEmpty(): Boolean = workflows.forall(_._2.isEmpty())
+  override def isEmpty(wf: Workflow): Boolean = workflows(wf.name).isEmpty()
+
+  def shutdown(): Unit = ()
+
+/*
+ * This class contains:
+ *   1. Static Information:
+ *      a. tasks, sources, sinks
+ *      b. name to identify this RuntimeWorkflow
+ *   2. Runtime Information
+ *      a. buffer for sources
+ *      b. connections (allowing subscription at runtime)
+ *      c. ref to systemContext
+ *   3. Workflow execution logic
+ */
+class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
+  private val logger = Logger(name)
+
+  var tasks = Map[String, RuntimeBehavior[_, _]]()
+  var sources = Map[String, RuntimeBehavior[_, _]]()
+  var sourceBuffer = Map[String, LinkedList[WrappedEvents[_]]]()
+  var sinks = Map[String, RuntimeBehavior[_, _]]()
+  var connections = Map[String, Set[String]]()
+
+  def isSource(name: String): Boolean = sources.contains(name)
+  def isSink(name: String): Boolean = sinks.contains(name)
+  def getRuntimeBehavior(name: String): RuntimeBehavior[_, _] = {
+    tasks.getOrElse(name, sources.getOrElse(name, sinks.getOrElse(name, null)))
+  }
+
+  var stepId = 0
+  var microStepId = 0
+
+  var _nextId = 0
+  def nextId(): Int =
+    _nextId = _nextId + 1
+    _nextId
+
+  var executionQueue = LinkedList[(RuntimeBehavior[_, _], WrappedEvents[_])]()
+
+  def microStep(): Unit = {
+    logger.debug(s"== mstep ${microStepId}")
+    while (!executionQueue.isEmpty) {
+      val (cell, event) = executionQueue.poll()
+      logger.debug(s"${cell.name} consume ${event}")
+      cell.step(event)
+    }
+    microStepId += 1
+  }
+  
+
+  def step(): Unit = {
+    isEmpty() match
+      case true =>
+        logger.error("no event to execute")
+      case false => {
+        // select one source with non-empty buffer, poll its events until atom is met
+        logger.debug(s"==== step ${stepId}")
+        val nonEmptySourceBuffers = sourceBuffer.filter(!_._2.isEmpty)
+        val selectedSource = nonEmptySourceBuffers.map(_._1).head
+        logger.debug(s"consume one atom(event seq) from ${selectedSource}")
+        breakable {
+          while (true) {
+            val event = nonEmptySourceBuffers.map(_._2).head.poll()
+            executionQueue.add((sources(selectedSource), event))
+
+            microStep()
+
+            if (event.isInstanceOf[Atom[_]]) {
+              logger.debug(s"step ${stepId} finishes")
+              break
+            }
+          }
+        }
+      }
+  }
+
+  def stepAll(): Unit = {
+    while (!isEmpty()) {
+      step()
+      stepId += 1
+    }
+    logger.debug("execution finished")
+  }
+
+  def isEmpty(): Boolean = sourceBuffer.filter(!_._2.isEmpty).size == 0
+
+  def stashWrappedEventToSource(name: String, event: WrappedEvents[_]): Unit = {
+    // logger.debug(s"add event[${event}] to ${name}")
+    sourceBuffer(name).add(event)
+  }
+
+  def onRuntimeBehaviorEventSubmit[I, O](behavior: RuntimeBehavior[I, O], event: O): Unit =
+    dispatchEvent(behavior, Event(event))
+  def onRuntimeBehaviorAtomSubmit(behavior: RuntimeBehavior[_, _]): Unit =
+    dispatchEvent(behavior, Atom())
+  def dispatchEvent(behavior: RuntimeBehavior[_, _], event: WrappedEvents[_]): Unit = {
+    connections(behavior.name).foreach(toName => {
+      // logger.debug(s"dispatch event[${event}] to ${toName}")
+      val dstwfId = extractWfId(toName)
+      // cycle to self soure or dispatch to another wf
+      if (sources.contains(toName) || dstwfId != name) {
+        system.workflows(dstwfId).stashWrappedEventToSource(toName, event)
+      } else {
+        executionQueue.add((getRuntimeBehavior(toName), event))
+      }
+    })
+  }
+
+  def extractWfId(name: String): String = {
+    name.split("/")(0)
+  }
+}
+
+// builde runtiem workflow from static workflow
+object RuntimeWorkflow {
+  def fromStaticWorkflow(system: SyncLocalSystem, wf: Workflow): RuntimeWorkflow = {
+    val rtwf = RuntimeWorkflow(wf.name, system)
+
+    // tasks in static workflow conatins sources and sinks, remove it
+    // TODO: consider doing this at AtomicStreamImpl
+    val tasksInMiddle = wf.tasks.filter((k, v) => {
+      !wf.sources.contains(k) && !wf.sinks.contains(k)
+    })
+
+    tasksInMiddle.foreach((name, behavior) => {
+      val fullName = wf.name + "/" + name
+      println(s"task: ${fullName}")
+      val rtBehavior = RuntimeBehavior(fullName, rtwf, behavior)
+      rtwf.tasks += (fullName -> rtBehavior)
+      system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
+    })
+
+    wf.sources.foreach((name, behavior) => {
+      val fullName = wf.name + "/" + name
+      println(s"source: ${fullName}")
+      val rtBehavior = RuntimeSource(fullName, rtwf, behavior)
+      rtwf.sources += (fullName -> rtBehavior)
+      rtwf.sourceBuffer += (fullName -> new LinkedList[WrappedEvents[_]]())
+      system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
+    })
+
+    wf.sinks.foreach((name, behavior) => {
+      val fullName = wf.name + "/" + name
+      println(s"sink: ${fullName}")
+      val rtBehavior = RuntimeSink(fullName, rtwf, behavior)
+      rtwf.sinks += (fullName -> rtBehavior)
+      system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
+    })
+
+    rtwf.connections = wf.connections
+      .map((k, v) => (wf.name + "/" + k, wf.name + "/" + v))
+      .groupBy(_._1)
+      .mapValues(_.map(_._2).toSet)
+      .toMap
+      .withDefaultValue(Set())
+
+    rtwf.logger.info(s"workflow ${rtwf.name} configuration:")
+    rtwf.logger.info(s"\tsources: ${rtwf.sources.keys.mkString(", ")}")
+    rtwf.logger.info(s"\ttasks: ${rtwf.tasks.keys.mkString(", ")}")
+    rtwf.logger.info(s"\tsinks: ${rtwf.sinks.keys.mkString(", ")}")
+    rtwf.logger.info(s"\tconnections: ")
+    // TODO: print in topological order
+    rtwf.connections.foreach((from, to) => {
+      rtwf.logger.info(s"\t\t${from} -> ${to.mkString(", ")}")
+    })
+
+    system.workflows += (rtwf.name -> rtwf)
+
+    rtwf
+  }
+}
+
+/*
+ * This class wraps behavior to
+ *   1. support runtime information
+ *      a. cell local state (TaskContext)
+ *      b. runtime subscription (from another wf or from TestUtils),
+ *         whose metadata is not managed by the workflow
+ *      c. ref to runtme workflow
+ *   2. static information:
+ *      a. unify handling of atom and event
+ *      b. name, to identify this RuntimeBehavior
+ */
+class RuntimeBehavior[I, O](
+    val name: String,
+    val rtwf: RuntimeWorkflow,
+    val behavior: TaskBehavior[I, O]
+):
+  val ctx = TaskContext[I, O]()
+
+  val self = this
+  ctx.opr = new OpRef[I, O] {
+    def submit(event: O): Unit = rtwf.onRuntimeBehaviorEventSubmit(self, event)
+    def fuse(): Unit = rtwf.onRuntimeBehaviorAtomSubmit(self)
+    // not used
+    override val mop: MultiOperatorWithAtom[I, O] = null
+    def seal(): Unit = ???
+    def subscibe(mref: OpRef[O, _]): Unit = ???
+  }
+
+  def step[T](item: WrappedEvents[T]): Unit =
+    item match
+      case Event(item) => {
+        behavior.onNext(ctx)(item.asInstanceOf[I]) // TODO: better type cast
+      }
+      case Atom()      => behavior.onAtomComplete(ctx)
+
+  // NOTE: only allow source to use iref
+  def iref(): IStreamRef[I] = new IStreamRef[I] {
+    private[portals] def submit(event: I): Unit = ???
+    private[portals] val opr: OpRef[I, _] = null
+    private[portals] def seal(): Unit = ???
+    private[portals] def fuse(): Unit = ???
+  }
+
+  // NOTE: only allow sink to use oref
+  def oref(): OStreamRef[O] = new OStreamRef[O] {
+    private[portals] val opr: OpRef[_, O] = null
+    private[portals] def subscribe(subscriber: IStreamRef[O]): Unit = ???
+  }
+
+class RuntimeSource[I, O](
+    override val name: String,
+    override val rtwf: RuntimeWorkflow,
+    override val behavior: TaskBehavior[I, O]
+) extends RuntimeBehavior[I, O](name, rtwf, behavior) {
+  override def iref(): IStreamRef[I] = NamedIStreamRef(name, rtwf)
+}
+
+class NamedIStreamRef[I](val name: String, val rtwf: RuntimeWorkflow) extends IStreamRef[I] {
+  private[portals] def submit(event: I): Unit = {
+      rtwf.stashWrappedEventToSource(name, Event(event))
+    }
+    private[portals] val opr: OpRef[I, _] = null
+    private[portals] def seal(): Unit = ???
+    private[portals] def fuse(): Unit = {
+      rtwf.stashWrappedEventToSource(name, Atom())
+    }
+}
+
+class RuntimeSink[I, O](
+    override val name: String,
+    override val rtwf: RuntimeWorkflow,
+    override val behavior: TaskBehavior[I, O]
+) extends RuntimeBehavior[I, O](name, rtwf, behavior) {
+  var runtimeSubscribers = Set[Subscriber[WrappedEvents[O]]]()
+
+  ctx.opr = new OpRef[I, O] {
+    def submit(event: O): Unit = {
+      runtimeSubscribers.foreach(_.onNext(Event(event)))
+      rtwf.onRuntimeBehaviorEventSubmit(self, event)
+    }
+    def fuse(): Unit = {
+      runtimeSubscribers.foreach(_.onNext(Atom()))
+      rtwf.onRuntimeBehaviorAtomSubmit(self)
+    }
+    // unsed
+    override val mop: MultiOperatorWithAtom[I, O] = null
+    def seal(): Unit = ???
+    def subscibe(mref: OpRef[O, _]): Unit = ???
+  }
+
+  override def oref(): OStreamRef[O] = new OStreamRef[O] {
+    private[portals] val opr: OpRef[_, O] = null
+    private[portals] def subscribe(subscriber: IStreamRef[O]): Unit =
+      // hack: cast to RuntimeSource to test if IStreamRef is from another wf or is from TestUtils
+      try {
+        val runtimeSubscriber = subscriber.asInstanceOf[NamedIStreamRef[_]]
+        println(s"cross wf subscription from ${name} to ${runtimeSubscriber.name}")
+        rtwf.connections = rtwf.connections.updatedWith(name) {
+          case Some(toSet) => {
+            Some(toSet + runtimeSubscriber.name)
+          }
+          case None    => {
+            Some(Set(runtimeSubscriber.name)) 
+          }
+        }
+      } catch {
+        case e: ClassCastException =>
+          runtimeSubscribers = runtimeSubscribers + subscriber.opr.mop.freshSubscriber()
+      }
+  }
+}

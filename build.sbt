@@ -1,4 +1,4 @@
-val scala3Version = "3.1.2"
+val scala3Version = "3.1.3"
 val junitInterfaceVersion = "0.11"
 val logbackversion = "1.2.11"
 
