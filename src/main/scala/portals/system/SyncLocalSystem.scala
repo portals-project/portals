@@ -4,6 +4,8 @@ import scala.collection.mutable
 import java.util.concurrent.Flow.Subscriber
 import java.util.LinkedList
 import scala.util.control.Breaks._
+import collection.JavaConverters._
+import java.{util => ju}
 
 class SyncLocalSystem extends LocalSystemContext:
   val registry: GlobalRegistry = GlobalRegistry()
@@ -44,7 +46,8 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
 
   var tasks = Map[String, RuntimeBehavior[_, _]]()
   var sources = Map[String, RuntimeBehavior[_, _]]()
-  var sourceBuffer = Map[String, LinkedList[WrappedEvents[_]]]()
+  var sourceEventBuffer = Map[String, ju.List[WrappedEvents[_]]]()
+  var sourceAtomBuffer = Map[String, LinkedList[List[WrappedEvents[_]]]]()
   var sinks = Map[String, RuntimeBehavior[_, _]]()
   var connections = Map[String, Set[String]]()
 
@@ -82,22 +85,14 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
       case false => {
         // select one source with non-empty buffer, poll its events until atom is met
         logger.debug(s"==== step ${stepId}")
-        val nonEmptySourceBuffers = sourceBuffer.filter(!_._2.isEmpty)
+        val nonEmptySourceBuffers = sourceAtomBuffer.filter(!_._2.isEmpty)
         val selectedSource = nonEmptySourceBuffers.map(_._1).head
         logger.debug(s"consume one atom(event seq) from ${selectedSource}")
-        breakable {
-          while (true) {
-            val event = nonEmptySourceBuffers.map(_._2).head.poll()
-            executionQueue.add((sources(selectedSource), event))
-
-            microStep()
-
-            if (event.isInstanceOf[Atom[_]]) {
-              logger.debug(s"step ${stepId} finishes")
-              break
-            }
-          }
-        }
+        nonEmptySourceBuffers(selectedSource).poll().foreach(event => {
+          executionQueue.add((sources(selectedSource), event))
+          microStep()
+        })
+        logger.debug(s"step ${stepId} finishes")
       }
   }
 
@@ -109,11 +104,21 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
     logger.debug("execution finished")
   }
 
-  def isEmpty(): Boolean = sourceBuffer.filter(!_._2.isEmpty).size == 0
+  def isEmpty(): Boolean = sourceAtomBuffer.filter(!_._2.isEmpty).size == 0
 
   def stashWrappedEventToSource(name: String, event: WrappedEvents[_]): Unit = {
     // logger.debug(s"add event[${event}] to ${name}")
-    sourceBuffer(name).add(event)
+    sourceEventBuffer(name).add(event)
+    event match {
+      case Atom() =>
+        val atom = sourceEventBuffer(name).asScala.toList
+        sourceEventBuffer(name).clear()
+        // only stash atom with at least one event
+        if (atom.length > 1) {
+          sourceAtomBuffer(name).add(atom)
+        }
+      case _ =>
+    }
   }
 
   def onRuntimeBehaviorEventSubmit[I, O](behavior: RuntimeBehavior[I, O], event: O): Unit =
@@ -162,7 +167,8 @@ object RuntimeWorkflow {
       // println(s"source: ${fullName}")
       val rtBehavior = RuntimeSource(fullName, rtwf, behavior)
       rtwf.sources += (fullName -> rtBehavior)
-      rtwf.sourceBuffer += (fullName -> new LinkedList[WrappedEvents[_]]())
+      rtwf.sourceAtomBuffer += (fullName -> new LinkedList[List[WrappedEvents[_]]]())
+      rtwf.sourceEventBuffer += (fullName -> new LinkedList[WrappedEvents[_]]())
       system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
     })
 

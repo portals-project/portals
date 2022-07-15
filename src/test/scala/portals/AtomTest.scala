@@ -65,8 +65,8 @@ class AtomTest:
     val testData = "testData"
     iref ! testData
 
-    // // try to step
-    // system.stepAll()
+    // try to step
+    system.stepAll()
     
     // nothing is happening yet, the atom is not complete (we need to fuse it first)
     assertTrue(testIRef.isEmpty())
