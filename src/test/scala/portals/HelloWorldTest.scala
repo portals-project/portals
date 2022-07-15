@@ -23,9 +23,8 @@ class HelloWorldTest:
   def testHelloWorld(): Unit =
     val helloWorld = "Hello, World!"
 
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
 
     val flow = builder
       .source[String]()

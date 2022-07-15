@@ -39,9 +39,8 @@ class IncrementalWordCountTest:
       ((x, y) =>  (x._1, x._2 + y._2))
 
     // one naive implementation is to use local state for storing the counts
-    val builder = Workflows
-      .builder()
-      .withName("workflow") // give name
+    val builder = Portals
+      .builder("workflow") // give name
     
     val flow = builder
       // input is a stream of lines of text, we give it the name "text"

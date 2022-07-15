@@ -151,7 +151,7 @@ object RuntimeWorkflow {
 
     tasksInMiddle.foreach((name, behavior) => {
       val fullName = wf.name + "/" + name
-      println(s"task: ${fullName}")
+      // println(s"task: ${fullName}")
       val rtBehavior = RuntimeBehavior(fullName, rtwf, behavior)
       rtwf.tasks += (fullName -> rtBehavior)
       system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
@@ -159,7 +159,7 @@ object RuntimeWorkflow {
 
     wf.sources.foreach((name, behavior) => {
       val fullName = wf.name + "/" + name
-      println(s"source: ${fullName}")
+      // println(s"source: ${fullName}")
       val rtBehavior = RuntimeSource(fullName, rtwf, behavior)
       rtwf.sources += (fullName -> rtBehavior)
       rtwf.sourceBuffer += (fullName -> new LinkedList[WrappedEvents[_]]())
@@ -168,7 +168,7 @@ object RuntimeWorkflow {
 
     wf.sinks.foreach((name, behavior) => {
       val fullName = wf.name + "/" + name
-      println(s"sink: ${fullName}")
+      // println(s"sink: ${fullName}")
       val rtBehavior = RuntimeSink(fullName, rtwf, behavior)
       rtwf.sinks += (fullName -> rtBehavior)
       system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
@@ -181,14 +181,14 @@ object RuntimeWorkflow {
       .toMap
       .withDefaultValue(Set())
 
-    rtwf.logger.info(s"workflow ${rtwf.name} configuration:")
-    rtwf.logger.info(s"\tsources: ${rtwf.sources.keys.mkString(", ")}")
-    rtwf.logger.info(s"\ttasks: ${rtwf.tasks.keys.mkString(", ")}")
-    rtwf.logger.info(s"\tsinks: ${rtwf.sinks.keys.mkString(", ")}")
-    rtwf.logger.info(s"\tconnections: ")
+    rtwf.logger.debug(s"workflow ${rtwf.name} configuration:")
+    rtwf.logger.debug(s"\tsources: ${rtwf.sources.keys.mkString(", ")}")
+    rtwf.logger.debug(s"\ttasks: ${rtwf.tasks.keys.mkString(", ")}")
+    rtwf.logger.debug(s"\tsinks: ${rtwf.sinks.keys.mkString(", ")}")
+    rtwf.logger.debug(s"\tconnections: ")
     // TODO: print in topological order
     rtwf.connections.foreach((from, to) => {
-      rtwf.logger.info(s"\t\t${from} -> ${to.mkString(", ")}")
+      rtwf.logger.debug(s"\t\t${from} -> ${to.mkString(", ")}")
     })
 
     system.workflows += (rtwf.name -> rtwf)
@@ -277,7 +277,7 @@ class RuntimeSink[I, O](
 
     private[portals] def subscribe(subscriber: IStreamRef[O]): Unit =
       val runtimeSubscriber = subscriber.asInstanceOf[NamedIStreamRef[_]]
-      println(s"cross wf subscription from ${name} to ${runtimeSubscriber.name}")
+      // println(s"cross wf subscription from ${name} to ${runtimeSubscriber.name}")
       rtwf.connections = rtwf.connections.updatedWith(name) {
         case Some(toSet) => {
           Some(toSet + runtimeSubscriber.name)

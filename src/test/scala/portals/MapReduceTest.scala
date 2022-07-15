@@ -46,9 +46,8 @@ class WordCountTest:
       ((x, y) =>  (x._1, x._2 + y._2))
 
     // one naive implementation is to use local state for storing the counts
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
 
     val flow = builder
       .source[String]()

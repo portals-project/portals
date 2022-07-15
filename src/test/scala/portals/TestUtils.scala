@@ -9,27 +9,6 @@ import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable.Queue
 
   object TestUtils:
-
-    def forwardingWorkflow[T, U](name: String)(using system: SystemContext): (IStreamRef[T], OStreamRef[U], Workflow) =
-      val builder = Workflows
-        .builder()
-        .withName(name)
-      
-      val flow = builder
-        .source[T]()
-        .withName("source")
-        .sink()
-        .withName("sink")
-
-      val wf = builder.build()
-      
-      system.launch(wf)
-
-      val iref = system.registry[T](name + "/source").resolve() 
-      val oref = system.registry.orefs[U](name + "/sink").resolve() 
-      (iref, oref, wf)
-
-
     class TestPreSubmitCallback[T] extends PreSubmitCallback[T] {
       val lock = ReentrantLock()
       private val queue: Queue[T] = Queue[T]()

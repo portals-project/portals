@@ -36,9 +36,8 @@ class AtomTest:
   def basicAtomTest(): Unit = 
     import portals.DSL.*
 
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
 
     // simple workflow that forwards any input to the output
     val flow = builder
@@ -66,9 +65,9 @@ class AtomTest:
     val testData = "testData"
     iref ! testData
 
-    // let us wait for 1 second
-    Thread.sleep(1000)
-
+    // // try to step
+    // system.stepAll()
+    
     // nothing is happening yet, the atom is not complete (we need to fuse it first)
     assertTrue(testIRef.isEmpty())
 

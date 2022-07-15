@@ -11,9 +11,8 @@ class AtomAlignmentTest:
 
   @Test
   def testSingleSourceSingleSink(): Unit =
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
       
     val _ = builder
       .source[Int]()
@@ -52,9 +51,8 @@ class AtomAlignmentTest:
 
   @Test
   def testDoubleSourceDoubleSink(): Unit =
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
       
     val _ = builder
       .source[Int]()
@@ -107,9 +105,8 @@ class AtomAlignmentTest:
 
   @Test
   def testDoubleSourceSingleSink(): Unit =
-    val builder = Workflows
-      .builder()
-      .withName("wf2")
+    val builder = Portals
+      .builder("wf")
       
     val source1 = builder
       .source[Int]()
@@ -129,28 +126,22 @@ class AtomAlignmentTest:
     val system = Systems.syncLocal()
     system.launch(wf)
 
-    val iref1: IStreamRef[Int] = system.registry("wf2/input1").resolve()
-    val iref2: IStreamRef[Int] = system.registry("wf2/input2").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("wf2/output").resolve()
+    val iref1: IStreamRef[Int] = system.registry("wf/input1").resolve()
+    val iref2: IStreamRef[Int] = system.registry("wf/input2").resolve()
+    val oref: OStreamRef[Int] = system.registry.orefs("wf/output").resolve()
 
-    val fwd1 = TestUtils.forwardingWorkflow[Int, Int]("fwd1")(using system)
-    val fwd2 = TestUtils.forwardingWorkflow[Int, Int]("fwd2")(using system)
-
-    fwd1._2.subscribe(iref1)
-    fwd2._2.subscribe(iref2)
-    
     // create a test environment IRef
     val testIRef = TestUtils.TestPreSubmitCallback[Int]()
     oref.setPreSubmitCallback(testIRef)
 
     val n = 128
     (0 until n).foreach { i =>
-      fwd1._1.submit(i)
-      fwd2._1.submit(i)
+      iref1.submit(i)
+      iref2.submit(i)
     }
 
-    fwd1._1.fuse()
-    fwd2._1.fuse()
+    iref1.fuse()
+    iref2.fuse()
 
     system.stepAll()
     system.shutdown()
@@ -167,9 +158,8 @@ class AtomAlignmentTest:
 
   @Test
   def testDiamond(): Unit =
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
       
     val source = builder
       .source[Int]()
@@ -219,9 +209,8 @@ class AtomAlignmentTest:
 
   @Test
   def testDiamond2(): Unit =
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
       
     val source = builder
       .source[Int]()

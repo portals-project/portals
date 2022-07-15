@@ -18,9 +18,8 @@ class DiamondTaskGraphTest:
   @Test
   def testDiamondTaskGraph(): Unit = 
 
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
 
     val source = builder
       .source[Int]()

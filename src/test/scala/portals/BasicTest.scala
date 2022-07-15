@@ -11,9 +11,8 @@ class BasicTest:
   @Test
   def testDiamond(): Unit = 
 
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
 
     val source = builder
       .source[Int]()
@@ -51,10 +50,8 @@ class BasicTest:
       iref.fuse()
     }
 
-    Thread.sleep(500)
     system.stepAll()
     system.shutdown()
-    Thread.sleep(500)
 
     val expected = testDatas.flatMap { i => List(i, i) }
 
@@ -64,9 +61,8 @@ class BasicTest:
   @Test
   def testIdentity(): Unit = 
 
-    val builder = Workflows
-      .builder()
-      .withName("wf")
+    val builder = Portals
+      .builder("wf")
 
     val source = builder
       .source[Int]()
