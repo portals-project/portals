@@ -11,6 +11,7 @@ import scala.collection.AnyStepper.AnyStepperSpliterator
 @RunWith(classOf[JUnit4])
 class CycleTest:
   
+  @Ignore
   @Test
   def testExternalCycle(): Unit = 
     import portals.DSL.*
