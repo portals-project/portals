@@ -11,9 +11,8 @@ import scala.collection.AnyStepper.AnyStepperSpliterator
 @RunWith(classOf[JUnit4])
 class CycleTest:
   
-  @Ignore
   @Test
-  def testCycle(): Unit = 
+  def testExternalCycle(): Unit = 
     import portals.DSL.*
 
     val builder = Portals
@@ -56,7 +55,7 @@ class CycleTest:
     assertTrue(testIRef.contains(2))
     assertTrue(testIRef.contains(1))
     assertTrue(testIRef.contains(0))
-    // assertFalse(testIRef.contains(-1))
+    assertFalse(testIRef.contains(-1))
 
     iref.submit(8)
     iref.fuse()
