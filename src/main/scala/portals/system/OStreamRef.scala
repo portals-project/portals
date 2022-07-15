@@ -2,8 +2,11 @@ package portals
 
 /** OStreamRef */
 trait OStreamRef[T]:
-  private[portals] val opr: OpRef[_, T]
-
   private[portals] def subscribe(subscriber: IStreamRef[T]): Unit
   
-  // omitted: private[portals] def close(): Unit
+  private[portals] def setPreSubmitCallback(cb: PreSubmitCallback[T]): Unit = ???
+
+trait PreSubmitCallback[T]:
+  def preSubmit(event: T): Unit = ()
+  def preFuse(): Unit = ()
+  

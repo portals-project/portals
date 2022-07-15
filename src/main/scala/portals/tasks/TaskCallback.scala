@@ -1,7 +1,6 @@
 package portals
 
-trait OperatorCtx[T, U]:
+trait TaskCallback[T, U]:
   def submit(item: U): Unit
   def fuse(): Unit
-  def seal(): Unit
-end OperatorCtx
+end TaskCallback // trait

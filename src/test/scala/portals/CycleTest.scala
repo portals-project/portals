@@ -37,10 +37,10 @@ class CycleTest:
     oref.subscribe(iref)
 
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[Int]()
+    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
 
     // subscribe testIRef to workflow
-    oref.subscribe(testIRef)
+    oref.setPreSubmitCallback(testIRef)
 
     iref.submit(8)
     iref.fuse()

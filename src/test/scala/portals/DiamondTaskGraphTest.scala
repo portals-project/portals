@@ -49,12 +49,12 @@ class DiamondTaskGraphTest:
     system.launch(wf)
 
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[Int]()
-
+    
     val iref: IStreamRef[Int] = system.registry("wf/input").resolve()
     val oref: OStreamRef[Int] = system.registry.orefs("wf/output").resolve()
-
-    val _ = oref.subscribe(testIRef)
+    
+    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
+    oref.setPreSubmitCallback(testIRef)
     
     iref.submit(1)
     iref.fuse()

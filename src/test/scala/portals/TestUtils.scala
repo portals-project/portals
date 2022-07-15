@@ -30,11 +30,15 @@ import scala.collection.mutable.Queue
       (iref, oref, wf)
 
 
-    class TestIStreamRef[T] extends IStreamRef[T]:
+    class TestPreSubmitCallback[T] extends PreSubmitCallback[T] {
       val lock = ReentrantLock()
-
-      // private val queue = new ConcurrentLinkedQueue[T]()
       private val queue: Queue[T] = Queue[T]()
+
+      override def preSubmit(t: T): Unit = {
+        lock.lock()
+        queue.enqueue(t)
+        lock.unlock()
+      }
 
       def receiveAssert(event: T): this.type = 
         lock.lock()
@@ -72,46 +76,4 @@ import scala.collection.mutable.Queue
         val res = queue.contains(el)
         lock.unlock()
         res
-
-      private[portals] val opr: OpRef[T, Nothing] = new OpRef[T, Nothing]{
-        val mop = new MultiOperatorWithAtom[T, Nothing]{
-          private[portals] def freshSubscriber(): Subscriber[WrappedEvents[T]] = new Subscriber[WrappedEvents[T]]{
-            def onSubscribe(s: Subscription): Unit =
-              s.request(Long.MaxValue)
-            def onNext(t: WrappedEvents[T]): Unit = 
-              lock.lock()
-              val res = t match
-                case Event(e) => queue.enqueue(e)
-                case Atom() => () // probably do something
-              lock.unlock()
-            def onError(t: Throwable): Unit = ???
-            def onComplete(): Unit = ???
-          }
-          
-          // leave unimplemented, these are not used :)
-          def onNext(subscriptionId: Int, item: WrappedEvents[T]): Unit = ???
-          def onComplete(subscriptionId: Int): Unit = ???
-          def onError(subscriptionId: Int, error: Throwable): Unit = ???
-          def onSubscribe(subscriptionId: Int, subscription: Subscription): Unit = ???
-          def subscribe(msubscriber: MultiSubscriber[WrappedEvents[Nothing]]): Unit = ???
-          private[portals] def freshPublisher(): Publisher[WrappedEvents[Nothing]] = ???
-          def submit(item: WrappedEvents[Nothing]): Unit = ???
-          def seal(): Unit = ???
-        }
-
-        // leave unimplemented, these are not used :)
-        def submit(item: Nothing): Unit = ???
-        def seal(): Unit  = ???
-        def subscibe(mref: OpRef[Nothing, _]): Unit = ???
-        def fuse(): Unit = ???
-      }
-
-      // leave unimplemented, these are not used :)
-      private[portals] def submit(event: T): Unit = ???
-      private[portals] def fuse(): Unit = ???
-      private[portals] def seal(): Unit = ???
-
-    end TestIStreamRef // class
-
-
-
+    }

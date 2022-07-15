@@ -30,8 +30,8 @@ class AtomAlignmentTest:
     val oref: OStreamRef[Int] = system.registry.orefs("wf/output").resolve()
 
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[Int]()
-    oref.subscribe(testIRef)
+    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
+    oref.setPreSubmitCallback(testIRef)
 
     val n = 128
     (0 until n).foreach { i =>
@@ -80,10 +80,10 @@ class AtomAlignmentTest:
     val oref2: OStreamRef[Int] = system.registry.orefs("wf/output2").resolve()
 
     // create a test environment IRef
-    val testIRef1 = TestUtils.TestIStreamRef[Int]()
-    val testIRef2 = TestUtils.TestIStreamRef[Int]()
-    oref1.subscribe(testIRef1)
-    oref2.subscribe(testIRef2)
+    val testIRef1 = TestUtils.TestPreSubmitCallback[Int]()
+    val testIRef2 = TestUtils.TestPreSubmitCallback[Int]()
+    oref1.setPreSubmitCallback(testIRef1)
+    oref2.setPreSubmitCallback(testIRef2)
 
     val n = 128
     (0 until n).foreach { i =>
@@ -140,8 +140,8 @@ class AtomAlignmentTest:
     fwd2._2.subscribe(iref2)
     
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[Int]()
-    oref.subscribe(testIRef)
+    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
+    oref.setPreSubmitCallback(testIRef)
 
     val n = 128
     (0 until n).foreach { i =>
@@ -197,8 +197,8 @@ class AtomAlignmentTest:
     val oref: OStreamRef[Int] = system.registry.orefs("wf/sink").resolve()
 
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[Int]()
-    oref.subscribe(testIRef)
+    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
+    oref.setPreSubmitCallback(testIRef)
 
     val n = 256
     (0 until n).foreach { i =>
@@ -249,8 +249,8 @@ class AtomAlignmentTest:
     val oref: OStreamRef[Int] = system.registry.orefs("wf/sink").resolve()
 
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[Int]()
-    oref.subscribe(testIRef)
+    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
+    oref.setPreSubmitCallback(testIRef)
 
     val n = 256
     (0 until n).foreach { i =>

@@ -76,10 +76,10 @@ class MultiProducerTest:
     val oref2: OStreamRef[Int] = system.registry.orefs("wf/output2").resolve()
 
     // create a test environment IRef
-    val testIRef1 = TestUtils.TestIStreamRef[Int]()
-    val testIRef2 = TestUtils.TestIStreamRef[Int]()
-    oref1.subscribe(testIRef1)
-    oref2.subscribe(testIRef2)
+    val testIRef1 = TestUtils.TestPreSubmitCallback[Int]()
+    oref1.setPreSubmitCallback(testIRef1)
+    val testIRef2 = TestUtils.TestPreSubmitCallback[Int]()
+    oref2.setPreSubmitCallback(testIRef2)
 
     val t1 = (new Thread() {
       override def run(): Unit = for (i <- 1 to 1000) {

@@ -38,13 +38,13 @@ class BasicTest:
     val system = Systems.syncLocal()
     system.launch(wf)
 
-    val testIRef = TestUtils.TestIStreamRef[Int]()
-
+    
     val iref: IStreamRef[Int] = system.registry("wf/input").resolve()
     val oref: OStreamRef[Int] = system.registry.orefs("wf/output").resolve()
-
-    val _ = oref.subscribe(testIRef)
     
+    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
+    oref.setPreSubmitCallback(testIRef)
+
     val testDatas = (0 until 128).toList
     testDatas.foreach { i =>
       iref.submit(i)
@@ -80,12 +80,12 @@ class BasicTest:
     val system = Systems.syncLocal()
     system.launch(wf)
 
-    val testIRef = TestUtils.TestIStreamRef[Int]()
-
+    
     val iref: IStreamRef[Int] = system.registry("wf/source").resolve()
     val oref: OStreamRef[Int] = system.registry.orefs("wf/sink").resolve()
-
-    val _ = oref.subscribe(testIRef)
+    
+    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
+    oref.setPreSubmitCallback(testIRef)
     
     val testDatas = (0 until 128).toList
     testDatas.foreach { i =>

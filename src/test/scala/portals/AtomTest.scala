@@ -58,10 +58,10 @@ class AtomTest:
     val oref = system.registry.orefs[String]("wf/output").resolve()
     
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[String]()
+    val testIRef = TestUtils.TestPreSubmitCallback[String]()
     
     // subscribe the testIref to the workflow
-    oref.subscribe(testIRef)
+    oref.setPreSubmitCallback(testIRef)
 
     val testData = "testData"
     iref ! testData

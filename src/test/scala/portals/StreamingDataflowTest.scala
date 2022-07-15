@@ -77,15 +77,16 @@ class IncrementalWordCountTest:
 
     val testData = "the quick brown fox jumps over the lazy dog"
 
-    // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[(String, Int)]()
-
+    
     // to get a reference of the workflow we look in the registry
     // resolve takes a shared ref and creates an owned ref that points to the shared ref
     val iref = system.registry[String]("workflow/text").resolve()
     val oref = system.registry.orefs[(String, Int)]("workflow/counts").resolve()
-    oref.subscribe(testIRef)
-
+    
+    // create a test environment IRef
+    val testIRef = TestUtils.TestPreSubmitCallback[(String, Int)]()
+    oref.setPreSubmitCallback(testIRef)
+    
     iref.submit(testData)
     iref.fuse()
 

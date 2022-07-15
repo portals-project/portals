@@ -2,11 +2,7 @@ package portals
 
 /** IStreamRef */
 trait IStreamRef[T]:
-  private[portals] val opr: OpRef[T, _]
-
   private[portals] def submit(event: T): Unit
-
-  private[portals] def seal(): Unit // or close()
   
   private[portals] def fuse(): Unit // or tick()
 

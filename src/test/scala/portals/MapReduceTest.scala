@@ -99,9 +99,9 @@ class WordCountTest:
     val oref: OStreamRef[(String, Int)] = system.registry.orefs("wf/output").resolve()
     
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[(String, Int)]()
+    val testIRef = TestUtils.TestPreSubmitCallback[(String, Int)]()
+    oref.setPreSubmitCallback(testIRef)
 
-    val _ = oref.subscribe(testIRef)
 
     iref ! testData
     iref ! FUSE // fuse the atom to trigger the onAtomComplete handler

@@ -44,9 +44,9 @@ class HelloWorldTest:
     val oref: OStreamRef[String] = system.registry.orefs("wf/output").resolve()
 
     // create a test environment IRef
-    val testIRef = TestUtils.TestIStreamRef[String]()
+    val testIRef = TestUtils.TestPreSubmitCallback[String]()
+    oref.setPreSubmitCallback(testIRef)
 
-    val _ = oref.subscribe(testIRef)
 
     iref.submit(helloWorld)
     iref.fuse()
