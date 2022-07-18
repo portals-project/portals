@@ -22,7 +22,6 @@ import org.junit.Assert._
   * each step (map, shuffle, reduce).
   */
 
-
 /** Word Count
   *
   * The first test is the canonical word count test. We have an input of
@@ -42,20 +41,20 @@ class WordCountTest:
       line => line.split("\\s+").map(w => (w, 1))
 
     // our reduce function takes two mapped elements and adds the counts together
-    val reducer: ((String, Int), (String, Int)) => (String, Int) = 
-      ((x, y) =>  (x._1, x._2 + y._2))
+    val reducer: ((String, Int), (String, Int)) => (String, Int) =
+      ((x, y) => (x._1, x._2 + y._2))
 
     // one naive implementation is to use local state for storing the counts
-    val builder = Portals
-      .builder("wf")
+    val builder = Builders.application("application")
 
     val flow = builder
+      .workflows[String, (String, Int)]("wf")
       .source[String]()
       .withName("input")
       /* mapper */
       .flatMap(mapper)
       .withName("map")
-      .keyBy(_._1) // sets the contextual key to the word
+      .key(_._1.hashCode()) // sets the contextual key to the word
       // reducer applied to word and state in the VSM
       .processor[(String, Int)] { x =>
         x match
@@ -66,24 +65,24 @@ class WordCountTest:
                 // TODO: make it so we don't need to cast to Int
                 val newN = reducer((k, v), (k, n.asInstanceOf[Int]))._2
                 ctx.state.set(k, newN)
-              case None => 
+              case None =>
                 ctx.state.set(k, v)
       }
       // we also install an onAtomComplete handler that is triggered on every atom
       // it will emit the final state of the VSM
       .withOnAtomComplete { ctx ?=>
         // emit final state
-        ctx.state.iterator.foreach { case (k, v) => ctx.emit((k.asInstanceOf[String], v.asInstanceOf[Int])) } 
+        ctx.state.iterator.foreach { case (k, v) => ctx.emit((k.asInstanceOf[String], v.asInstanceOf[Int])) }
         ctx.state.clear()
         ctx.fuse() // emit next atom
-        TaskBehaviors.same
+        Tasks.same
       }
-      // .withLogger() // print the output to logger
+      // .logger()
       // check that the current output type is (String, Int), otherwise something went wrong
-      .checkExpectedType[(String, Int)]() 
+      .checkExpectedType[(String, Int), (String, Int)]()
       .sink()
       .withName("output")
-    
+
     val wf = builder
       .build()
 
@@ -94,17 +93,16 @@ class WordCountTest:
 
     // to get a reference of the workflow we look in the registry
     // resolve takes a shared ref and creates an owned ref that points to the shared ref
-    val iref: IStreamRef[String] = system.registry[String]("wf/input").resolve() 
+    val iref: IStreamRef[String] = system.registry[String]("wf/input").resolve()
     val oref: OStreamRef[(String, Int)] = system.registry.orefs("wf/output").resolve()
-    
+
     // create a test environment IRef
     val testIRef = TestUtils.TestPreSubmitCallback[(String, Int)]()
     oref.setPreSubmitCallback(testIRef)
 
-
     iref ! testData
     iref ! FUSE // fuse the atom to trigger the onAtomComplete handler
-    
+
     system.stepAll()
     system.shutdown()
 

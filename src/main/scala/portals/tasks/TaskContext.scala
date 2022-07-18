@@ -1,7 +1,11 @@
 package portals
 
 /** TaskContext */
-private[portals] trait TaskContext[I, O]:
+private[portals] trait TaskContext[T, U]
+    extends GenericTaskContext[T, U]
+    with EmittingTaskContext[T, U]
+    with StatefulTaskContext[T, U]
+    with LoggingTaskContext[T, U]:
   //////////////////////////////////////////////////////////////////////////////
   // Base Operations
   //////////////////////////////////////////////////////////////////////////////
@@ -10,10 +14,10 @@ private[portals] trait TaskContext[I, O]:
   def state: TaskState[Any, Any]
 
   /** Emit an event */
-  def emit(event: O): Unit
+  def emit(event: U): Unit
 
   /** finishes the ongoing atom and starts a new tick */
-  def fuse(): Unit // or tick()
+  private[portals] def fuse(): Unit // or tick()
 
   /** Logger */
   def log: Logger
@@ -31,5 +35,4 @@ private[portals] trait TaskContext[I, O]:
   private[portals] var system: SystemContext
 
 object TaskContext:
-  def apply[I, O](): TaskContextImpl[I, O] = new TaskContextImpl[I, O]
-  // def syncLocal[I, O](): LocalTaskContextImpl[I, O] = new LocalTaskContextImpl[I, O]
+  def apply[T, U](): TaskContextImpl[T, U] = new TaskContextImpl[T, U]

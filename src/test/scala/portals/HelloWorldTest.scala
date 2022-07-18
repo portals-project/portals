@@ -23,29 +23,29 @@ class HelloWorldTest:
   def testHelloWorld(): Unit =
     val helloWorld = "Hello, World!"
 
-    val builder = Portals
-      .builder("wf")
+    val builder = Builders
+      .application("app")
 
-    val flow = builder
-      .source[String]()
-      .withName("input")
+    val workflow = builder.workflows[String, String]("wf")
+
+    val flow = workflow
+      .source[String]("src")
       .map[String] { x => x }
-      // .withLogger() // print the output to logger
-      .sink()
-      .withName("output")
+      .withName("map")
+      // .logger()
+      .sink("sink")
 
-    val wf = builder.build()
+    val application = builder.build()
 
     val system = Systems.syncLocal()
-    system.launch(wf)
+    system.launch(application)
 
-    val iref: IStreamRef[String] = system.registry("wf/input").resolve()
-    val oref: OStreamRef[String] = system.registry.orefs("wf/output").resolve()
+    val iref: IStreamRef[String] = system.registry("wf/src").resolve()
+    val oref: OStreamRef[String] = system.registry.orefs("wf/sink").resolve()
 
     // create a test environment IRef
     val testIRef = TestUtils.TestPreSubmitCallback[String]()
     oref.setPreSubmitCallback(testIRef)
-
 
     iref.submit(helloWorld)
     iref.fuse()

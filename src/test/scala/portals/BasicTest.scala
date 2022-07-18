@@ -9,80 +9,29 @@ import org.junit.Assert._
 class BasicTest:
 
   @Test
-  def testDiamond(): Unit = 
+  def testIdentity(): Unit =
 
-    val builder = Portals
-      .builder("wf")
-
-    val source = builder
-      .source[Int]()
-      .withName("input")
-      .identity()
-
-    val fromSource1 = builder
-      .from(source)
-      .identity()
-
-    val fromSource2 = builder
-      .from(source)
-      .identity()
-
-    val merged = builder
-      .merge(fromSource1, fromSource2)
-      .sink[Int]()
-      .withName("output")
-
-    val wf = builder.build()
-
-    val system = Systems.syncLocal()
-    system.launch(wf)
-
-    
-    val iref: IStreamRef[Int] = system.registry("wf/input").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("wf/output").resolve()
-    
-    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
-    oref.setPreSubmitCallback(testIRef)
-
-    val testDatas = (0 until 128).toList
-    testDatas.foreach { i =>
-      iref.submit(i)
-      iref.fuse()
-    }
-
-    system.stepAll()
-    system.shutdown()
-
-    val expected = testDatas.flatMap { i => List(i, i) }
-
-    assertEquals(expected, testIRef.receiveAll())
-
-
-  @Test
-  def testIdentity(): Unit = 
-
-    val builder = Portals
-      .builder("wf")
+    val builder = Builders.application("application")
 
     val source = builder
+      .workflows[Int, Int]("wf")
       .source[Int]()
       .withName("source")
       .identity()
       .sink()
       .withName("sink")
 
-    val wf = builder.build()
+    val application = builder.build()
 
     val system = Systems.syncLocal()
-    system.launch(wf)
+    system.launch(application)
 
-    
     val iref: IStreamRef[Int] = system.registry("wf/source").resolve()
     val oref: OStreamRef[Int] = system.registry.orefs("wf/sink").resolve()
-    
+
     val testIRef = TestUtils.TestPreSubmitCallback[Int]()
     oref.setPreSubmitCallback(testIRef)
-    
+
     val testDatas = (0 until 128).toList
     testDatas.foreach { i =>
       iref.submit(i)

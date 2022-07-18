@@ -12,11 +12,14 @@ class SyncLocalSystem extends LocalSystemContext:
 
   var workflows = Map[String, RuntimeWorkflow]()
 
-  def launch(workflow: Workflow): Unit =
-    workflows += (workflow.name -> RuntimeWorkflow.fromStaticWorkflow(this, workflow))
+  def launch(application: Application): Unit =
+    // launch workflows
+    application.workflows.foreach(workflow =>
+      workflows += (workflow.name -> RuntimeWorkflow.fromStaticWorkflow(this, workflow))
+    )
 
   override def step(): Unit = workflows.filter(!_._2.isEmpty()).head._2.step()
-  override def step(wf: Workflow): Unit = workflows(wf.name).step()
+  override def step(wf: Workflow[_, _]): Unit = workflows(wf.name).step()
   override def stepAll(): Unit = isEmpty() match {
     case true =>
     case false => {
@@ -24,9 +27,9 @@ class SyncLocalSystem extends LocalSystemContext:
       stepAll()
     }
   }
-  override def stepAll(wf: Workflow): Unit = workflows(wf.name).stepAll()
+  override def stepAll(wf: Workflow[_, _]): Unit = workflows(wf.name).stepAll()
   override def isEmpty(): Boolean = workflows.forall(_._2.isEmpty())
-  override def isEmpty(wf: Workflow): Boolean = workflows(wf.name).isEmpty()
+  override def isEmpty(wf: Workflow[_, _]): Boolean = workflows(wf.name).isEmpty()
 
   def shutdown(): Unit = ()
 
@@ -46,8 +49,8 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
 
   var tasks = Map[String, RuntimeBehavior[_, _]]()
   var sources = Map[String, RuntimeBehavior[_, _]]()
-  var sourceEventBuffer = Map[String, ju.List[WrappedEvents[_]]]()
-  var sourceAtomBuffer = Map[String, LinkedList[List[WrappedEvents[_]]]]()
+  var sourceEventBuffer = Map[String, ju.List[WrappedEvent[_]]]()
+  var sourceAtomBuffer = Map[String, LinkedList[List[WrappedEvent[_]]]]()
   var sinks = Map[String, RuntimeBehavior[_, _]]()
   var connections = Map[String, Set[String]]()
 
@@ -65,7 +68,7 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
     _nextId = _nextId + 1
     _nextId
 
-  var executionQueue = LinkedList[(RuntimeBehavior[_, _], WrappedEvents[_])]()
+  var executionQueue = LinkedList[(RuntimeBehavior[_, _], WrappedEvent[_])]()
 
   def microStep(): Unit = {
     logger.debug(s"== mstep ${microStepId}")
@@ -107,7 +110,7 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
 
   def isEmpty(): Boolean = sourceAtomBuffer.filter(!_._2.isEmpty).size == 0
 
-  def stashWrappedEventToSource(name: String, event: WrappedEvents[_]): Unit = {
+  def stashWrappedEventToSource(name: String, event: WrappedEvent[_]): Unit = {
     // logger.debug(s"add event[${event}] to ${name}")
     sourceEventBuffer(name).add(event)
     event match {
@@ -126,7 +129,7 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
     dispatchEvent(behavior, Event(event))
   def onRuntimeBehaviorAtomSubmit(behavior: RuntimeBehavior[_, _]): Unit =
     dispatchEvent(behavior, Atom())
-  def dispatchEvent(behavior: RuntimeBehavior[_, _], event: WrappedEvents[_]): Unit = {
+  def dispatchEvent(behavior: RuntimeBehavior[_, _], event: WrappedEvent[_]): Unit = {
     connections(behavior.name).foreach(toName => {
       // logger.debug(s"dispatch event[${event}] to ${toName}")
       val dstwfId = extractWfId(toName)
@@ -146,7 +149,7 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
 
 // build runtime workflow from static workflow
 object RuntimeWorkflow {
-  def fromStaticWorkflow(system: SyncLocalSystem, wf: Workflow): RuntimeWorkflow = {
+  def fromStaticWorkflow(system: SyncLocalSystem, wf: Workflow[_, _]): RuntimeWorkflow = {
     val rtwf = RuntimeWorkflow(wf.name, system)
 
     // tasks in static workflow conatins sources and sinks, remove it
@@ -168,8 +171,8 @@ object RuntimeWorkflow {
       // println(s"source: ${fullName}")
       val rtBehavior = RuntimeSource(fullName, rtwf, behavior)
       rtwf.sources += (fullName -> rtBehavior)
-      rtwf.sourceAtomBuffer += (fullName -> new LinkedList[List[WrappedEvents[_]]]())
-      rtwf.sourceEventBuffer += (fullName -> new LinkedList[WrappedEvents[_]]())
+      rtwf.sourceAtomBuffer += (fullName -> new LinkedList[List[WrappedEvent[_]]]())
+      rtwf.sourceEventBuffer += (fullName -> new LinkedList[WrappedEvent[_]]())
       system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
     })
 
@@ -216,7 +219,7 @@ object RuntimeWorkflow {
 class RuntimeBehavior[I, O](
     val name: String,
     val rtwf: RuntimeWorkflow,
-    val behavior: TaskBehavior[I, O]
+    val behavior: Task[I, O]
 ):
   val ctx = TaskContext[I, O]()
 
@@ -226,7 +229,7 @@ class RuntimeBehavior[I, O](
     def fuse(): Unit = rtwf.onRuntimeBehaviorAtomSubmit(self)
   }
 
-  def step[T](item: WrappedEvents[T]): Unit =
+  def step[T](item: WrappedEvent[T]): Unit =
     item match
       case Event(item) => {
         behavior.onNext(ctx)(item.asInstanceOf[I]) // TODO: better type cast
@@ -247,7 +250,7 @@ class RuntimeBehavior[I, O](
 class RuntimeSource[I, O](
     override val name: String,
     override val rtwf: RuntimeWorkflow,
-    override val behavior: TaskBehavior[I, O]
+    override val behavior: Task[I, O]
 ) extends RuntimeBehavior[I, O](name, rtwf, behavior) {
   override def iref(): IStreamRef[I] = NamedIStreamRef(name, rtwf)
 }
@@ -264,7 +267,7 @@ class NamedIStreamRef[I](val name: String, val rtwf: RuntimeWorkflow) extends IS
 class RuntimeSink[I, O](
     override val name: String,
     override val rtwf: RuntimeWorkflow,
-    override val behavior: TaskBehavior[I, O]
+    override val behavior: Task[I, O]
 ) extends RuntimeBehavior[I, O](name, rtwf, behavior) {
   var preSubmitCallback = new PreSubmitCallback[O] {}
 

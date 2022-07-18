@@ -16,3 +16,7 @@ jobs:
         java-version: 17
     - name: Build and Test
       run: sbt -v test
+    - name: Scalafmt scala
+      run: sbt scalafmtCheckAll
+    - name: Scalafmt sbt
+      run: sbt scalafmtSbtCheck

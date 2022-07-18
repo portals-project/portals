@@ -16,45 +16,42 @@ import org.junit.Assert._
 class DiamondTaskGraphTest:
 
   @Test
-  def testDiamondTaskGraph(): Unit = 
+  def testDiamondTaskGraph(): Unit =
 
-    val builder = Portals
-      .builder("wf")
+    val builder = Builders.application("application")
 
     val source = builder
+      .workflows[Int, Int]("wf")
       .source[Int]()
       .withName("input")
 
-    val fromSource1 = builder
-      .from(source)
+    val fromSource1 = source
       .map(_ + 1)
 
-    val fromSource2 = builder
-      .from(source)
+    val fromSource2 = source
       .map(_ + 2)
 
-    val merged = builder
-      .merge(fromSource1, fromSource2)
+    val merged = fromSource1
+      .union(fromSource2)
       .withName("merged")
 
-    val sink = builder
-      .from(merged)
+    val sink = merged
       .sink[Int]()
       .withName("output")
 
-    val wf = builder.build()
+    val application = builder.build()
 
     val system = Systems.syncLocal()
-    system.launch(wf)
+    system.launch(application)
 
     // create a test environment IRef
-    
+
     val iref: IStreamRef[Int] = system.registry("wf/input").resolve()
     val oref: OStreamRef[Int] = system.registry.orefs("wf/output").resolve()
-    
+
     val testIRef = TestUtils.TestPreSubmitCallback[Int]()
     oref.setPreSubmitCallback(testIRef)
-    
+
     iref.submit(1)
     iref.fuse()
 

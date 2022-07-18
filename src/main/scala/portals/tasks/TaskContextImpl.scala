@@ -5,7 +5,7 @@ private[portals] class TaskContextImpl[I, O] extends TaskContext[I, O]:
 
   override def emit(event: O): Unit = cb.submit(event)
 
-  override def fuse(): Unit = cb.fuse()
+  override private[portals] def fuse(): Unit = cb.fuse()
 
   private lazy val _log = Logger(this.getClass().toString())
   override def log: Logger = _log

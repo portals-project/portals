@@ -10,27 +10,28 @@ import scala.collection.AnyStepper.AnyStepperSpliterator
 // Verify cycles between workflows behave as expected.
 @RunWith(classOf[JUnit4])
 class CycleTest:
-  
+
   @Test
-  def testExternalCycle(): Unit = 
+  def testExternalCycle(): Unit =
     import portals.DSL.*
 
-    val builder = Portals
-      .builder("wf")
+    val builder = Builders.application("application")
 
     val src = builder
+      .workflows[Int, Int]("wf")
       .source[Int]()
+      // .checkExpectedType[Int, Int]()
       .withName("src")
-      .flatMap[Int]{ ctx ?=> x =>
-        if (x > 0) List(x-1)
+      .flatMap[Int] { ctx ?=> x =>
+        if (x > 0) List(x - 1)
         else List.empty
       }
       .sink()
       .withName("loop")
 
-    val wf = builder.build()
+    val application = builder.build()
     val system = Systems.syncLocal()
-    system.launch(wf)
+    system.launch(application)
 
     val iref: IStreamRef[Int] = system.registry("wf/src").resolve()
     val oref: OStreamRef[Int] = system.registry.orefs("wf/loop").resolve()
@@ -44,8 +45,8 @@ class CycleTest:
 
     iref.submit(8)
     iref.fuse()
-    
-    system.stepAll(wf)
+
+    system.stepAll()
 
     assertTrue(testIRef.contains(7))
     assertTrue(testIRef.contains(6))
@@ -59,7 +60,7 @@ class CycleTest:
 
     iref.submit(8)
     iref.fuse()
-    system.stepAll(wf)
+    system.stepAll()
     system.shutdown()
 
     assertTrue(testIRef.contains(7))
@@ -71,4 +72,3 @@ class CycleTest:
     assertTrue(testIRef.contains(1))
     assertTrue(testIRef.contains(0))
     assertFalse(testIRef.contains(-1))
-    
