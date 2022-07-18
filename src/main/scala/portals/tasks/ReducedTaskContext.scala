@@ -5,6 +5,7 @@ package portals
  *  To be used in Map, FlatMap, etc., where the task is not supposed to emit.
  */
 sealed trait ReducedTaskContext[I, O] {
+
   /** State of the task */
   def state: TaskState[Any, Any]
 

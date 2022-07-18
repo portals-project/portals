@@ -25,6 +25,7 @@ Contributions are welcome! To contribute please follow these guideines.
   1. Choose an issue (or create an issue).
   1. Fork the repo.
   1. Implement and test your implementation, add documentation.
+  1. Format the code by running `sbt scalafmt`.
   1. [Group/squash commit](https://github.com/akka/akka/blob/main/CONTRIBUTING.md#creating-commits-and-writing-commit-messages).
   1. Submit a pull-request (include a reference to the issue).
   1. After review and approval (LGTM) the pull-request will be merged. 

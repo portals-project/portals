@@ -76,7 +76,6 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
     }
     microStepId += 1
   }
-  
 
   def step(): Unit = {
     isEmpty() match
@@ -88,10 +87,12 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
         val nonEmptySourceBuffers = sourceAtomBuffer.filter(!_._2.isEmpty)
         val selectedSource = nonEmptySourceBuffers.map(_._1).head
         logger.debug(s"consume one atom(event seq) from ${selectedSource}")
-        nonEmptySourceBuffers(selectedSource).poll().foreach(event => {
-          executionQueue.add((sources(selectedSource), event))
-          microStep()
-        })
+        nonEmptySourceBuffers(selectedSource)
+          .poll()
+          .foreach(event => {
+            executionQueue.add((sources(selectedSource), event))
+            microStep()
+          })
         logger.debug(s"step ${stepId} finishes")
       }
   }
@@ -230,7 +231,7 @@ class RuntimeBehavior[I, O](
       case Event(item) => {
         behavior.onNext(ctx)(item.asInstanceOf[I]) // TODO: better type cast
       }
-      case Atom()      => behavior.onAtomComplete(ctx)
+      case Atom() => behavior.onAtomComplete(ctx)
 
   // NOTE: only allow source to use iref
   def iref(): IStreamRef[I] = new IStreamRef[I] {
@@ -253,11 +254,11 @@ class RuntimeSource[I, O](
 
 class NamedIStreamRef[I](val name: String, val rtwf: RuntimeWorkflow) extends IStreamRef[I] {
   private[portals] def submit(event: I): Unit = {
-      rtwf.stashWrappedEventToSource(name, Event(event))
-    }
-    private[portals] def fuse(): Unit = {
-      rtwf.stashWrappedEventToSource(name, Atom())
-    }
+    rtwf.stashWrappedEventToSource(name, Event(event))
+  }
+  private[portals] def fuse(): Unit = {
+    rtwf.stashWrappedEventToSource(name, Atom())
+  }
 }
 
 class RuntimeSink[I, O](
@@ -265,7 +266,7 @@ class RuntimeSink[I, O](
     override val rtwf: RuntimeWorkflow,
     override val behavior: TaskBehavior[I, O]
 ) extends RuntimeBehavior[I, O](name, rtwf, behavior) {
-  var preSubmitCallback = new PreSubmitCallback[O]{}
+  var preSubmitCallback = new PreSubmitCallback[O] {}
 
   ctx.cb = new TaskCallback[I, O] {
     def submit(event: O): Unit = {
@@ -288,8 +289,8 @@ class RuntimeSink[I, O](
         case Some(toSet) => {
           Some(toSet + runtimeSubscriber.name)
         }
-        case None    => {
-          Some(Set(runtimeSubscriber.name)) 
+        case None => {
+          Some(Set(runtimeSubscriber.name))
         }
       }
   }

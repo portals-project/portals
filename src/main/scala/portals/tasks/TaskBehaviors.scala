@@ -4,7 +4,7 @@ object TaskBehaviors:
   //////////////////////////////////////////////////////////////////////////////
   // TaskBehavior Factories
   //////////////////////////////////////////////////////////////////////////////
-  
+
   /** behavior factory for handling incoming event and context with a virtual state machine */
   def vsm[I, O](
       onNext: TaskContext[I, O] ?=> I => TaskBehavior[I, O]
@@ -20,19 +20,21 @@ object TaskBehaviors:
   /** behavior factory for map */
   def map[I, O](f: ReducedTaskContext[I, O] ?=> I => O): TaskBehavior[I, O] =
     // todo: reduce context initialization to once per task with init behavior
-    ProcessBehavior[I, O](tctx => x => 
-      val ctx = ReducedTaskContext.fromTaskContext(tctx)  
-      tctx.emit(
-        f(using ctx)(x)
-      )
+    ProcessBehavior[I, O](tctx =>
+      x =>
+        val ctx = ReducedTaskContext.fromTaskContext(tctx)
+        tctx.emit(
+          f(using ctx)(x)
+        )
     )
 
   /** behavior factory for flatMap */
   def flatMap[I, O](f: ReducedTaskContext[I, O] ?=> I => TraversableOnce[O]): TaskBehavior[I, O] =
     // todo: reduce context initialization to once per task with init behavior
-    ProcessBehavior[I, O](tctx => x => 
-      val ctx = ReducedTaskContext.fromTaskContext(tctx)  
-      f(using ctx)(x).foreach(tctx.emit(_))
+    ProcessBehavior[I, O](tctx =>
+      x =>
+        val ctx = ReducedTaskContext.fromTaskContext(tctx)
+        f(using ctx)(x).foreach(tctx.emit(_))
     )
 
   /** behavior factory for emitting the same values as ingested */
@@ -44,7 +46,6 @@ object TaskBehaviors:
     // same behavior is compatible with previous behavior
     SameBehavior.asInstanceOf[TaskBehavior[T, S]]
 
-
   //////////////////////////////////////////////////////////////////////////////
   // TaskBehavior Implementations
   //////////////////////////////////////////////////////////////////////////////
@@ -52,7 +53,7 @@ object TaskBehaviors:
   private[portals] case class VSMBehavior[I, O](
       _onNext: TaskContext[I, O] => I => TaskBehavior[I, O]
   ) extends BaseTaskBehavior[I, O]:
-    override def onNext(tctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = 
+    override def onNext(tctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] =
       _onNext(tctx)(t)
 
   private[portals] case class ProcessBehavior[I, O](
@@ -70,7 +71,6 @@ object TaskBehaviors:
   private[portals] case object SameBehavior extends TaskBehaviorUnimpl[Nothing, Nothing]
   // this is fine, the methods are ignored as we reuse the previous behavior
 
-
   //////////////////////////////////////////////////////////////////////////////
   // Base TaskBehaviors
   //////////////////////////////////////////////////////////////////////////////
@@ -79,9 +79,9 @@ object TaskBehaviors:
     override def onNext(ctx: TaskContext[I, O])(t: I): TaskBehavior[I, O] = ???
 
     override def onError(ctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] = ???
-    
+
     override def onComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = ???
-    
+
     override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = ???
 
   private[portals] class BaseTaskBehavior[I, O] extends TaskBehavior[I, O]:
@@ -90,10 +90,9 @@ object TaskBehaviors:
     // TODO: implement onError and onComplete to have base behavior, forwarding
     // the completion, e.g.
     override def onError(ctx: TaskContext[I, O])(t: Throwable): TaskBehavior[I, O] = ???
-    
+
     override def onComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = ???
-    
-    override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] = 
+
+    override def onAtomComplete(ctx: TaskContext[I, O]): TaskBehavior[I, O] =
       ctx.fuse()
       TaskBehaviors.same
-

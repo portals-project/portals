@@ -2,10 +2,9 @@ package portals
 
 import java.util.concurrent.locks.ReentrantLock
 
-class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, O] :
+class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, O]:
   private def addTask(name: String, behavior: TaskBehavior[_, _]): AtomicStream[I, O] =
-    if latest.isDefined then
-      workflow.connections = workflow.connections :+ (latest.get, name)
+    if latest.isDefined then workflow.connections = workflow.connections :+ (latest.get, name)
     workflow.tasks = workflow.tasks + (name -> behavior)
     val newStream = new AtomicStreamImpl[I, O](workflow)
     newStream.latest = Some(name)
@@ -58,10 +57,11 @@ class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, 
     addTask(behavior).asInstanceOf[AtomicStream[I, O]]
 
   def keyBy[T](f: O => T): AtomicStream[I, O] =
-    processor[O] { ctx ?=> event => {
-      ctx.key = Key(f(event).hashCode());
-      ctx.emit(event)
-    }
+    processor[O] { ctx ?=> event =>
+      {
+        ctx.key = Key(f(event).hashCode());
+        ctx.emit(event)
+      }
     }
 
   def map[T](f: ReducedTaskContext[O, T] ?=> O => T): AtomicStream[I, T] =
@@ -101,7 +101,7 @@ class AtomicStreamImpl[I, O](workflow: WorkflowBuilder) extends AtomicStream[I, 
       (from, to) match
         case (l, r) if r == oldName => (l, name)
         case (l, r) if l == oldName => (name, r)
-        case (l, r) => (l, r)
+        case (l, r)                 => (l, r)
     }
     this.asInstanceOf[AtomicStream[I, O]]
 
