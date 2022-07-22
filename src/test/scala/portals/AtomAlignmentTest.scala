@@ -11,7 +11,7 @@ class AtomAlignmentTest:
 
   @Test
   def testSingleSourceSingleSink(): Unit =
-    val builder = Builders.application("application")
+    val builder = ApplicationBuilders.application("application")
 
     val _ = builder
       .workflows[Int, Int]("wf")
@@ -25,8 +25,8 @@ class AtomAlignmentTest:
     val system = Systems.syncLocal()
     system.launch(wf)
 
-    val iref: IStreamRef[Int] = system.registry("wf/input").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("wf/output").resolve()
+    val iref: IStreamRef[Int] = system.registry("/application/wf/input").resolve()
+    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/output").resolve()
 
     // create a test environment IRef
     val testIRef = TestUtils.TestPreSubmitCallback[Int]()
@@ -156,7 +156,7 @@ class AtomAlignmentTest:
 
   @Test
   def testDiamond(): Unit =
-    val builder = Builders.application("application")
+    val builder = ApplicationBuilders.application("application")
 
     val source = builder
       .workflows[Int, Int]("wf")
@@ -179,8 +179,8 @@ class AtomAlignmentTest:
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("wf/source").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("wf/sink").resolve()
+    val iref: IStreamRef[Int] = system.registry("/application/wf/source").resolve()
+    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/sink").resolve()
 
     // create a test environment IRef
     val testIRef = TestUtils.TestPreSubmitCallback[Int]()
@@ -204,7 +204,7 @@ class AtomAlignmentTest:
 
   @Test
   def testDiamond2(): Unit =
-    val builder = Builders.application("application")
+    val builder = ApplicationBuilders.application("application")
 
     val source = builder
       .workflows[Int, Int]("wf")
@@ -227,8 +227,8 @@ class AtomAlignmentTest:
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("wf/source").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("wf/sink").resolve()
+    val iref: IStreamRef[Int] = system.registry("/application/wf/source").resolve()
+    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/sink").resolve()
 
     // create a test environment IRef
     val testIRef = TestUtils.TestPreSubmitCallback[Int]()

@@ -11,7 +11,7 @@ class BasicTest:
   @Test
   def testIdentity(): Unit =
 
-    val builder = Builders.application("application")
+    val builder = ApplicationBuilders.application("application")
 
     val source = builder
       .workflows[Int, Int]("wf")
@@ -26,8 +26,8 @@ class BasicTest:
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("wf/source").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("wf/sink").resolve()
+    val iref: IStreamRef[Int] = system.registry("/application/wf/source").resolve()
+    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/sink").resolve()
 
     val testIRef = TestUtils.TestPreSubmitCallback[Int]()
     oref.setPreSubmitCallback(testIRef)

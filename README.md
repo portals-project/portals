@@ -23,12 +23,13 @@ Contributions are welcome! To contribute please follow these guideines.
   * Other projects: [Reactors](http://reactors.io/), [Kalix (Akka Serverless)](https://docs.kalix.io/java/).
 * To contribute we follow the [Akka guidelines](https://github.com/akka/akka/blob/main/CONTRIBUTING.md):
   1. Choose an issue (or create an issue).
-  1. Fork the repo.
-  1. Implement and test your implementation, add documentation.
-  1. Format the code by running `sbt scalafmt`.
-  1. [Group/squash commit](https://github.com/akka/akka/blob/main/CONTRIBUTING.md#creating-commits-and-writing-commit-messages).
-  1. Submit a pull-request (include a reference to the issue).
-  1. After review and approval (LGTM) the pull-request will be merged. 
+  2. Fork the repo.
+  3. Implement and test your implementation, add documentation.
+  4. Format the code by running `sbt scalafmt` (and `sbt scalafmtAll` to format all files, incl. test and sbt `sbt scalafmtSbt`).
+  5. Check that the tests pass `sbt test`, and that the formatting is correct `sbt scalafmtCheckAll` and `sbt scalafmtSbtCheck`.
+  6. [Group/squash commit](https://github.com/akka/akka/blob/main/CONTRIBUTING.md#creating-commits-and-writing-commit-messages).
+  7. Submit a pull-request (include a reference to the issue).
+  8. After review and approval (LGTM) the pull-request will be merged. 
 
 # Portals Legacy
 To find the old repo look through the branches for [!old-dump](https://github.com/jonasspenger/portals/tree/!old-dump), and for [legacy](https://github.com/jonasspenger/portals/tree/legacy).

@@ -15,7 +15,7 @@ class CycleTest:
   def testExternalCycle(): Unit =
     import portals.DSL.*
 
-    val builder = Builders.application("application")
+    val builder = ApplicationBuilders.application("application")
 
     val src = builder
       .workflows[Int, Int]("wf")
@@ -33,8 +33,8 @@ class CycleTest:
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("wf/src").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("wf/loop").resolve()
+    val iref: IStreamRef[Int] = system.registry("/application/wf/src").resolve()
+    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/loop").resolve()
     oref.subscribe(iref)
 
     // create a test environment IRef

@@ -8,20 +8,18 @@ import org.junit.Assert._
 /** Streaming Dataflow tests
   *
   * These tests show how we can model Streaming Dataflow in our model.
-  * 
-  * Streaming Dataflow is straight-forward to implement in our model, Pods 
-  * Workflows are a hybrid of dataflow and actors. We build a streaming 
-  * pipeline from sources, apply transformations on the data through the 
-  * processor abstraction, and end in a sink. The processor abstraction can 
-  * then be used to implement all higher-level operators that are common in 
-  * streaming dataflow, such as Map, FlatMap, Windowing, etc.
+  *
+  * Streaming Dataflow is straight-forward to implement in our model, Pods Workflows are a hybrid of dataflow and
+  * actors. We build a streaming pipeline from sources, apply transformations on the data through the processor
+  * abstraction, and end in a sink. The processor abstraction can then be used to implement all higher-level operators
+  * that are common in streaming dataflow, such as Map, FlatMap, Windowing, etc.
   */
 
 /** Incremental Word Count
-  * 
-  * The incremental word count test computes the wordcount of a stream of 
-  * lines of text. For each new ingested word, the updated wordcount is emitted.
-*/
+  *
+  * The incremental word count test computes the wordcount of a stream of lines of text. For each new ingested word, the
+  * updated wordcount is emitted.
+  */
 @RunWith(classOf[JUnit4])
 class IncrementalWordCountTest:
 
@@ -38,7 +36,7 @@ class IncrementalWordCountTest:
       ((x, y) => (x._1, x._2 + y._2))
 
     // one naive implementation is to use local state for storing the counts
-    val builder = Builders.application("application")
+    val builder = ApplicationBuilders.application("application")
 
     val flow = builder
       .workflows[String, (String, Int)]("workflow")
@@ -78,8 +76,8 @@ class IncrementalWordCountTest:
 
     // to get a reference of the workflow we look in the registry
     // resolve takes a shared ref and creates an owned ref that points to the shared ref
-    val iref = system.registry[String]("workflow/text").resolve()
-    val oref = system.registry.orefs[(String, Int)]("workflow/counts").resolve()
+    val iref = system.registry[String]("/application/workflow/text").resolve()
+    val oref = system.registry.orefs[(String, Int)]("/application/workflow/counts").resolve()
 
     // create a test environment IRef
     val testIRef = TestUtils.TestPreSubmitCallback[(String, Int)]()

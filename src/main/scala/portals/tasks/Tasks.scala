@@ -54,6 +54,20 @@ object Tasks:
     // same behavior is compatible with previous behavior
     Same.asInstanceOf[Task[T, S]]
 
+  // TODO: currently the portals need to have matching Req and Rep type, this should be fixed and instead we should
+  // allow differing types for Req and Rep for the portals.
+  def portals[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](portals: Portals*) =
+    new PortalsTasks[Req, Rep, Portals]()
+
+  class PortalsTasks[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])]():
+    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep, Portals] ?=> T => Task[T, U]): Task[T, U] =
+      same // TODO: implement
+
+    def replier[T, U](f1: TaskContext[T, U] ?=> T => Task[T, U])(
+        f2: ReplierTaskContext[T, U, Req, Rep, Portals] ?=> Req => Task[T, U]
+    ): Task[T, U] =
+      same // TODO: implement
+
   //////////////////////////////////////////////////////////////////////////////
   // Task Implementations
   //////////////////////////////////////////////////////////////////////////////

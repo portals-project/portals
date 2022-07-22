@@ -1,11 +1,22 @@
 package portals
 
+import scala.annotation.targetName
+
 trait FlowBuilder[T, U]:
+  //////////////////////////////////////////////////////////////////////////////
+  // Freezing
+  //////////////////////////////////////////////////////////////////////////////
+
+  def freeze(): Workflow[T, U]
+
   //////////////////////////////////////////////////////////////////////////////
   // Sources and sinks
   //////////////////////////////////////////////////////////////////////////////
 
   private[portals] def source[TT >: T <: T](name: String = null): FlowBuilder[T, U]
+
+  @targetName("sourceFromRef")
+  private[portals] def source[TT >: T <: T](ref: AtomicStreamRef[T]): FlowBuilder[T, U]
 
   def sink[TT >: T | U <: T & U](name: String = null): FlowBuilder[T, U]
 
@@ -39,10 +50,9 @@ trait FlowBuilder[T, U]:
   def logger(prefix: String = ""): FlowBuilder[T, U]
 
   /** Check the current type against the provided expected type.
-   *
-   * Compares FlowBuilder[T, U] with FlowBuilder[TT, UU], will succeed if
-   * T <: TT <: T and U <: UU <: U.
-   */
+    *
+    * Compares FlowBuilder[T, U] with FlowBuilder[TT, UU], will succeed if T <: TT <: T and U <: UU <: U.
+    */
   def checkExpectedType[TT >: T <: T, UU >: U <: U](): FlowBuilder[T, U]
 
   //////////////////////////////////////////////////////////////////////////////

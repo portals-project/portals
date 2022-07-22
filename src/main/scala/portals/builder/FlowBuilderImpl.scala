@@ -1,6 +1,7 @@
 package portals
 
 import TaskExtensions.*
+import scala.annotation.targetName
 
 class FlowBuilderImpl[T, U](using fbctx: FlowBuilderContext[T, U]) extends FlowBuilder[T, U]:
   given WorkflowBuilderContext[T, U] = fbctx.wbctx // used for creating new FlowBuilder instances
@@ -94,9 +95,19 @@ class FlowBuilderImpl[T, U](using fbctx: FlowBuilderContext[T, U]) extends FlowB
   //////////////////////////////////////////////////////////////////////////////
   // Builder methods
   //////////////////////////////////////////////////////////////////////////////
+
+  override def freeze(): Workflow[T, U] =
+    fbctx.wbctx.freeze()
+
   override private[portals] def source[TT >: T <: T](name: String = null): FlowBuilder[T, U] =
     val behavior = Tasks.identity[T]
     addSource(name, behavior).asInstanceOf[FlowBuilder[T, U]]
+
+  @targetName("sourceFromRef")
+  private[portals] def source[TT >: T <: T](ref: AtomicStreamRef[T]): FlowBuilder[T, U] =
+    val behavior = Tasks.identity[T]
+    fbctx.wbctx.consumes = ref
+    addSource(null, behavior).asInstanceOf[FlowBuilder[T, U]]
 
   override def sink[TT >: T | U <: T & U](name: String = null): FlowBuilder[T, U] =
     val behavior = Tasks.identity[U]

@@ -22,6 +22,7 @@ lazy val root = project
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
       "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
-      "ch.qos.logback" % "logback-classic" % "1.2.11"
+      "ch.qos.logback" % "logback-classic" % "1.2.11",
+      "com.lihaoyi" %% "pprint" % "0.7.0",
     )
   )

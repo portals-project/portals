@@ -6,32 +6,37 @@ import java.util.LinkedList
 import scala.util.control.Breaks._
 import collection.JavaConverters._
 import java.{util => ju}
+import portals.Generator.GeneratorEvent
 
 class SyncLocalSystem extends LocalSystemContext:
   val registry: GlobalRegistry = GlobalRegistry()
 
-  var workflows = Map[String, RuntimeWorkflow]()
+  var runtimeWorkflows = Map[String, RuntimeWorkflow]()
 
   def launch(application: Application): Unit =
     // launch workflows
     application.workflows.foreach(workflow =>
-      workflows += (workflow.name -> RuntimeWorkflow.fromStaticWorkflow(this, workflow))
+      runtimeWorkflows += (wfId(application, workflow) -> RuntimeWorkflow
+        .fromStaticWorkflow(this, application, workflow))
     )
 
-  override def step(): Unit = workflows.filter(!_._2.isEmpty()).head._2.step()
-  override def step(wf: Workflow[_, _]): Unit = workflows(wf.name).step()
+  override def step(): Unit = runtimeWorkflows.filter(!_._2.isEmpty()).head._2.step()
+  override def step(wf: Workflow[_, _]): Unit = runtimeWorkflows(wf.name).step()
   override def stepAll(): Unit = isEmpty() match {
     case true =>
     case false => {
-      workflows.filter(!_._2.isEmpty()).head._2.stepAll()
+      runtimeWorkflows.filter(!_._2.isEmpty()).head._2.stepAll()
       stepAll()
     }
   }
-  override def stepAll(wf: Workflow[_, _]): Unit = workflows(wf.name).stepAll()
-  override def isEmpty(): Boolean = workflows.forall(_._2.isEmpty())
-  override def isEmpty(wf: Workflow[_, _]): Boolean = workflows(wf.name).isEmpty()
+  override def stepAll(wf: Workflow[_, _]): Unit = runtimeWorkflows(wf.name).stepAll()
+  override def isEmpty(): Boolean = runtimeWorkflows.forall(_._2.isEmpty())
+  override def isEmpty(wf: Workflow[_, _]): Boolean = runtimeWorkflows(wf.name).isEmpty()
 
   def shutdown(): Unit = ()
+
+  // TODO: Workflow path is not guaranteed to have this pattern in future versions.
+  def wfId(app: Application, wf: Workflow[_, _]): String = "/" + app.name + "/" + wf.name
 
 /*
  * This class contains:
@@ -47,6 +52,7 @@ class SyncLocalSystem extends LocalSystemContext:
 class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
   private val logger = Logger(name)
 
+  var consumes: Generator[_] = null
   var tasks = Map[String, RuntimeBehavior[_, _]]()
   var sources = Map[String, RuntimeBehavior[_, _]]()
   var sourceEventBuffer = Map[String, ju.List[WrappedEvent[_]]]()
@@ -98,17 +104,38 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
           })
         logger.debug(s"step ${stepId} finishes")
       }
+    stepId += 1
   }
 
   def stepAll(): Unit = {
     while (!isEmpty()) {
       step()
-      stepId += 1
     }
     logger.debug("execution finished")
   }
 
-  def isEmpty(): Boolean = sourceAtomBuffer.filter(!_._2.isEmpty).size == 0
+  // TODO if picked an empty Atom
+  def isEmpty(): Boolean = {
+    def atomBufferIsEmpty(): Boolean = sourceAtomBuffer.filter(_._2.isEmpty).size == sourceAtomBuffer.size
+
+    // if all sourceAtomBuffer empty, then try to get an atom from consume
+    if (atomBufferIsEmpty()) {
+      // notice that we may consume just an atom from consume, this will not have any effect at stashWrappedEventToSource
+      while (consumes != null && consumes.hasNext() && atomBufferIsEmpty()) {
+        consumes.generate() match {
+          // TODO: assume only one source for now
+          case portals.Generator.Event(event) => stashWrappedEventToSource(sources.head._1, Event(event))
+          case portals.Generator.Atom => {
+            stashWrappedEventToSource(sources.head._1, Atom())
+          }
+          case portals.Generator.Seal => () // do nothing
+          case _                      => ??? // TODO: other types not supported yet
+        }
+      }
+    }
+
+    atomBufferIsEmpty()
+  }
 
   def stashWrappedEventToSource(name: String, event: WrappedEvent[_]): Unit = {
     // logger.debug(s"add event[${event}] to ${name}")
@@ -135,22 +162,66 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
       val dstwfId = extractWfId(toName)
       // cycle to self soure or dispatch to another wf
       if (sources.contains(toName) || dstwfId != name) {
-        system.workflows(dstwfId).stashWrappedEventToSource(toName, event)
+        system.runtimeWorkflows(dstwfId).stashWrappedEventToSource(toName, event)
       } else {
         executionQueue.add((getRuntimeBehavior(toName), event))
       }
     })
   }
 
+  // TODO: move to registry static method
   def extractWfId(name: String): String = {
-    name.split("/")(0)
+    name.split("/").slice(0, 3).mkString("/") // "/app/wf/task" -> "/app/wf"
+  }
+}
+
+class RuntimeSequencer[T](val generators: Map[AtomicStreamRef[_], Generator[_]], sequencerStrategy: Sequencer[_])
+    extends Generator[T] {
+  val upstreamRefToGeneratorMapping = generators.asInstanceOf[Map[AtomicStreamRef[T], Generator[T]]]
+  val sequencer: Sequencer[T] = sequencerStrategy.asInstanceOf[Sequencer[T]]
+  val upStreamRefs = generators.keySet.toList.asInstanceOf[List[AtomicStreamRef[T]]]
+  val upStreamGenerators = generators.values.toList
+
+  override def generate(): GeneratorEvent[T] = {
+    val nonEmptyUpstreamRefs = upstreamRefToGeneratorMapping.filter(_._2.hasNext()).keySet.toList
+    val selected = sequencer.sequence(nonEmptyUpstreamRefs: _*).get
+    upstreamRefToGeneratorMapping(selected).generate()
+    // println(s"pick ${selected.path}, get ${e}")
+  }
+  override def hasNext(): Boolean = {
+    upStreamGenerators.exists(_.hasNext())
   }
 }
 
 // build runtime workflow from static workflow
 object RuntimeWorkflow {
-  def fromStaticWorkflow(system: SyncLocalSystem, wf: Workflow[_, _]): RuntimeWorkflow = {
-    val rtwf = RuntimeWorkflow(wf.name, system)
+  def convertAtomicStreamRefToGenerator(
+      streamRef: AtomicStreamRef[_],
+      app: Application
+  ): Generator[_] = {
+    if (app.generators.filter(_.stream.path == streamRef.path).size == 1) {
+      // if atomicStreamRef points to a generator, then things are simple
+      app.generators.filter(_.stream.path == streamRef.path).head.generator
+    } else if (app.sequencers.filter(_.stream.path == streamRef.path).size == 1) {
+      // else if ref points to a sequencer, convert sequencer's upstream atomicStreamRef to generator
+      // then wrap the sequencer to be a generator
+      val sequencer = app.sequencers.filter(_.stream.path == streamRef.path).head
+      val upStreamAtomicRefs = app.connections.filter(_.ti.stream.path == streamRef.path)
+      val upstreamRefToGeneratorMapping = upStreamAtomicRefs
+        .map(conn => {
+          (conn.from, convertAtomicStreamRefToGenerator(conn.from, app))
+        })
+        .toMap
+      RuntimeSequencer(upstreamRefToGeneratorMapping, sequencer.sequencer)
+    } else {
+      // possibly when ref points to a wf
+      ???
+    }
+  }
+
+  def fromStaticWorkflow(system: SyncLocalSystem, app: Application, wf: Workflow[_, _]): RuntimeWorkflow = {
+    val namePrefix = system.wfId(app, wf)
+    val rtwf = RuntimeWorkflow(namePrefix, system)
 
     // tasks in static workflow conatins sources and sinks, remove it
     // TODO: consider doing this at AtomicStreamImpl
@@ -159,7 +230,7 @@ object RuntimeWorkflow {
     })
 
     tasksInMiddle.foreach((name, behavior) => {
-      val fullName = wf.name + "/" + name
+      val fullName = namePrefix + "/" + name
       // println(s"task: ${fullName}")
       val rtBehavior = RuntimeBehavior(fullName, rtwf, behavior)
       rtwf.tasks += (fullName -> rtBehavior)
@@ -167,7 +238,7 @@ object RuntimeWorkflow {
     })
 
     wf.sources.foreach((name, behavior) => {
-      val fullName = wf.name + "/" + name
+      val fullName = namePrefix + "/" + name
       // println(s"source: ${fullName}")
       val rtBehavior = RuntimeSource(fullName, rtwf, behavior)
       rtwf.sources += (fullName -> rtBehavior)
@@ -177,7 +248,7 @@ object RuntimeWorkflow {
     })
 
     wf.sinks.foreach((name, behavior) => {
-      val fullName = wf.name + "/" + name
+      val fullName = namePrefix + "/" + name
       // println(s"sink: ${fullName}")
       val rtBehavior = RuntimeSink(fullName, rtwf, behavior)
       rtwf.sinks += (fullName -> rtBehavior)
@@ -185,11 +256,17 @@ object RuntimeWorkflow {
     })
 
     rtwf.connections = wf.connections
-      .map((k, v) => (wf.name + "/" + k, wf.name + "/" + v))
+      .map((k, v) => (namePrefix + "/" + k, namePrefix + "/" + v))
       .groupBy(_._1)
       .mapValues(_.map(_._2).toSet)
       .toMap
       .withDefaultValue(Set())
+
+    // convert consumes to generator
+    // TODO: is wf.consumes always not null for new workflow builder?
+    if (wf.consumes != null) {
+      rtwf.consumes = convertAtomicStreamRefToGenerator(wf.consumes, app)
+    }
 
     rtwf.logger.debug(s"workflow ${rtwf.name} configuration:")
     rtwf.logger.debug(s"\tsources: ${rtwf.sources.keys.mkString(", ")}")
@@ -201,7 +278,7 @@ object RuntimeWorkflow {
       rtwf.logger.debug(s"\t\t${from} -> ${to.mkString(", ")}")
     })
 
-    system.workflows += (rtwf.name -> rtwf)
+    system.runtimeWorkflows += (rtwf.name -> rtwf)
 
     rtwf
   }

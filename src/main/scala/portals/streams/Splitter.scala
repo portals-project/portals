@@ -1,0 +1,3 @@
+package portals
+
+trait Splitter

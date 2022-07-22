@@ -5,12 +5,10 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
-/** Diamond task graph pattern test
-  * We can create a DAG and not just a sequence the following way
-  * this creates a diamond shaped workflow
-  *         |------> map _ + 1 ---->
-  * source -->                      |---> sink
-  *         |------> map _ + 2 ---->
+/** Diamond task graph pattern test We can create a DAG and not just a sequence the following way this creates a diamond
+  * shaped workflow
+  *
+  * \|------> map _ + 1 ----> source --> |---> sink \|------> map _ + 2 ---->
   */
 @RunWith(classOf[JUnit4])
 class DiamondTaskGraphTest:
@@ -18,7 +16,7 @@ class DiamondTaskGraphTest:
   @Test
   def testDiamondTaskGraph(): Unit =
 
-    val builder = Builders.application("application")
+    val builder = ApplicationBuilders.application("application")
 
     val source = builder
       .workflows[Int, Int]("wf")
@@ -46,8 +44,8 @@ class DiamondTaskGraphTest:
 
     // create a test environment IRef
 
-    val iref: IStreamRef[Int] = system.registry("wf/input").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("wf/output").resolve()
+    val iref: IStreamRef[Int] = system.registry("/application/wf/input").resolve()
+    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/output").resolve()
 
     val testIRef = TestUtils.TestPreSubmitCallback[Int]()
     oref.setPreSubmitCallback(testIRef)

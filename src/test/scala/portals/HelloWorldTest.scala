@@ -12,9 +12,8 @@ import org.junit.Assert._
 
 /** Logged Hello World
   *
-  * This example creates a workflow that prints all the ingested events to the
-  * logger. We submit the event containing the message "Hello, World!" and 
-  * expect it to be printed.
+  * This example creates a workflow that prints all the ingested events to the logger. We submit the event containing
+  * the message "Hello, World!" and expect it to be printed.
   */
 @RunWith(classOf[JUnit4])
 class HelloWorldTest:
@@ -23,7 +22,7 @@ class HelloWorldTest:
   def testHelloWorld(): Unit =
     val helloWorld = "Hello, World!"
 
-    val builder = Builders
+    val builder = ApplicationBuilders
       .application("app")
 
     val workflow = builder.workflows[String, String]("wf")
@@ -40,8 +39,8 @@ class HelloWorldTest:
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[String] = system.registry("wf/src").resolve()
-    val oref: OStreamRef[String] = system.registry.orefs("wf/sink").resolve()
+    val iref: IStreamRef[String] = system.registry("/app/wf/src").resolve()
+    val oref: OStreamRef[String] = system.registry.orefs("/app/wf/sink").resolve()
 
     // create a test environment IRef
     val testIRef = TestUtils.TestPreSubmitCallback[String]()

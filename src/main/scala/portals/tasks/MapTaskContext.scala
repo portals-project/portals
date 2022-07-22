@@ -1,9 +1,9 @@
 package portals
 
 /** MapTaskContext, context without emit, etc.
- * 
- *  To be used in Map, FlatMap, etc., where the task is not supposed to emit.
- */
+  *
+  * To be used in Map, FlatMap, etc., where the task is not supposed to emit.
+  */
 sealed trait MapTaskContext[T, U]
     extends GenericTaskContext[T, U]
     with StatefulTaskContext[T, U]
