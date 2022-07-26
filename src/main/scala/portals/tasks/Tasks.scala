@@ -1,6 +1,10 @@
 package portals
 
-object Tasks:
+import scala.annotation.targetName
+
+trait Tasks
+
+object Tasks extends Tasks:
   //////////////////////////////////////////////////////////////////////////////
   // Task Factories
   //////////////////////////////////////////////////////////////////////////////
@@ -38,6 +42,9 @@ object Tasks:
         f(using ctx)(x).foreach(tctx.emit(_))
     )
 
+  def filter[T](p: T => Boolean): Task[T, T] =
+    flatMap(x => if (p(x)) List(x) else Nil)
+
   /** behavior factory for emitting the same values as ingested */
   def identity[T]: Task[T, T] =
     Identity[T]()
@@ -48,6 +55,12 @@ object Tasks:
       tctx.key = Key(f(x))
       tctx.emit(x)
     }
+
+  /** Behavior factory for initializing the task before any events. Note: this may be **re-executed** more than once,
+    * every time that the task is restarted (e.g. after a failure).
+    */
+  def init[T, U](initFactory: TaskContext[T, U] ?=> Task[T, U]): Task[T, U] =
+    Init[T, U](tctx => initFactory(using tctx))
 
   /** behavior factory for using the same behavior as previous behavior */
   def same[T, S]: Task[T, S] =
@@ -90,6 +103,45 @@ object Tasks:
       tctx.emit(event)
       Tasks.same
 
+  private[portals] case class Init[T, U](
+      initFactory: TaskContext[T, U] => Task[T, U]
+  ) extends TaskUnimpl[T, U]:
+    // this is fine, the methods are ignored as it is unfolded during initialization
+
+    // TODO: this should be initialized before execution instead by the **runtime**
+    // when instantiating the task, and not handled by the behavior, but this works
+    // for now :).
+    var _task: Option[Task[T, U]] = None
+
+    override def onNext(ctx: TaskContext[T, U])(t: T): Task[T, U] =
+      _task match
+        case Some(task) => task.onNext(ctx)(t)
+        case None =>
+          _task = Some(prepareTask(this, ctx))
+          _task.get.onNext(ctx)(t)
+      Tasks.same
+    override def onError(ctx: TaskContext[T, U])(t: Throwable): Task[T, U] =
+      _task match
+        case Some(task) => task.onError(ctx)(t)
+        case None =>
+          _task = Some(prepareTask(this, ctx))
+          _task.get.onError(ctx)(t)
+      Tasks.same
+    override def onComplete(ctx: TaskContext[T, U]): Task[T, U] =
+      _task match
+        case Some(task) => task.onComplete(ctx)
+        case None =>
+          _task = Some(prepareTask(this, ctx))
+          _task.get.onComplete(ctx)
+      Tasks.same
+    override def onAtomComplete(ctx: TaskContext[T, U]): Task[T, U] =
+      _task match
+        case Some(task) => task.onAtomComplete(ctx)
+        case None =>
+          _task = Some(prepareTask(this, ctx))
+          _task.get.onAtomComplete(ctx)
+      Tasks.same
+
   private[portals] case object Same extends TaskUnimpl[Nothing, Nothing]
   // this is fine, the methods are ignored as we reuse the previous behavior
 
@@ -120,6 +172,18 @@ object Tasks:
       ctx.fuse()
       Tasks.same
 
+  // needs to be called (internally) to setup the task for Init behaviors, called every time we start a new instance of a task
+  private[portals] def prepareTask[T, U](task: Task[T, U], ctx: TaskContext[T, U]): Task[T, U] =
+    // internal recursive method
+    def prepareTaskRec(task: Task[T, U], ctx: TaskContext[T, U]): Task[T, U] =
+      // FIXME: (low prio) this will fail if we have a init nested inside of a normal behavior
+      task match
+        case Init(initFactory) => prepareTaskRec(initFactory(ctx), ctx)
+        case _ => task
+    task match
+      case Same => throw new Exception("Same is not a valid initial task behavior")
+      case _ => prepareTaskRec(task, ctx)
+
 object TaskExtensions:
   //////////////////////////////////////////////////////////////////////////////
   // Extension methods
@@ -137,4 +201,120 @@ object TaskExtensions:
 
     def withOnAtomComplete(f: TaskContext[T, U] ?=> Task[T, U]): Task[T, U] =
       task._copy(_onAtomComplete = ctx => f(using ctx))
+  }
+
+////////////////////////////////////////////////////////////////////////////////
+// Other Extensions
+////////////////////////////////////////////////////////////////////////////////
+export VSMExtension.*
+object VSMExtension:
+  extension (t: Tasks) {
+
+    /** behavior factory for handling incoming event and context with a virtual state machine */
+    def vsminit[T, U](defaultTask: Task[T, U]): Task[T, U] = Tasks.init[T, U] { ctx ?=>
+      val _vsm_state = PerKeyState[Task[T, U]]("$_vsm_state", defaultTask)
+      Tasks.processor[T, U] { ctx ?=> event =>
+        _vsm_state.get().onNext(ctx)(event) match
+          case Tasks.Same => () // do nothing, keep same behavior
+          case t @ _ => _vsm_state.set(t)
+      }
+    }
+
+    /** behavior factory for handling incoming event and context with a virtual state machine */
+    def vsm[T, U](_onNext: TaskContext[T, U] ?=> T => Task[T, U]): Task[T, U] = Tasks.processor[T, U] { ctx ?=> event =>
+      _onNext(using ctx)(event) match
+        case Tasks.Same => () // do nothing, keep same behavior
+        case t @ _ =>
+          val _vsm_state = PerKeyState[Task[T, U]]("$_vsm_state", null)
+          _vsm_state.set(t)
+    }
+  }
+
+export StepExtension.*
+object StepExtension:
+
+  private[portals] case class Stepper[T, U](steppers: List[Steppers[T, U]]) extends Task[T, U]:
+    val index: TaskContext[T, U] ?=> PerTaskState[Int] = PerTaskState("$index", 0)
+    val loopcount: TaskContext[T, U] ?=> PerTaskState[Int] = PerTaskState("$loopcount", 0)
+    val size = steppers.size
+
+    override def onNext(ctx: TaskContext[T, U])(t: T): Task[T, U] =
+      steppers(index(using ctx).get() % size).task.onNext(ctx)(t)
+
+    override def onError(ctx: TaskContext[T, U])(t: Throwable): Task[T, U] =
+      steppers(index(using ctx).get() % size).task.onError(ctx)(t)
+
+    override def onComplete(ctx: TaskContext[T, U]): Task[T, U] =
+      steppers(index(using ctx).get() % size).task.onComplete(ctx)
+
+    override def onAtomComplete(ctx: TaskContext[T, U]): Task[T, U] =
+      steppers(index(using ctx).get() % size) match
+        case Step(_) =>
+          steppers(index(using ctx).get() % size).task.onAtomComplete(ctx)
+          index(using ctx).set(index(using ctx).get() + 1)
+
+        case Loop(_, count) =>
+          loopcount(using ctx).set(loopcount(using ctx).get() + 1)
+          if loopcount(using ctx).get() >= count then
+            steppers(index(using ctx).get() % size).task.onAtomComplete(ctx)
+            loopcount(using ctx).set(0)
+            index(using ctx).set(index(using ctx).get() + 1)
+          else steppers(index(using ctx).get() % size).task.onAtomComplete(ctx)
+      ctx.fuse() // TODO: we should remove fuse from the user-space :).
+      Tasks.same
+
+  private[portals] sealed trait Steppers[T, U](val task: Task[T, U])
+  private[portals] case class Step[T, U](override val task: Task[T, U]) extends Steppers[T, U](task)
+  private[portals] case class Loop[T, U](override val task: Task[T, U], count: Int) extends Steppers[T, U](task)
+
+  extension [T, U](task: Task[T, U]) {
+    def withStep(_task: Task[T, U]): Task[T, U] = task match
+      case stepper: Stepper[T, U] => stepper.copy(steppers = stepper.steppers :+ Step(_task))
+      case _ => Stepper(List(Step(task), Step(_task)))
+
+    def withLoop(count: Int)(_task: Task[T, U]): Task[T, U] = task match
+      case stepper: Stepper[T, U] => stepper.copy(steppers = stepper.steppers :+ Loop(_task, count))
+      case _ => Stepper(List(Step(task), Loop(_task, count)))
+  }
+
+export WithAndThenExtension.*
+object WithAndThenExtension:
+  private[portals] trait WithAndThenContext[T, U] extends TaskContext[T, U]:
+    var emitted: Seq[U]
+
+  def withAndThenContext[T, U](ctx: TaskContext[T, U]) =
+    new WithAndThenContext[T, U] {
+      var emitted = Seq.empty[U]
+      override def state: TaskState[Any, Any] = ctx.state
+      override def emit(event: U) = emitted = emitted :+ event
+      override private[portals] def fuse(): Unit = ctx.fuse()
+      override def log: Logger = ctx.log
+      private[portals] var path: String = ctx.path
+      private[portals] var key: Key[Int] = ctx.key
+      private[portals] var system: SystemContext = ctx.system
+    }
+
+  extension [T, U](task: Task[T, U]) {
+    def withAndThen[TT](_task: Task[U, TT]): Task[T, TT] =
+      Tasks.processor[T, TT] { ctx ?=> event =>
+        val _ctx = withAndThenContext[T, U](ctx.asInstanceOf)
+        task.onNext(_ctx)(event)
+        _ctx.emitted.foreach { event => _task.onNext(ctx.asInstanceOf)(event) }
+      }
+  }
+
+export WithWrapperExtension.*
+object WithWrapperExtension:
+
+  extension [T, U](task: Task[T, U]) {
+
+    // Alternative
+    // /** f: ctx => wrappd => task */
+    // def withWrapper(f: TaskContext[T, U] ?=> Task[T, U] => Task[T, U]): Task[T, U] =
+    //   Tasks.init[T, U] { ctx ?=> f(using ctx)(task) }
+
+    /** f: ctx => wrappd => event => Unit */
+    @targetName("withWrapper2")
+    def withWrapper(f: TaskContext[T, U] ?=> (TaskContext[T, U] ?=> T => Task[T, U]) => T => Unit): Task[T, U] =
+      Tasks.processor[T, U] { ctx ?=> event => f(using ctx)(task.onNext(ctx))(event) }
   }

@@ -124,12 +124,13 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
       while (consumes != null && consumes.hasNext() && atomBufferIsEmpty()) {
         consumes.generate() match {
           // TODO: assume only one source for now
-          case portals.Generator.Event(event) => stashWrappedEventToSource(sources.head._1, Event(event))
+          case portals.Generator.Event(key, event) =>
+            stashWrappedEventToSource(sources.head._1, Event(key, event))
           case portals.Generator.Atom => {
             stashWrappedEventToSource(sources.head._1, Atom())
           }
           case portals.Generator.Seal => () // do nothing
-          case _                      => ??? // TODO: other types not supported yet
+          case _ => ??? // TODO: other types not supported yet
         }
       }
     }
@@ -152,8 +153,8 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
     }
   }
 
-  def onRuntimeBehaviorEventSubmit[I, O](behavior: RuntimeBehavior[I, O], event: O): Unit =
-    dispatchEvent(behavior, Event(event))
+  def onRuntimeBehaviorEventSubmit[I, O](behavior: RuntimeBehavior[I, O], key: Key[Int], event: O): Unit =
+    dispatchEvent(behavior, Event(key, event))
   def onRuntimeBehaviorAtomSubmit(behavior: RuntimeBehavior[_, _]): Unit =
     dispatchEvent(behavior, Atom())
   def dispatchEvent(behavior: RuntimeBehavior[_, _], event: WrappedEvent[_]): Unit = {
@@ -234,7 +235,7 @@ object RuntimeWorkflow {
       // println(s"task: ${fullName}")
       val rtBehavior = RuntimeBehavior(fullName, rtwf, behavior)
       rtwf.tasks += (fullName -> rtBehavior)
-      system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
+      // system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
     })
 
     wf.sources.foreach((name, behavior) => {
@@ -244,7 +245,7 @@ object RuntimeWorkflow {
       rtwf.sources += (fullName -> rtBehavior)
       rtwf.sourceAtomBuffer += (fullName -> new LinkedList[List[WrappedEvent[_]]]())
       rtwf.sourceEventBuffer += (fullName -> new LinkedList[WrappedEvent[_]]())
-      system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
+      // system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
     })
 
     wf.sinks.foreach((name, behavior) => {
@@ -252,7 +253,7 @@ object RuntimeWorkflow {
       // println(s"sink: ${fullName}")
       val rtBehavior = RuntimeSink(fullName, rtwf, behavior)
       rtwf.sinks += (fullName -> rtBehavior)
-      system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
+      // system.registry.set(fullName, (rtBehavior.iref(), rtBehavior.oref()))
     })
 
     rtwf.connections = wf.connections
@@ -302,76 +303,78 @@ class RuntimeBehavior[I, O](
 
   val self = this
   ctx.cb = new TaskCallback[I, O] {
-    def submit(event: O): Unit = rtwf.onRuntimeBehaviorEventSubmit(self, event)
+    def submit(key: Key[Int], event: O): Unit = rtwf.onRuntimeBehaviorEventSubmit(self, key, event)
     def fuse(): Unit = rtwf.onRuntimeBehaviorAtomSubmit(self)
   }
 
   def step[T](item: WrappedEvent[T]): Unit =
     item match
-      case Event(item) => {
+      case Event(key, item) => {
+        ctx.key = key
+        ctx.state.key = key
         behavior.onNext(ctx)(item.asInstanceOf[I]) // TODO: better type cast
       }
       case Atom() => behavior.onAtomComplete(ctx)
 
   // NOTE: only allow source to use iref
-  def iref(): IStreamRef[I] = new IStreamRef[I] {
-    private[portals] def submit(event: I): Unit = ???
-    private[portals] def fuse(): Unit = ???
-  }
+  // def iref(): IStreamRef[I] = new IStreamRef[I] {
+  //   private[portals] def submit(event: I): Unit = ???
+  //   private[portals] def fuse(): Unit = ???
+  // }
 
   // NOTE: only allow sink to use oref
-  def oref(): OStreamRef[O] = new OStreamRef[O] {
-    private[portals] def subscribe(subscriber: IStreamRef[O]): Unit = ???
-  }
+  // def oref(): OStreamRef[O] = new OStreamRef[O] {
+  //   private[portals] def subscribe(subscriber: IStreamRef[O]): Unit = ???
+  // }
 
 class RuntimeSource[I, O](
     override val name: String,
     override val rtwf: RuntimeWorkflow,
     override val behavior: Task[I, O]
 ) extends RuntimeBehavior[I, O](name, rtwf, behavior) {
-  override def iref(): IStreamRef[I] = NamedIStreamRef(name, rtwf)
+  // override def iref(): IStreamRef[I] = NamedIStreamRef(name, rtwf)
 }
 
-class NamedIStreamRef[I](val name: String, val rtwf: RuntimeWorkflow) extends IStreamRef[I] {
-  private[portals] def submit(event: I): Unit = {
-    rtwf.stashWrappedEventToSource(name, Event(event))
-  }
-  private[portals] def fuse(): Unit = {
-    rtwf.stashWrappedEventToSource(name, Atom())
-  }
-}
+// class NamedIStreamRef[I](val name: String, val rtwf: RuntimeWorkflow) extends IStreamRef[I] {
+//   private[portals] def submit(event: I): Unit = {
+//     rtwf.stashWrappedEventToSource(name, Event(event))
+//   }
+//   private[portals] def fuse(): Unit = {
+//     rtwf.stashWrappedEventToSource(name, Atom())
+//   }
+// }
 
 class RuntimeSink[I, O](
     override val name: String,
     override val rtwf: RuntimeWorkflow,
     override val behavior: Task[I, O]
 ) extends RuntimeBehavior[I, O](name, rtwf, behavior) {
-  var preSubmitCallback = new PreSubmitCallback[O] {}
+  // var preSubmitCallback = new PreSubmitCallback[O] {}
 
   ctx.cb = new TaskCallback[I, O] {
-    def submit(event: O): Unit = {
-      preSubmitCallback.preSubmit(event)
-      rtwf.onRuntimeBehaviorEventSubmit(self, event)
+    def submit(key: Key[Int], event: O): Unit = {
+      // preSubmitCallback.preSubmit(event)
+      rtwf.onRuntimeBehaviorEventSubmit(self, key, event)
     }
     def fuse(): Unit = {
-      preSubmitCallback.preFuse()
+      // preSubmitCallback.preFuse()
       rtwf.onRuntimeBehaviorAtomSubmit(self)
     }
   }
 
-  override def oref(): OStreamRef[O] = new OStreamRef[O] {
-    private[portals] override def setPreSubmitCallback(cb: PreSubmitCallback[O]): Unit = preSubmitCallback = cb
+  // override def oref(): OStreamRef[O] = new OStreamRef[O] {
+  //   private[portals] override def setPreSubmitCallback(cb: PreSubmitCallback[O]): Unit = preSubmitCallback = cb
 
-    private[portals] def subscribe(subscriber: IStreamRef[O]): Unit =
-      val runtimeSubscriber = subscriber.asInstanceOf[NamedIStreamRef[_]]
-      // println(s"cross wf subscription from ${name} to ${runtimeSubscriber.name}")
-      rtwf.connections = rtwf.connections.updatedWith(name) {
-        case Some(toSet) => {
-          Some(toSet + runtimeSubscriber.name)
-        }
-        case None => {
-          Some(Set(runtimeSubscriber.name))
-        }
-      }
-  }
+  //   private[portals] def subscribe(subscriber: IStreamRef[O]): Unit =
+  //     val runtimeSubscriber = subscriber.asInstanceOf[NamedIStreamRef[_]]
+  //     // println(s"cross wf subscription from ${name} to ${runtimeSubscriber.name}")
+  //     rtwf.connections = rtwf.connections.updatedWith(name) {
+  //       case Some(toSet) => {
+  //         Some(toSet + runtimeSubscriber.name)
+  //       }
+  //       case None => {
+  //         Some(Set(runtimeSubscriber.name))
+  //       }
+  //     }
+  // }
 }

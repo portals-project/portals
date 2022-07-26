@@ -27,6 +27,8 @@ class IncrementalWordCountTest:
   def testIncrementalWordCount(): Unit =
     import portals.DSL.*
 
+    val tester = new TestUtils.Tester[(String, Int)]()
+
     // our map function takes an string and splits it to produce a list of words
     val mapper: String => Seq[(String, Int)] =
       line => line.split("\\s+").map(w => (w, 1))
@@ -38,11 +40,13 @@ class IncrementalWordCountTest:
     // one naive implementation is to use local state for storing the counts
     val builder = ApplicationBuilders.application("application")
 
-    val flow = builder
+    val input = List("the quick brown fox jumps over the lazy dog")
+    val generator = builder.generators.fromList("generator", input)
+
+    val _ = builder
       .workflows[String, (String, Int)]("workflow")
       // input is a stream of lines of text, we give it the name "text"
-      .source[String]()
-      .withName("text")
+      .source[String](generator.stream)
       // each line is splitted on whitespaces
       .flatMap(_.split("\\s+"))
       // we create tuples for each word, with the second element being the number of occurrences of the word
@@ -64,38 +68,27 @@ class IncrementalWordCountTest:
               (key, value)
       )
       // .logger()
+      .task(tester.task)
       .sink()
-      .withName("counts")
+      .freeze()
 
     val application = builder.build()
 
+    // ASTPrinter.println(application)
+
     val system = Systems.syncLocal()
     system.launch(application)
-
-    val testData = "the quick brown fox jumps over the lazy dog"
-
-    // to get a reference of the workflow we look in the registry
-    // resolve takes a shared ref and creates an owned ref that points to the shared ref
-    val iref = system.registry[String]("/application/workflow/text").resolve()
-    val oref = system.registry.orefs[(String, Int)]("/application/workflow/counts").resolve()
-
-    // create a test environment IRef
-    val testIRef = TestUtils.TestPreSubmitCallback[(String, Int)]()
-    oref.setPreSubmitCallback(testIRef)
-
-    iref.submit(testData)
-    iref.fuse()
 
     system.stepAll()
     system.shutdown()
 
     // check that the output is correct
-    assertTrue(testIRef.contains(("the", 1)))
-    assertTrue(testIRef.contains(("the", 2)))
-    assertTrue(testIRef.contains(("quick", 1)))
-    assertTrue(testIRef.contains(("brown", 1)))
-    assertTrue(testIRef.contains(("fox", 1)))
-    assertTrue(testIRef.contains(("jumps", 1)))
-    assertTrue(testIRef.contains(("over", 1)))
-    assertTrue(testIRef.contains(("lazy", 1)))
-    assertTrue(testIRef.contains(("dog", 1)))
+    assertTrue(tester.contains(("the", 1)))
+    assertTrue(tester.contains(("the", 2)))
+    assertTrue(tester.contains(("quick", 1)))
+    assertTrue(tester.contains(("brown", 1)))
+    assertTrue(tester.contains(("fox", 1)))
+    assertTrue(tester.contains(("jumps", 1)))
+    assertTrue(tester.contains(("over", 1)))
+    assertTrue(tester.contains(("lazy", 1)))
+    assertTrue(tester.contains(("dog", 1)))

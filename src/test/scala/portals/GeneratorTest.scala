@@ -21,13 +21,13 @@ class GeneratorTest:
       .application("app")
 
     val generator = builder.generators
-      .fromIterator[Int]("generator", (0 to 10).iterator)
+      .fromIterator[Int]("generator", Iterator.range(0, 10))
 
-    val workflow = builder
+    val _ = builder
       .workflows[Int, Int]("wf")
       .source(generator.stream)
       .task(tester.task)
-      .logger()
+      // .logger()
       .sink("sink")
       .freeze()
 
@@ -40,15 +40,14 @@ class GeneratorTest:
     system.launch(app)
 
     system.stepAll()
-
     system.shutdown()
 
-    (0 to 10).foreach { i =>
-      tester.receiveAssert(i)
+    Iterator.range(0, 10).foreach { x =>
+      tester.receiveAssert(x)
     }
 
   @Test
-  def fromFunctionTest(): Unit =
+  def fromIteratorOfIteratorsTest(): Unit =
     import portals.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
@@ -57,31 +56,13 @@ class GeneratorTest:
       .application("app")
 
     val generator = builder.generators
-      .generator[Int](
-        "generator",
-        Generators.fromFunction(
-          {
-            import Generator.*
-            var state: Int = -1
-            var atom: Boolean = false
-            () =>
-              if atom then
-                atom = false
-                Atom
-              else
-                state = state + 1
-                if state % 5 == 0 then atom = true
-                Event(state)
-          },
-          () => true
-        )
-      )
+      .fromIteratorOfIterators[Int]("generator", Iterator.from(0).map { x => Iterator.range(0, 5).map(_ + 5 * x) })
 
     val workflow = builder
       .workflows[Int, Int]("wf")
       .source(generator.stream)
       .task(tester.task)
-      .logger()
+      // .logger()
       .sink("sink")
       .freeze()
 
@@ -94,9 +75,9 @@ class GeneratorTest:
     system.launch(app)
 
     // take two steps
-    system.step()
-    system.step()
 
+    system.step()
+    system.step()
     (0 until 5).foreach { i =>
       tester.receiveAssert(i)
     }
@@ -104,9 +85,7 @@ class GeneratorTest:
     // take two more steps
     system.step()
     system.step()
-
     (5 until 10).foreach { i =>
       tester.receiveAssert(i)
     }
-
     system.shutdown()

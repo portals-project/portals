@@ -4,24 +4,30 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
+import org.junit.Ignore
 
-/** Diamond task graph pattern test We can create a DAG and not just a sequence the following way this creates a diamond
-  * shaped workflow
-  *
-  * \|------> map _ + 1 ----> source --> |---> sink \|------> map _ + 2 ---->
+/** Diamond task graph pattern test
   */
 @RunWith(classOf[JUnit4])
 class DiamondTaskGraphTest:
 
+  @Ignore
   @Test
   def testDiamondTaskGraph(): Unit =
+    import portals.DSL.*
 
-    val builder = ApplicationBuilders.application("application")
+    val tester = new TestUtils.Tester[Int]()
 
-    val source = builder
+    val builder = ApplicationBuilders
+      .application("application")
+
+    val generator = builder.generators.fromList("generator", List(1))
+
+    val wfb = builder
       .workflows[Int, Int]("wf")
-      .source[Int]()
-      .withName("input")
+
+    val source = wfb
+      .source[Int](generator.stream)
 
     val fromSource1 = source
       .map(_ + 1)
@@ -29,32 +35,35 @@ class DiamondTaskGraphTest:
     val fromSource2 = source
       .map(_ + 2)
 
+    val fromSource3 = source
+      .map(_ + 3)
+
     val merged = fromSource1
       .union(fromSource2)
-      .withName("merged")
+      .union(fromSource3)
 
     val sink = merged
+      .task(tester.task)
+      // .logger()
       .sink[Int]()
-      .withName("output")
+
+    val _ = wfb.freeze()
 
     val application = builder.build()
 
     val system = Systems.syncLocal()
     system.launch(application)
 
-    // create a test environment IRef
-
-    val iref: IStreamRef[Int] = system.registry("/application/wf/input").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/output").resolve()
-
-    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
-    oref.setPreSubmitCallback(testIRef)
-
-    iref.submit(1)
-    iref.fuse()
-
     system.stepAll()
     system.shutdown()
 
-    assertTrue(testIRef.contains(2) && testIRef.contains(3))
-    assertFalse(testIRef.contains(1))
+    // 1. The output does not contain 1
+    assertFalse(tester.contains(1))
+
+    // 2. The output contains 2, 3, 4 from each of the three paths
+    assertTrue(tester.contains(2))
+    assertTrue(tester.contains(3))
+    assertTrue(tester.contains(4))
+
+    // 3. The output contains a single atom
+    assertEquals(1, tester.receiveAllWrapped().filter { case tester.Atom => true; case _ => false }.size)

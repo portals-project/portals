@@ -53,7 +53,8 @@ case class AtomicStream[T](path: String, name: String) extends AST
 case class AtomicStreamRef[T](path: String, name: String) extends AST
 
 /** External Atomic Stream Ref. */
-case class ExtAtomicStreamRef[T](path: String, name: String) extends AST
+case class ExtAtomicStreamRef[T](path: String, name: String) extends AST:
+  def resolve(): AtomicStreamRef[T] = AtomicStreamRef(path, name)
 
 /** Atomic Sequencer. */
 case class AtomicSequencer[T](
@@ -68,7 +69,8 @@ case class AtomicSequencer[T](
 case class AtomicSequencerRef[T](path: String, name: String, stream: AtomicStreamRef[T]) extends AST
 
 /** External Atomic Sequencer Ref. */
-case class ExtAtomicSequencerRef[T](path: String, name: String, stream: ExtAtomicStreamRef[T]) extends AST
+case class ExtAtomicSequencerRef[T](path: String, name: String, stream: ExtAtomicStreamRef[T]) extends AST:
+  def resolve(): AtomicSequencerRef[T] = AtomicSequencerRef(path, name, stream.resolve())
 
 /** Atomic Splitter. */
 case class AtomicSplitter[T](

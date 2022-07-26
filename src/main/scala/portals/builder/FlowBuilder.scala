@@ -41,6 +41,12 @@ trait FlowBuilder[T, U]:
 
   def flatMap[TT](f: MapTaskContext[T, TT] ?=> T => Seq[TT]): FlowBuilder[TT, U]
 
+  def filter(p: T => Boolean): FlowBuilder[T, U]
+
+  def vsm[TT](defaultTask: Task[T, TT]): FlowBuilder[TT, U]
+
+  def init[TT](initFactory: TaskContext[T, TT] ?=> Task[T, TT]): FlowBuilder[TT, U]
+
   //////////////////////////////////////////////////////////////////////////////
   // Useful operators
   //////////////////////////////////////////////////////////////////////////////
@@ -61,13 +67,24 @@ trait FlowBuilder[T, U]:
 
   def withName(name: String): FlowBuilder[T, U]
 
-  def withOnNext(_onNext: TaskContext[T, U] ?=> T => Task[T, U]): FlowBuilder[T, U]
+  def withOnNext(onNext: TaskContext[T, U] ?=> T => Task[T, U]): FlowBuilder[T, U]
 
-  def withOnError(_onError: TaskContext[T, U] ?=> Throwable => Task[T, U]): FlowBuilder[T, U]
+  def withOnError(onError: TaskContext[T, U] ?=> Throwable => Task[T, U]): FlowBuilder[T, U]
 
-  def withOnComplete(_onComplete: TaskContext[T, U] ?=> Task[T, U]): FlowBuilder[T, U]
+  def withOnComplete(onComplete: TaskContext[T, U] ?=> Task[T, U]): FlowBuilder[T, U]
 
-  def withOnAtomComplete(_onAtomComplete: TaskContext[T, U] ?=> Task[T, U]): FlowBuilder[T, U]
+  def withOnAtomComplete(onAtomComplete: TaskContext[T, U] ?=> Task[T, U]): FlowBuilder[T, U]
+
+  def withWrapper(
+      onNext: TaskContext[T, U] ?=> (TaskContext[T, U] ?=> T => Task[T, U]) => T => Unit
+  ): FlowBuilder[T, U]
+
+  def withStep(task: Task[T, U]): FlowBuilder[T, U]
+
+  def withLoop(count: Int)(task: Task[T, U]): FlowBuilder[T, U]
+
+  def withAndThen[TT](task: Task[U, TT]): FlowBuilder[TT, U]
+
 end FlowBuilder // trait
 
 object FlowBuilder:

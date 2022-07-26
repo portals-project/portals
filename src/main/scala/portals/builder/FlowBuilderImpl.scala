@@ -30,7 +30,7 @@ class FlowBuilderImpl[T, U](using fbctx: FlowBuilderContext[T, U]) extends FlowB
       (from, to) match
         case (l, r) if r == oldName => (l, newName)
         case (l, r) if l == oldName => (newName, r)
-        case (l, r)                 => (l, r)
+        case (l, r) => (l, r)
     }
     // rename latest if oldName
     if fbctx.latest == Some(oldName) then FlowBuilder(Some(newName))
@@ -137,6 +137,17 @@ class FlowBuilderImpl[T, U](using fbctx: FlowBuilderContext[T, U]) extends FlowB
     val behavior = Tasks.flatMap[T, TT](f)
     addTask(behavior).asInstanceOf[FlowBuilder[TT, U]]
 
+  override def filter(p: T => Boolean): FlowBuilder[T, U] =
+    flatMap { t => if p(t) then Seq(t) else Seq.empty }
+
+  override def vsm[TT](defaultTask: Task[T, TT]): FlowBuilder[TT, U] =
+    val behavior = Tasks.vsminit(defaultTask)
+    addTask(behavior).asInstanceOf[FlowBuilder[TT, U]]
+
+  override def init[TT](initFactory: TaskContext[T, TT] ?=> Task[T, TT]): FlowBuilder[TT, U] =
+    val behavior = Tasks.init(initFactory)
+    addTask(behavior).asInstanceOf[FlowBuilder[TT, U]]
+
   override def identity(): FlowBuilder[T, U] =
     val behavior = Tasks.identity[T]
     addTask(behavior).asInstanceOf[FlowBuilder[T, U]]
@@ -177,5 +188,31 @@ class FlowBuilderImpl[T, U](using fbctx: FlowBuilderContext[T, U]) extends FlowB
     val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[T, U]]
     val newBehavior = behavior.withOnAtomComplete(_onAtomComplete)
     updateTask(name, newBehavior).asInstanceOf[FlowBuilder[T, U]]
+
+  override def withWrapper(
+      _onNext: TaskContext[T, U] ?=> (TaskContext[T, U] ?=> T => Task[T, U]) => T => Unit
+  ): FlowBuilder[T, U] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[T, U]]
+    val newBehavior = behavior.withWrapper(_onNext)
+    updateTask(name, newBehavior).asInstanceOf[FlowBuilder[T, U]]
+
+  override def withStep(task: Task[T, U]): FlowBuilder[T, U] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[T, U]]
+    val newBehavior = behavior.withStep(task)
+    updateTask(name, newBehavior).asInstanceOf[FlowBuilder[T, U]]
+
+  override def withLoop(count: Int)(task: Task[T, U]): FlowBuilder[T, U] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[T, U]]
+    val newBehavior = behavior.withLoop(count)(task)
+    updateTask(name, newBehavior).asInstanceOf[FlowBuilder[T, U]]
+
+  override def withAndThen[TT](task: Task[U, TT]): FlowBuilder[TT, U] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[T, U]]
+    val newBehavior = behavior.withAndThen(task)
+    updateTask(name, newBehavior).asInstanceOf[FlowBuilder[TT, U]]
 
 end FlowBuilderImpl //

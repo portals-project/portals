@@ -4,12 +4,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
+import org.junit.Ignore
 
 import TestUtils.*
 
 @RunWith(classOf[JUnit4])
 class SequencerTest:
 
+  @Ignore
   @Test
   def randomTest(): Unit =
     import portals.DSL.*
@@ -24,29 +26,24 @@ class SequencerTest:
       .random[Int]("random")
 
     // producers
-    val iter1 = (0 until 128).map { x => if x % 5 == 0 then Atom else Event(x) }.concat(Iterator(Atom, Seal)).iterator
-    val generator1 = builder.generators
-      .fromFunction[Int]("generator1", iter1.next, () => iter1.hasNext)
+    val generator1 = builder.generators.fromRange("generator1", 0, 128, 5)
+    val generator2 = builder.generators.fromRange("generator2", 128, 256, 5)
 
-    val iter2 = (128 until 256).map { x => if x % 5 == 0 then Atom else Event(x) }.concat(Iterator(Atom, Seal)).iterator
-    val generator2 = builder.generators
-      .fromFunction[Int]("generator2", iter2.next, () => iter2.hasNext)
+    // connect producers to sequencer
+    val _ = builder.connections.connect("connection1", generator1.stream, sequencer)
+    val _ = builder.connections.connect("connection2", generator2.stream, sequencer)
 
     // consumers
-    val consumingWorkflow = builder
+    val _ = builder
       .workflows[Int, Int]("consumingWorkflow")
       .source(sequencer.stream)
       .task(tester.task)
       .sink()
       .freeze()
 
-    // connect producers to sequencer
-    val connection1 = builder.connections.connect("connection1", generator1.stream, sequencer)
-    val connection2 = builder.connections.connect("connection2", generator2.stream, sequencer)
-
     val app = builder.build()
 
-    ASTPrinter.println(app)
+    // ASTPrinter.println(app)
 
     val system = Systems.syncLocal()
 
@@ -56,5 +53,22 @@ class SequencerTest:
 
     system.shutdown()
 
-    val testData = (0 until 256).flatMap { x => if x % 5 == 0 then List.empty else List(x) }.toList
-    assertEquals(tester.receiveAll().sorted, testData)
+    val received = tester.receiveAll()
+    val receivedWrapped = tester.receiveAllWrapped()
+    val receivedAtoms = tester.receiveAllAtoms()
+    val testData = Iterator.range(0, 256).toList
+    val testDataAtoms = testData.grouped(5).toList
+
+    // 1. all events have been produced and consumed
+    assertEquals(received.sorted, testData)
+
+    // 2. the received events are in the same order as the events that were produced
+    val testData21 = testData.filter(_ < 128)
+    val testData22 = testData.filter(_ >= 128)
+    assertEquals(received.filter(_ < 128), testData21)
+    assertEquals(received.filter(_ >= 128), testData22)
+
+    // 3. the atoms are not fused / jumbled by the sequencer
+    testDataAtoms.foreach { atom =>
+      assertEquals(true, receivedAtoms.contains(atom))
+    }

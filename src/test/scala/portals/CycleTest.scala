@@ -11,64 +11,49 @@ import scala.collection.AnyStepper.AnyStepperSpliterator
 @RunWith(classOf[JUnit4])
 class CycleTest:
 
+  @Ignore
   @Test
   def testExternalCycle(): Unit =
     import portals.DSL.*
 
-    val builder = ApplicationBuilders.application("application")
+    val tester = new TestUtils.Tester[Int]()
 
-    val src = builder
+    val builder = ApplicationBuilders
+      .application("application")
+
+    val sequencer = builder.sequencers.random[Int]("sequencer")
+
+    val workflow = builder
       .workflows[Int, Int]("wf")
-      .source[Int]()
-      // .checkExpectedType[Int, Int]()
-      .withName("src")
+      .source[Int](sequencer.stream)
       .flatMap[Int] { ctx ?=> x =>
         if (x > 0) List(x - 1)
         else List.empty
       }
+      .task(tester.task)
       .sink()
-      .withName("loop")
+      .freeze()
+
+    val _ = builder.connections.connect("connection1", workflow.stream, sequencer)
+
+    val generator = builder.generators.fromList[Int]("generator", List(8))
+    val _ = builder.connections.connect("connection2", generator.stream, sequencer)
 
     val application = builder.build()
+
     val system = Systems.syncLocal()
+
     system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("/application/wf/src").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/loop").resolve()
-    oref.subscribe(iref)
-
-    // create a test environment IRef
-    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
-
-    // subscribe testIRef to workflow
-    oref.setPreSubmitCallback(testIRef)
-
-    iref.submit(8)
-    iref.fuse()
-
-    system.stepAll()
-
-    assertTrue(testIRef.contains(7))
-    assertTrue(testIRef.contains(6))
-    assertTrue(testIRef.contains(5))
-    assertTrue(testIRef.contains(4))
-    assertTrue(testIRef.contains(3))
-    assertTrue(testIRef.contains(2))
-    assertTrue(testIRef.contains(1))
-    assertTrue(testIRef.contains(0))
-    assertFalse(testIRef.contains(-1))
-
-    iref.submit(8)
-    iref.fuse()
     system.stepAll()
     system.shutdown()
 
-    assertTrue(testIRef.contains(7))
-    assertTrue(testIRef.contains(6))
-    assertTrue(testIRef.contains(5))
-    assertTrue(testIRef.contains(4))
-    assertTrue(testIRef.contains(3))
-    assertTrue(testIRef.contains(2))
-    assertTrue(testIRef.contains(1))
-    assertTrue(testIRef.contains(0))
-    assertFalse(testIRef.contains(-1))
+    assertEquals(Some(7), tester.receiveAtom())
+    assertEquals(Some(6), tester.receiveAtom())
+    assertEquals(Some(5), tester.receiveAtom())
+    assertEquals(Some(4), tester.receiveAtom())
+    assertEquals(Some(3), tester.receiveAtom())
+    assertEquals(Some(2), tester.receiveAtom())
+    assertEquals(Some(1), tester.receiveAtom())
+    assertEquals(Some(0), tester.receiveAtom())
+    assertNotEquals(Some(-1), tester.receiveAtom())

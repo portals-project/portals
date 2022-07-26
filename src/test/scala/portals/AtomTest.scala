@@ -33,17 +33,21 @@ class AtomTest:
   def basicAtomTest(): Unit =
     import portals.DSL.*
 
+    val tester = new TestUtils.Tester[String]()
+
     val builder = ApplicationBuilders
       .application("application")
+
+    val testData = "testData"
+    val generator = builder.generators.fromList("generator", List(testData))
 
     // simple workflow that forwards any input to the output
     val flow = builder
       .workflows[String, String]("wf")
-      .source[String]()
-      .withName("input")
+      .source[String](generator.stream)
       .identity()
+      .task(tester.task)
       .sink()
-      .withName("output")
 
     val application = builder.build()
 
@@ -51,28 +55,7 @@ class AtomTest:
 
     system.launch(application)
 
-    val iref = system.registry[String]("/application/wf/input").resolve()
-    val oref = system.registry.orefs[String]("/application/wf/output").resolve()
-
-    // create a test environment IRef
-    val testIRef = TestUtils.TestPreSubmitCallback[String]()
-
-    // subscribe the testIref to the workflow
-    oref.setPreSubmitCallback(testIRef)
-
-    val testData = "testData"
-    iref ! testData
-
-    // try to step
-    system.stepAll()
-
-    // nothing is happening yet, the atom is not complete (we need to fuse it first)
-    assertTrue(testIRef.isEmpty())
-
-    // now we trigger the atom barrier which will trigger the fusion
-    iref ! FUSE
     system.stepAll()
     system.shutdown()
 
-    // we should now expect to observe some output from the workflow
-    testIRef.receiveAssert(testData)
+    tester.receiveAssert(testData)

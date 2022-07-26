@@ -10,7 +10,7 @@ private[portals] trait TaskContext[T, U]
   // Base Operations
   //////////////////////////////////////////////////////////////////////////////
 
-  /** State of the task */
+  /** State of the task, scoped by the contextual invocation context */
   def state: TaskState[Any, Any]
 
   /** Emit an event */
@@ -25,6 +25,10 @@ private[portals] trait TaskContext[T, U]
   //////////////////////////////////////////////////////////////////////////////
   // Execution Context
   //////////////////////////////////////////////////////////////////////////////
+
+  /** The Path of this task */
+  // has to be var so that it can be swapped at runtime
+  private[portals] var path: String
 
   /** Contextual key for per-key execution */
   // has to be var so that it can be swapped at runtime

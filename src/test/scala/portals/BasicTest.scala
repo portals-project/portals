@@ -10,35 +10,29 @@ class BasicTest:
 
   @Test
   def testIdentity(): Unit =
+    import portals.DSL.*
+
+    val tester = new TestUtils.Tester[Int]()
 
     val builder = ApplicationBuilders.application("application")
 
+    val testData = List.range(0, 128).grouped(1).toList
+    val generator = builder.generators.fromListOfLists("generator", testData)
+
     val source = builder
       .workflows[Int, Int]("wf")
-      .source[Int]()
-      .withName("source")
+      .source[Int](generator.stream)
       .identity()
+      .task(tester.task)
       .sink()
-      .withName("sink")
+      .freeze()
 
     val application = builder.build()
 
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("/application/wf/source").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/sink").resolve()
-
-    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
-    oref.setPreSubmitCallback(testIRef)
-
-    val testDatas = (0 until 128).toList
-    testDatas.foreach { i =>
-      iref.submit(i)
-      iref.fuse()
-    }
-
     system.stepAll()
     system.shutdown()
 
-    assertEquals(testDatas, testIRef.receiveAll())
+    assertEquals(testData.flatten, tester.receiveAll())

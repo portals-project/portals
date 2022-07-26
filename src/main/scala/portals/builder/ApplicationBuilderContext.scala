@@ -26,7 +26,7 @@ class ApplicationBuilderContext(_path: String, _name: String):
     case x: ExtAtomicPortalRef[_, _] =>
       app = app.copy(externalPortals = app.externalPortals :+ x)
     case x: Application => ???
-    case _              => ???
+    case _ => ???
 
   // TODO: get rid of this anomaly
   var _workflowBuilders: List[WorkflowBuilder[_, _]] = List.empty

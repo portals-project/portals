@@ -50,14 +50,14 @@ object DSL:
   // Refs
   //////////////////////////////////////////////////////////////////////////////
 
-  sealed trait Events
-  case object FUSE extends Events
+  // sealed trait Events
+  // case object FUSE extends Events
 
-  extension [T](ic: IStreamRef[T]) {
-    def !(f: DSL.FUSE.type) =
-      ic.fuse()
+  // extension [T](ic: IStreamRef[T]) {
+  //   def !(f: DSL.FUSE.type) =
+  //     ic.fuse()
 
-    def !(event: T) =
-      ic.submit(event)
-  }
+  //   def !(event: T) =
+  //     ic.submit(event)
+  // }
 end DSL // object

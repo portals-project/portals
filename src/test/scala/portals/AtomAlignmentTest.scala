@@ -9,44 +9,39 @@ import org.junit.Ignore
 @RunWith(classOf[JUnit4])
 class AtomAlignmentTest:
 
+  @Ignore
   @Test
   def testSingleSourceSingleSink(): Unit =
+    import portals.DSL.*
+
+    val tester = new TestUtils.Tester[Int]()
+
     val builder = ApplicationBuilders.application("application")
 
-    val _ = builder
-      .workflows[Int, Int]("wf")
-      .source[Int]()
-      .withName("input")
-      .sink()
-      .withName("output")
+    val testData = List.range(0, 128).grouped(1).toList
+    val generator = builder.generators.fromListOfLists("generator", testData)
 
-    val wf = builder.build()
+    val workflow = builder
+      .workflows[Int, Int]("wf")
+      .source[Int](generator.stream)
+      .sink()
+      .freeze()
+
+    val _ = tester.workflow(workflow.stream, builder)
+
+    val application = builder.build()
 
     val system = Systems.syncLocal()
-    system.launch(wf)
+    system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("/application/wf/input").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/output").resolve()
-
-    // create a test environment IRef
-    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
-    oref.setPreSubmitCallback(testIRef)
-
-    val n = 128
-    (0 until n).foreach { i =>
-      (0 until n).foreach { j =>
-        iref.submit(j)
-      }
-      iref.fuse()
-    }
+    // ASTPrinter.println(application)
 
     system.stepAll()
     system.shutdown()
 
-    (0 until n).foreach { i =>
-      (0 until n).foreach { j =>
-        assertEquals(Some(j), testIRef.receive())
-      }
+    testData.flatten.foreach { i =>
+      println(i)
+      tester.receiveAssert(i)
     }
 
   // @Test
@@ -156,110 +151,100 @@ class AtomAlignmentTest:
 
   @Test
   def testDiamond(): Unit =
-    val builder = ApplicationBuilders.application("application")
+    import portals.DSL.*
 
-    val source = builder
+    val tester = new TestUtils.Tester[Int]()
+
+    val builder = ApplicationBuilders
+      .application("application")
+
+    val testData = List.range(0, 256).grouped(1).toList
+    val generator = builder.generators.fromListOfLists("generator", testData)
+
+    val wfb = builder
       .workflows[Int, Int]("wf")
-      .source[Int]()
-      .withName("source")
 
-    val split1 = source
+    val source = wfb
+      .source[Int](generator.stream)
+
+    val fromSource1 = source
       .identity()
 
-    val split2 = source
+    val fromSource2 = source
       .identity()
 
-    val _ = split1
-      .union(split2)
-      .sink()
-      .withName("sink")
+    val merged = fromSource1
+      .union(fromSource2)
+
+    val sink = merged
+      .task(tester.task)
+      // .logger()
+      .sink[Int]()
+
+    val _ = wfb.freeze()
 
     val application = builder.build()
 
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("/application/wf/source").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/sink").resolve()
-
-    // create a test environment IRef
-    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
-    oref.setPreSubmitCallback(testIRef)
-
-    val n = 256
-    (0 until n).foreach { i =>
-      iref.submit(i)
-      iref.fuse()
-    }
-
     system.stepAll()
     system.shutdown()
 
-    (0 until n).foreach { i =>
-      assertEquals(Some(i), testIRef.receive())
-      assertEquals(Some(i), testIRef.receive())
+    testData.foreach { atom =>
+      atom.foreach { event =>
+        tester.receiveAssert(event)
+        tester.receiveAssert(event)
+      }
     }
-
-    assertEquals(true, testIRef.isEmpty())
 
   @Test
   def testDiamond2(): Unit =
-    val builder = ApplicationBuilders.application("application")
+    import portals.DSL.*
 
-    val source = builder
+    val tester = new TestUtils.Tester[Int]()
+
+    val builder = ApplicationBuilders
+      .application("application")
+
+    val testData = List.range(0, 256).grouped(128).toList
+    val generator = builder.generators.fromListOfLists("generator", testData)
+
+    val wfb = builder
       .workflows[Int, Int]("wf")
-      .source[Int]()
-      .withName("source")
 
-    val split1 = source
+    val source = wfb
+      .source[Int](generator.stream)
+
+    val fromSource1 = source
       .identity()
 
-    val split2 = source
+    val fromSource2 = source
       .identity()
 
-    val _ = split1
-      .union(split2)
-      .sink()
-      .withName("sink")
+    val merged = fromSource1
+      .union(fromSource2)
+
+    val sink = merged
+      .task(tester.task)
+      // .logger()
+      .sink[Int]()
+
+    val _ = wfb.freeze()
 
     val application = builder.build()
 
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[Int] = system.registry("/application/wf/source").resolve()
-    val oref: OStreamRef[Int] = system.registry.orefs("/application/wf/sink").resolve()
-
-    // create a test environment IRef
-    val testIRef = TestUtils.TestPreSubmitCallback[Int]()
-    oref.setPreSubmitCallback(testIRef)
-
-    val n = 256
-    (0 until n).foreach { i =>
-      iref.submit(i)
-    }
-    iref.fuse()
-
-    (0 until n).foreach { i =>
-      iref.submit(i)
-    }
-    iref.fuse()
-
     system.stepAll()
     system.shutdown()
 
-    var receives = Set.empty[Int]
-    (0 until n).foreach { i =>
-      receives += testIRef.receive().get
-      receives += testIRef.receive().get
+    val firstAtom = testData(0)
+    tester.receiveAtom().get.foreach { event =>
+      assertTrue(firstAtom.contains(event))
     }
-    assertEquals(receives, (0 until n).toSet)
-
-    receives = Set.empty[Int]
-    (0 until n).foreach { i =>
-      receives += testIRef.receive().get
-      receives += testIRef.receive().get
+    val secondAtom = testData(1)
+    tester.receiveAtom().get.foreach { event =>
+      assertTrue(secondAtom.contains(event))
     }
-    assertEquals(receives, (0 until n).toSet)
-
-    assertEquals(true, testIRef.isEmpty())

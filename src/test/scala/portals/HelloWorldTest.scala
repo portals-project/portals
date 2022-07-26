@@ -20,36 +20,31 @@ class HelloWorldTest:
 
   @Test
   def testHelloWorld(): Unit =
-    val helloWorld = "Hello, World!"
+    import portals.DSL.*
+
+    val tester = new TestUtils.Tester[String]()
 
     val builder = ApplicationBuilders
       .application("app")
 
-    val workflow = builder.workflows[String, String]("wf")
+    val message = "Hello, World!"
+    val generator = builder.generators.fromList("hw", List(message))
 
-    val flow = workflow
-      .source[String]("src")
+    val _ = builder
+      .workflows[String, String]("wf")
+      .source[String](generator.stream)
       .map[String] { x => x }
-      .withName("map")
       // .logger()
-      .sink("sink")
+      .task(tester.task)
+      .sink()
+      .freeze()
 
     val application = builder.build()
 
     val system = Systems.syncLocal()
     system.launch(application)
 
-    val iref: IStreamRef[String] = system.registry("/app/wf/src").resolve()
-    val oref: OStreamRef[String] = system.registry.orefs("/app/wf/sink").resolve()
-
-    // create a test environment IRef
-    val testIRef = TestUtils.TestPreSubmitCallback[String]()
-    oref.setPreSubmitCallback(testIRef)
-
-    iref.submit(helloWorld)
-    iref.fuse()
-
     system.stepAll()
     system.shutdown()
 
-    testIRef.receiveAssert(helloWorld)
+    tester.receiveAssert(message)

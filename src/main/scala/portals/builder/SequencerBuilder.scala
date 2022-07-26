@@ -13,7 +13,7 @@ end SequencerBuilder
 
 class SequencerBuilderImpl(using bctx: ApplicationBuilderContext) extends SequencerBuilder:
   override def random[T](name: String): AtomicSequencerRef[T] =
-    val _path = bctx.app.name + "/" + name
+    val _path = bctx.app.path + "/" + name
     val _name = name
     val _ins = List.empty
     val aStream = AtomicStream[T](path = _path + "/stream", name = "stream")
@@ -31,7 +31,7 @@ class SequencerBuilderImpl(using bctx: ApplicationBuilderContext) extends Sequen
     AtomicSequencerRef(aSequencer)
 
   override def roundRobin[T](name: String): AtomicSequencerRef[T] =
-    val _path = bctx.app.name + "/" + name
+    val _path = bctx.app.path + "/" + name
     val _name = name
     val _ins = List.empty
     val aStream = AtomicStream[T](path = _path + "/stream", name = "stream")
