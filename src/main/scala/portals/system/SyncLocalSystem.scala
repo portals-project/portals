@@ -1,11 +1,13 @@
 package portals
 
-import scala.collection.mutable
+import java.{util => ju}
 import java.util.concurrent.Flow.Subscriber
 import java.util.LinkedList
+
+import scala.collection.mutable
+import scala.collection.JavaConverters._
 import scala.util.control.Breaks._
-import collection.JavaConverters._
-import java.{util => ju}
+
 import portals.Generator.GeneratorEvent
 
 class SyncLocalSystem extends LocalSystemContext:
@@ -21,7 +23,7 @@ class SyncLocalSystem extends LocalSystemContext:
     )
 
   override def step(): Unit = runtimeWorkflows.filter(!_._2.isEmpty()).head._2.step()
-  override def step(wf: Workflow[_, _]): Unit = runtimeWorkflows(wf.name).step()
+  override def step(wf: Workflow[_, _]): Unit = runtimeWorkflows(wf.path).step()
   override def stepAll(): Unit = isEmpty() match {
     case true =>
     case false => {
@@ -29,14 +31,14 @@ class SyncLocalSystem extends LocalSystemContext:
       stepAll()
     }
   }
-  override def stepAll(wf: Workflow[_, _]): Unit = runtimeWorkflows(wf.name).stepAll()
+  override def stepAll(wf: Workflow[_, _]): Unit = runtimeWorkflows(wf.path).stepAll()
   override def isEmpty(): Boolean = runtimeWorkflows.forall(_._2.isEmpty())
-  override def isEmpty(wf: Workflow[_, _]): Boolean = runtimeWorkflows(wf.name).isEmpty()
+  override def isEmpty(wf: Workflow[_, _]): Boolean = runtimeWorkflows(wf.path).isEmpty()
 
   def shutdown(): Unit = ()
 
   // TODO: Workflow path is not guaranteed to have this pattern in future versions.
-  def wfId(app: Application, wf: Workflow[_, _]): String = "/" + app.name + "/" + wf.name
+  def wfId(app: Application, wf: Workflow[_, _]): String = wf.path
 
 /*
  * This class contains:
@@ -172,11 +174,12 @@ class RuntimeWorkflow(val name: String, val system: SyncLocalSystem) {
 
   // TODO: move to registry static method
   def extractWfId(name: String): String = {
-    name.split("/").slice(0, 3).mkString("/") // "/app/wf/task" -> "/app/wf"
+    // FIXME: rests on assumption that paths always have the same form.
+    name.split("/").slice(0, 4).mkString("/") // "/app/wf/task" -> "/app/wf"
   }
 }
 
-class RuntimeSequencer[T](val generators: Map[AtomicStreamRef[_], Generator[_]], sequencerStrategy: Sequencer[_])
+class RuntimeSequencer[T](val generators: Map[AtomicStreamRefKind[_], Generator[_]], sequencerStrategy: Sequencer[_])
     extends Generator[T] {
   val upstreamRefToGeneratorMapping = generators.asInstanceOf[Map[AtomicStreamRef[T], Generator[T]]]
   val sequencer: Sequencer[T] = sequencerStrategy.asInstanceOf[Sequencer[T]]
@@ -197,7 +200,7 @@ class RuntimeSequencer[T](val generators: Map[AtomicStreamRef[_], Generator[_]],
 // build runtime workflow from static workflow
 object RuntimeWorkflow {
   def convertAtomicStreamRefToGenerator(
-      streamRef: AtomicStreamRef[_],
+      streamRef: AtomicStreamRefKind[_],
       app: Application
   ): Generator[_] = {
     if (app.generators.filter(_.stream.path == streamRef.path).size == 1) {
@@ -207,7 +210,7 @@ object RuntimeWorkflow {
       // else if ref points to a sequencer, convert sequencer's upstream atomicStreamRef to generator
       // then wrap the sequencer to be a generator
       val sequencer = app.sequencers.filter(_.stream.path == streamRef.path).head
-      val upStreamAtomicRefs = app.connections.filter(_.ti.stream.path == streamRef.path)
+      val upStreamAtomicRefs = app.connections.filter(_.to.stream.path == streamRef.path)
       val upstreamRefToGeneratorMapping = upStreamAtomicRefs
         .map(conn => {
           (conn.from, convertAtomicStreamRefToGenerator(conn.from, app))
@@ -312,9 +315,9 @@ class RuntimeBehavior[I, O](
       case Event(key, item) => {
         ctx.key = key
         ctx.state.key = key
-        behavior.onNext(ctx)(item.asInstanceOf[I]) // TODO: better type cast
+        behavior.onNext(using ctx)(item.asInstanceOf[I]) // TODO: better type cast
       }
-      case Atom() => behavior.onAtomComplete(ctx)
+      case Atom() => behavior.onAtomComplete(using ctx)
 
   // NOTE: only allow source to use iref
   // def iref(): IStreamRef[I] = new IStreamRef[I] {

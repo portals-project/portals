@@ -1,12 +1,12 @@
 package portals
 
-import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Ignore
+import org.junit.Test
 
-import TestUtils.*
+import portals.test.*
 
 @RunWith(classOf[JUnit4])
 class SequencerTest:
@@ -15,7 +15,6 @@ class SequencerTest:
   @Test
   def randomTest(): Unit =
     import portals.DSL.*
-    import Generator.*
 
     val tester = new TestUtils.Tester[Int]()
 
@@ -23,15 +22,15 @@ class SequencerTest:
       .application("app")
 
     val sequencer = builder.sequencers
-      .random[Int]("random")
+      .random[Int]()
 
     // producers
-    val generator1 = builder.generators.fromRange("generator1", 0, 128, 5)
-    val generator2 = builder.generators.fromRange("generator2", 128, 256, 5)
+    val generator1 = builder.generators.fromRange(0, 128, 5)
+    val generator2 = builder.generators.fromRange(128, 256, 5)
 
     // connect producers to sequencer
-    val _ = builder.connections.connect("connection1", generator1.stream, sequencer)
-    val _ = builder.connections.connect("connection2", generator2.stream, sequencer)
+    val _ = builder.connections.connect(generator1.stream, sequencer)
+    val _ = builder.connections.connect(generator2.stream, sequencer)
 
     // consumers
     val _ = builder
@@ -54,7 +53,6 @@ class SequencerTest:
     system.shutdown()
 
     val received = tester.receiveAll()
-    val receivedWrapped = tester.receiveAllWrapped()
     val receivedAtoms = tester.receiveAllAtoms()
     val testData = Iterator.range(0, 256).toList
     val testDataAtoms = testData.grouped(5).toList

@@ -1,9 +1,12 @@
-package portals
+package portals.examples
 
-import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
+import org.junit.Test
+
+import portals.*
+import portals.test.*
 
 /** HelloWorld Test
   *
@@ -28,12 +31,12 @@ class HelloWorldTest:
       .application("app")
 
     val message = "Hello, World!"
-    val generator = builder.generators.fromList("hw", List(message))
+    val generator = builder.generators.fromList(List(message))
 
     val _ = builder
-      .workflows[String, String]("wf")
-      .source[String](generator.stream)
-      .map[String] { x => x }
+      .workflows[String, String]()
+      .source(generator.stream)
+      .map { x => x }
       // .logger()
       .task(tester.task)
       .sink()
@@ -41,7 +44,10 @@ class HelloWorldTest:
 
     val application = builder.build()
 
+    // ASTPrinter.println(application)
+
     val system = Systems.syncLocal()
+
     system.launch(application)
 
     system.stepAll()

@@ -4,11 +4,13 @@ trait PortalBuilder:
   def portal[T, R](name: String): AtomicPortalRef[T, R]
 
 object PortalBuilder:
-  def apply()(using bctx: ApplicationBuilderContext): PortalBuilder = new PortalBuilderImpl()
+  def apply(name: String)(using bctx: ApplicationBuilderContext): PortalBuilder =
+    val _name = bctx.name_or_id(name)
+    new PortalBuilderImpl(_name)
 
-class PortalBuilderImpl(using bctx: ApplicationBuilderContext) extends PortalBuilder:
+class PortalBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) extends PortalBuilder:
   def portal[T, R](name: String): AtomicPortalRef[T, R] =
     val path = bctx.app.path + "/portals/" + name
-    val portal = AtomicPortal[T, R](path, name)
+    val portal = AtomicPortal[T, R](path)
     bctx.addToContext(portal)
     AtomicPortalRef[T, R](portal)

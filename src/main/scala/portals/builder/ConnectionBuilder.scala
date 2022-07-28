@@ -1,14 +1,16 @@
 package portals
 
 trait ConnectionBuilder:
-  def connect[T](name: String, aStream: AtomicStreamRef[T], sequencer: AtomicSequencerRef[T]): AtomicConnection[T]
+  def connect[T](aStream: AtomicStreamRefKind[T], sequencer: AtomicSequencerRefKind[T]): AtomicConnection[T]
 
 object ConnectionBuilder:
-  def apply()(using bctx: ApplicationBuilderContext): ConnectionBuilder = new ConnectionBuilderImpl()
+  def apply(name: String)(using bctx: ApplicationBuilderContext): ConnectionBuilder =
+    val _name = bctx.name_or_id(name)
+    new ConnectionBuilderImpl(_name)
 
-class ConnectionBuilderImpl(using bctx: ApplicationBuilderContext) extends ConnectionBuilder:
-  def connect[T](name: String, aStream: AtomicStreamRef[T], sequencer: AtomicSequencerRef[T]): AtomicConnection[T] =
+class ConnectionBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) extends ConnectionBuilder:
+  def connect[T](aStream: AtomicStreamRefKind[T], sequencer: AtomicSequencerRefKind[T]): AtomicConnection[T] =
     val path = bctx.app.path + "/connections/" + name
-    val connection = AtomicConnection[T](path, name, aStream, sequencer)
+    val connection = AtomicConnection[T](path, aStream, sequencer)
     bctx.addToContext(connection)
     connection

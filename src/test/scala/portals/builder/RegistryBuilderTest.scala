@@ -1,15 +1,15 @@
 package portals
 
-import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Ignore
+import org.junit.Test
 
-import TestUtils.*
+import portals.test.*
 
 @RunWith(classOf[JUnit4])
-class RegistryTest:
+class RegistryBuilderTest:
 
   @Ignore
   @Test
@@ -28,7 +28,7 @@ class RegistryTest:
         .application("app1")
 
       val sequencer = builder.sequencers
-        .random[Int]("sequencer")
+        .random[Int]()
 
       val _ = builder
         .workflows[Int, Int]("workflow")
@@ -52,12 +52,12 @@ class RegistryTest:
       val builder = ApplicationBuilders
         .application("app2")
 
-      val generator = builder.generators.fromRange("generator", 0, 100, 5)
+      val generator = builder.generators.fromRange(0, 100, 5)
 
       // REGISTRY
       val extSequencer = builder.registry.sequencers.get[Int]("/app1/sequencer")
 
-      builder.connections.connect("connection", generator.stream, extSequencer.resolve())
+      builder.connections.connect(generator.stream, extSequencer)
 
       val app = builder.build()
 
@@ -108,7 +108,7 @@ class RegistryTest:
       val builder = ApplicationBuilders
         .application("app1")
 
-      val generator = builder.generators.fromRange("generator", 0, 100, 5)
+      val generator = builder.generators.fromRange(0, 100, 5)
 
       val _ = builder
         .workflows[Int, Int]("workflow")
@@ -136,7 +136,7 @@ class RegistryTest:
 
       val _ = builder
         .workflows[Int, Int]("workflow")
-        .source(extStream.resolve())
+        .source(extStream)
         .task(tester.task)
         .sink()
         .freeze()

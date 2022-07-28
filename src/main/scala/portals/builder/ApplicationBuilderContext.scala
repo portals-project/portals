@@ -1,8 +1,8 @@
 package portals
 
 /** Application Builder Context. */
-class ApplicationBuilderContext(_path: String, _name: String):
-  var app: Application = Application(path = _path, name = _name)
+class ApplicationBuilderContext(_path: String):
+  var app: Application = Application(path = _path)
 
   def addToContext(e: AST): Unit = e match
     case x: Workflow[_, _] =>
@@ -27,6 +27,13 @@ class ApplicationBuilderContext(_path: String, _name: String):
       app = app.copy(externalPortals = app.externalPortals :+ x)
     case x: Application => ???
     case _ => ???
+
+  private var _next_id: Int = 0
+  def next_id(): String =
+    _next_id = _next_id + 1
+    "$" + _next_id.toString
+
+  def name_or_id(name: String): String = if name == null then this.next_id() else name
 
   // TODO: get rid of this anomaly
   var _workflowBuilders: List[WorkflowBuilder[_, _]] = List.empty

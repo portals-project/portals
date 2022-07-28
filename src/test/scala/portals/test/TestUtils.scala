@@ -1,61 +1,75 @@
-package portals
+package portals.test
 
-import collection.convert.ImplicitConversions.`collection asJava`
-import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable.Queue
 import scala.util.Try
+
 import org.junit.Assert._
-import scala.util.{Success, Failure}
+
+import portals.*
 
 object TestUtils:
-  // // TODO: remove
-  // class TestPreSubmitCallback[T] extends PreSubmitCallback[T] {
-  //   val lock = ReentrantLock()
-  //   private val queue: Queue[T] = Queue[T]()
+  def executeTask[T, U](
+      task: Task[T, U],
+      testData: List[List[T]],
+      testDataKeys: List[List[Key[Int]]] = List.empty,
+  ): Tester[U] =
+    val tester = Tester[U]()
+    val builder = ApplicationBuilders.application("app")
+    val generator =
+      if testDataKeys.isEmpty then builder.generators.fromListOfLists(testData)
+      else builder.generators.fromListOfLists(testData, testDataKeys)
+    val workflow = builder
+      .workflows[T, U]("workflow")
+      .source(generator.stream)
+      .task(task)
+      .task(tester.task)
+      .sink()
+      .freeze()
+    val app = builder.build()
+    val system = Systems.syncLocal()
+    system.launch(app)
+    system.stepAll()
+    system.shutdown()
+    tester
 
-  //   override def preSubmit(t: T): Unit = {
-  //     lock.lock()
-  //     queue.enqueue(t)
-  //     lock.unlock()
-  //   }
+  def executeWorkflow[T, U](
+      flows: FlowBuilder[T, U, T, T] => FlowBuilder[T, U, U, U],
+      testData: List[List[T]],
+      testDataKeys: List[List[Key[Int]]] = List.empty,
+  ): Tester[U] =
+    val tester = Tester[U]()
+    val builder = ApplicationBuilders.application("app")
 
-  //   def receiveAssert(event: T): this.type =
-  //     lock.lock()
-  //     assert(event == queue.dequeue())
-  //     lock.unlock()
-  //     this
+    val generator =
+      if testDataKeys.isEmpty then builder.generators.fromListOfLists(testData)
+      else builder.generators.fromListOfLists(testData, testDataKeys)
 
-  //   def receive(): Option[T] =
-  //     lock.lock()
-  //     val res = Option(queue.dequeue())
-  //     lock.unlock()
-  //     res
+    val workflow = builder
+      .workflows[T, U]("workflow")
 
-  //   def peek(): Option[T] =
-  //     lock.lock()
-  //     val res = Option(queue.front)
-  //     lock.unlock()
-  //     res
+    flows(
+      workflow
+        .source(generator.stream)
+    )
+      .task(tester.task)
+      .sink()
+      .freeze()
 
-  //   def receiveAll(): Seq[T] =
-  //     lock.lock()
-  //     // queue.toArray.asInstanceOf[Array[T]].toSeq
-  //     val res = queue.toSeq
-  //     lock.unlock()
-  //     res
+    val app = builder.build()
 
-  //   def isEmpty(): Boolean =
-  //     lock.lock()
-  //     val res = queue.isEmpty()
-  //     lock.unlock()
-  //     res
+    val system = Systems.syncLocal()
 
-  //   def contains(el: T): Boolean =
-  //     lock.lock()
-  //     val res = queue.contains(el)
-  //     lock.unlock()
-  //     res
-  // }
+    system.launch(app)
+    system.stepAll()
+    system.shutdown()
+
+    tester
+
+  // for building a flowbuilding factory
+  def flowBuilder[T, U](
+      flows: FlowBuilder[T, U, T, T] => FlowBuilder[T, U, U, U]
+  ): FlowBuilder[T, U, T, T] => FlowBuilder[T, U, U, U] =
+    flows
 
   // only for synchronous testing
   class Tester[T]:
@@ -68,17 +82,17 @@ object TestUtils:
     private val queue: Queue[WrappedEvent[T]] = Queue[WrappedEvent[T]]()
 
     val task = new Task[T, T] {
-      override def onNext(ctx: TaskContext[T, T])(t: T): Task[T, T] =
+      override def onNext(using ctx: TaskContext[T, T])(t: T): Task[T, T] =
         queue.enqueue(Event(t))
         ctx.emit(t)
         Tasks.same
-      override def onError(ctx: TaskContext[T, T])(t: Throwable): Task[T, T] =
+      override def onError(using ctx: TaskContext[T, T])(t: Throwable): Task[T, T] =
         queue.enqueue(Error(t))
         Tasks.same
-      override def onComplete(ctx: TaskContext[T, T]): Task[T, T] =
+      override def onComplete(using ctx: TaskContext[T, T]): Task[T, T] =
         queue.enqueue(Seal)
         Tasks.same
-      override def onAtomComplete(ctx: TaskContext[T, T]): Task[T, T] =
+      override def onAtomComplete(using ctx: TaskContext[T, T]): Task[T, T] =
         queue.enqueue(Atom)
         ctx.fuse()
         Tasks.same
@@ -144,7 +158,7 @@ object TestUtils:
       atomIterator(queue.iterator).toSeq
 
     def isEmpty(): Boolean =
-      queue.isEmpty()
+      queue.isEmpty
 
     def contains(el: T): Boolean =
       queue.contains(Event(el))

@@ -1,9 +1,12 @@
-package portals
+package portals.examples
 
-import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
+import org.junit.Test
+
+import portals.*
+import portals.test.*
 
 /** MapReduce tests
   *
@@ -45,7 +48,7 @@ class WordCountTest:
     val builder = ApplicationBuilders.application("application")
 
     val input = List("the quick brown fox jumps over the lazy dog")
-    val generator = builder.generators.fromList("generator", input)
+    val generator = builder.generators.fromList(input)
 
     val _ = builder
       .workflows[String, (String, Int)]("wf")
@@ -53,27 +56,26 @@ class WordCountTest:
       .flatMap(mapper)
       .key(_._1.hashCode()) // sets the contextual key to the word
       // reducer applied to word and state in the VSM
-      .processor[(String, Int)] { case (k, v) =>
-        ctx.state.get(k) match
-          case Some(n) =>
-            // reduce to compute the next value
-            val newN = reducer((k, v), (k, n.asInstanceOf[Int]))._2
-            ctx.state.set(k, newN)
-          case None =>
-            ctx.state.set(k, v)
+      .init[(String, Int)] {
+        val counts = PerTaskState[Map[String, Int]]("counts", Map.empty)
+        Tasks.processor { case (k, v) =>
+          val newCount = counts.get().getOrElse(k, 0) + v
+          counts.set(counts.get() + (k -> newCount))
+        }
       }
       // we also install an onAtomComplete handler that is triggered on every atom
       // it will emit the final state of the VSM
       .withOnAtomComplete { ctx ?=>
         // emit final state
-        ctx.state.iterator.foreach { case (k, v) => ctx.emit((k.asInstanceOf[String], v.asInstanceOf[Int])) }
+        val counts = PerTaskState[Map[String, Int]]("counts", Map.empty)
+        counts.get().iterator.foreach { case (k, v) => ctx.emit(k, v) }
         ctx.state.clear()
         ctx.fuse() // emit next atom
         Tasks.same
       }
       // .logger()
       // check that the current output type is (String, Int), otherwise something went wrong
-      .checkExpectedType[(String, Int), (String, Int)]()
+      .checkExpectedType[(String, Int)]()
       .task(tester.task)
       .sink()
       .freeze()

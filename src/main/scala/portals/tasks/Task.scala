@@ -1,24 +1,24 @@
 package portals
 
-private[portals] trait Task[I, O]:
-  def onNext(ctx: TaskContext[I, O])(t: I): Task[I, O]
+private[portals] trait Task[T, U]:
+  def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U]
 
-  def onError(ctx: TaskContext[I, O])(t: Throwable): Task[I, O]
+  def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U]
 
-  def onComplete(ctx: TaskContext[I, O]): Task[I, O]
+  def onComplete(using ctx: TaskContext[T, U]): Task[T, U]
 
-  def onAtomComplete(ctx: TaskContext[I, O]): Task[I, O]
+  def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U]
 
   // we use `_` underscore here, as otherwise copy is overridden by inheriting case classes
   private[portals] def _copy(
-      _onNext: TaskContext[I, O] => I => Task[I, O] = onNext,
-      _onError: TaskContext[I, O] => Throwable => Task[I, O] = onError,
-      _onComplete: TaskContext[I, O] => Task[I, O] = onComplete,
-      _onAtomComplete: TaskContext[I, O] => Task[I, O] = onAtomComplete
-  ): Task[I, O] =
-    new Task[I, O] {
-      override def onNext(ctx: TaskContext[I, O])(t: I): Task[I, O] = _onNext(ctx)(t)
-      override def onError(ctx: TaskContext[I, O])(t: Throwable): Task[I, O] = _onError(ctx)(t)
-      override def onComplete(ctx: TaskContext[I, O]): Task[I, O] = _onComplete(ctx)
-      override def onAtomComplete(ctx: TaskContext[I, O]): Task[I, O] = _onAtomComplete(ctx)
+      _onNext: TaskContext[T, U] ?=> T => Task[T, U] = onNext,
+      _onError: TaskContext[T, U] ?=> Throwable => Task[T, U] = onError,
+      _onComplete: TaskContext[T, U] ?=> Task[T, U] = onComplete,
+      _onAtomComplete: TaskContext[T, U] ?=> Task[T, U] = onAtomComplete
+  ): Task[T, U] =
+    new Task[T, U] {
+      override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] = _onNext(using ctx)(t)
+      override def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U] = _onError(using ctx)(t)
+      override def onComplete(using ctx: TaskContext[T, U]): Task[T, U] = _onComplete(using ctx)
+      override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] = _onAtomComplete(using ctx)
     }

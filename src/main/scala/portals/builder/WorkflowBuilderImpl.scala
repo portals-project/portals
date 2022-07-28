@@ -6,17 +6,15 @@ private[portals] class WorkflowBuilderImpl[T, U](using wbctx: WorkflowBuilderCon
     extends WorkflowBuilder[T, U]:
 
   // internal, do not use
-  // todo: solve this in some better way :)
   private[portals] override def complete(): Unit =
-    if wbctx.frozen == true then () else wbctx.freeze()
+    try wbctx.freeze()
+    // FIXME: we should not ignore the error here, it happens when we call freeze twice
+    catch e => ()
 
   override def freeze(): Workflow[T, U] = wbctx.freeze()
-  override def source[TT >: T <: T](name: String = null): FlowBuilder[T, U] =
-    FlowBuilder(None).source(name)
 
-  @targetName("sourceFromRef")
-  override def source[TT >: T <: T](ref: AtomicStreamRef[T]): FlowBuilder[T, U] =
-    FlowBuilder(None).source(ref)
+  override def source[TT >: T <: T](ref: AtomicStreamRefKind[T], name: String = null): FlowBuilder[T, U, TT, TT] =
+    FlowBuilder(None).source(ref, name)
 
   override def check(): Boolean = ???
 end WorkflowBuilderImpl

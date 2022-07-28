@@ -3,14 +3,15 @@ package portals
 object DSL:
 
   //////////////////////////////////////////////////////////////////////////////
-  // Tasks
+  // Tasks DSL
   //////////////////////////////////////////////////////////////////////////////
 
   // shorthands for the TaskContext
+  // Here we can use a generic task context instead, and use the return type of
+  // the dependent contextual generic task context to obtain a more specific
+  // task context type. This can return both a MapTaskContext or the regular
+  // TaskContext, e.g.
   def ctx[T, U](using gctx: GenericTaskContext[T, U]): gctx.type =
-    // here we can use a generic task context instead, and use the return type of
-    // the dependent contextual generic task context to obtain a more specific
-    // task context type. This should work.
     gctx
 
   // shorthands for the TaskContext methods
@@ -19,7 +20,7 @@ object DSL:
   def log[T, U](using LoggingTaskContext[T, U]) = summon[LoggingTaskContext[T, U]].log
 
   //////////////////////////////////////////////////////////////////////////////
-  // Portals
+  // Portals DSL
   //////////////////////////////////////////////////////////////////////////////
 
   def ask[T, U, Req, Rep, Portals <: AtomicPortalRefType[Req, Rep]](using
@@ -40,24 +41,4 @@ object DSL:
     def ask(req: Req): Future[Rep] = ctx.ask(portal)(req)
   }
 
-  extension [T, U, Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](using
-      ReplierTaskContext[T, U, Req, Rep, Portals]
-  )(portal: Portals) {
-    def reply(rep: Rep): Unit = ctx.reply(rep)
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Refs
-  //////////////////////////////////////////////////////////////////////////////
-
-  // sealed trait Events
-  // case object FUSE extends Events
-
-  // extension [T](ic: IStreamRef[T]) {
-  //   def !(f: DSL.FUSE.type) =
-  //     ic.fuse()
-
-  //   def !(event: T) =
-  //     ic.submit(event)
-  // }
 end DSL // object

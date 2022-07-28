@@ -1,7 +1,11 @@
 package portals
 
-import org.slf4j.{LoggerFactory => SLLoggerFactory, Logger => SLLogger}
-import ch.qos.logback.classic.{LoggerContext => LBLoggerContext, Logger => LBLogger, Level => LBLevel}
+import org.slf4j.{Logger => SLLogger}
+import org.slf4j.{LoggerFactory => SLLoggerFactory}
+
+import ch.qos.logback.classic.{Level => LBLevel}
+import ch.qos.logback.classic.{Logger => LBLogger}
+import ch.qos.logback.classic.{LoggerContext => LBLoggerContext}
 
 type Logger = SLLogger
 
