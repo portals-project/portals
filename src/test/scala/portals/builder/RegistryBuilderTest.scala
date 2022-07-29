@@ -11,7 +11,6 @@ import portals.test.*
 @RunWith(classOf[JUnit4])
 class RegistryBuilderTest:
 
-  @Ignore
   @Test
   def testRegistrySequencer(): Unit =
     import portals.DSL.*
@@ -27,8 +26,7 @@ class RegistryBuilderTest:
       val builder = ApplicationBuilders
         .application("app1")
 
-      val sequencer = builder.sequencers
-        .random[Int]()
+      val sequencer = builder.sequencers("sequencer").random[Int]()
 
       val _ = builder
         .workflows[Int, Int]("workflow")
@@ -55,7 +53,7 @@ class RegistryBuilderTest:
       val generator = builder.generators.fromRange(0, 100, 5)
 
       // REGISTRY
-      val extSequencer = builder.registry.sequencers.get[Int]("/app1/sequencer")
+      val extSequencer = builder.registry.sequencers.get[Int]("/app1/sequencers/sequencer")
 
       builder.connections.connect(generator.stream, extSequencer)
 
@@ -92,7 +90,6 @@ class RegistryBuilderTest:
       assertEquals(expected, actual.toList)
     }
 
-  @Ignore
   @Test
   def testRegistryStream(): Unit =
     import portals.DSL.*
@@ -132,7 +129,7 @@ class RegistryBuilderTest:
         .application("app2")
 
       // REGISTRY
-      val extStream = builder.registry.streams.get[Int]("/app1/workflow/stream")
+      val extStream = builder.registry.streams.get[Int]("/app1/workflows/workflow/stream")
 
       val _ = builder
         .workflows[Int, Int]("workflow")

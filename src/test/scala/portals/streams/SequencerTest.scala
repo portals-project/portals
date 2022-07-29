@@ -11,7 +11,6 @@ import portals.test.*
 @RunWith(classOf[JUnit4])
 class SequencerTest:
 
-  @Ignore
   @Test
   def randomTest(): Unit =
     import portals.DSL.*
@@ -55,7 +54,7 @@ class SequencerTest:
     val received = tester.receiveAll()
     val receivedAtoms = tester.receiveAllAtoms()
     val testData = Iterator.range(0, 256).toList
-    val testDataAtoms = testData.grouped(5).toList
+    val testDataAtoms = Iterator.range(0, 128).grouped(5).toList ++ Iterator.range(128, 256).grouped(5).toList
 
     // 1. all events have been produced and consumed
     assertEquals(received.sorted, testData)

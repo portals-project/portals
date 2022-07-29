@@ -9,8 +9,5 @@ trait SystemContext:
 
 trait LocalSystemContext extends SystemContext:
   def step(): Unit
-  def step(wf: Workflow[_, _]): Unit
   def stepAll(): Unit
-  def stepAll(wf: Workflow[_, _]): Unit
   def isEmpty(): Boolean
-  def isEmpty(wf: Workflow[_, _]): Boolean

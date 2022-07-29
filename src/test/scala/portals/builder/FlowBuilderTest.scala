@@ -11,7 +11,6 @@ import portals.test.*
 @RunWith(classOf[JUnit4])
 class FlowBuilderTest:
 
-  @Ignore
   @Test
   def testDiamondTaskGraph(): Unit =
     import portals.DSL.*

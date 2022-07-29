@@ -232,5 +232,4 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
       updateTask(name, newBehavior)
     }
     this.asInstanceOf[FlowBuilder[T | WT, U | WU, CT, CU]]
-
 end FlowBuilderImpl //

@@ -18,7 +18,6 @@ import portals.test.*
 @RunWith(classOf[JUnit4])
 class PingPongTest:
 
-  @Ignore
   @Test
   def testPingPong(): Unit =
     import portals.DSL.*
@@ -33,7 +32,7 @@ class PingPongTest:
     {
       val pinger = ApplicationBuilders.application("pinger")
 
-      val sequencer = pinger.sequencers.random[Pong]()
+      val sequencer = pinger.sequencers("sequencer").random[Pong]()
 
       val generator = pinger.generators.fromList(List(Pong(128)))
 
@@ -55,11 +54,11 @@ class PingPongTest:
       val ponger = ApplicationBuilders
         .application("ponger")
 
-      val extStream = ponger.registry.sequencers.get[Ping]("/pinger/workflow/stream")
+      val extStream = ponger.registry.streams.get[Ping]("/pinger/workflows/workflow/stream")
 
       val pongerwf = ponger
         .workflows[Ping, Pong]("ponger")
-        .source[Ping](extStream.stream)
+        .source[Ping](extStream)
         .map { case Ping(i) => Pong(i - 1) }
         .filter(_.i > 0)
         // .logger()
@@ -67,7 +66,7 @@ class PingPongTest:
         .sink[Pong]()
         .freeze()
 
-      val extSequencer = ponger.registry.sequencers.get[Pong]("/pinger/sequencer")
+      val extSequencer = ponger.registry.sequencers.get[Pong]("/pinger/sequencers/sequencer")
       val _ = ponger.connections.connect(pongerwf.stream, extSequencer)
 
       val pongerApp = ponger.build()
@@ -77,4 +76,4 @@ class PingPongTest:
 
     system.stepAll()
 
-    assertEquals((128 until 0 by -1).toList, tester.receiveAll())
+    assertEquals((127 until 0 by -1).map(Pong(_)).toList, tester.receiveAll())

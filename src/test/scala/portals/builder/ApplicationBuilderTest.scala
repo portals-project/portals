@@ -11,7 +11,6 @@ import portals.test.*
 @RunWith(classOf[JUnit4])
 class ApplicationBuilderTest:
 
-  @Ignore
   @Test
   def testExternalCycle(): Unit =
     import portals.DSL.*
@@ -60,7 +59,6 @@ class ApplicationBuilderTest:
     assertEquals(Some(List(0)), tester.receiveAtom())
     assertNotEquals(Some(List(-1)), tester.receiveAtom())
 
-  @Ignore
   @Test
   def testChainOfWorkflows(): Unit =
     import portals.DSL.*
@@ -214,7 +212,6 @@ class ApplicationBuilderTest:
       assertTrue(secondAtom.contains(event))
     }
 
-  @Ignore
   @Test
   def testDiamond2(): Unit =
     import portals.DSL.*

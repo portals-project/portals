@@ -1,5 +1,7 @@
 package portals
 
+import scala.annotation.targetName
+
 /** Events to be produced by the generator. */
 object Generator:
   sealed trait GeneratorEvent[+T]
