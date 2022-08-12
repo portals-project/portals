@@ -5,7 +5,11 @@ import java.util.LinkedList
 
 import collection.JavaConverters._
 
-class RuntimeWorkflow(val staticWf: Workflow[_, _]) extends Executable with Recvable {
+trait SyncWorkflow extends Executable with Recvable {
+  val staticWf: Workflow[_, _]
+}
+
+class RuntimeWorkflow(val staticWf: Workflow[_, _]) extends SyncWorkflow {
   private val logger = Logger(staticWf.path)
 
   var tasks = Map[String, RuntimeBehavior[_, _]]()
@@ -14,13 +18,17 @@ class RuntimeWorkflow(val staticWf: Workflow[_, _]) extends Executable with Recv
   var sourceAtomBuffer = Map[String, LinkedList[AtomSeq]]()
   var sinks = Map[String, RuntimeBehavior[_, _]]()
   var connections = Map[String, Set[String]]()
+  var subscribers = List[Recvable]()
 
   // TODO: assume only one source
   def recv(from: AtomicStreamRefKind[_], seq: AtomSeq) = {
     logger.debug(s"${staticWf.path} receives from ${from.path}")
     sourceAtomBuffer.head._2.add(seq)
   }
-  var subscribers = List[Recvable]()
+
+  def subscribedBy(recvable: Recvable) = {
+    subscribers ::= recvable
+  }
 
   def getRuntimeBehavior(name: String): RuntimeBehavior[_, _] = {
     tasks.getOrElse(name, sources.getOrElse(name, sinks.getOrElse(name, null)))

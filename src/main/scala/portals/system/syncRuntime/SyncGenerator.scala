@@ -4,12 +4,18 @@ import java.util.LinkedList
 
 import collection.JavaConverters._
 
-class RuntimeGenerator[T](val g: AtomicGenerator[T]) extends Executable:
+trait SyncGenerator extends Executable {
+  val g: AtomicGenerator[_]
+}
+
+class RuntimeGenerator[T](val g: AtomicGenerator[T]) extends SyncGenerator:
   private val logger = Logger(g.path)
 
   val eventBuffer = new LinkedList[WrappedEvent[T]]()
   val atomBuffer = new LinkedList[AtomSeq]()
   var subscribers = List[Recvable]()
+
+  def subscribedBy(subscriber: Recvable) = subscribers ::= subscriber
 
   // we must read from generator to know if its events is enough to produce an atom
   override def isEmpty(): Boolean = {
