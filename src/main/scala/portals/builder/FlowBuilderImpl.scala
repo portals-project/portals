@@ -62,6 +62,21 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     // set latest
     FlowBuilder(Some(name))
 
+  private def addTaskFrom2[CU, CCU](
+      behavior: Task[CU, CCU],
+      froms: List[FlowBuilder[T, U, _, CU]],
+  ): FlowBuilder[T, U, CU, CCU] =
+    // create name
+    val name = fbctx.wbctx.bctx.next_id()
+    // add connections
+    froms.foreach { from =>
+      from.asInstanceOf[FlowBuilderImpl[T, U, _, CU]].addConnectionTo(name)
+    }
+    // add task
+    fbctx.wbctx.tasks = fbctx.wbctx.tasks + (name -> behavior)
+    // set latest
+    FlowBuilder(Some(name))
+
   private def addTask[CCU](behavior: Task[CU, CCU]): FlowBuilder[T, U, CU, CCU] =
     // create name
     val name = fbctx.wbctx.bctx.name_or_id(null)
@@ -110,9 +125,17 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     val behavior = Tasks.identity[U]
     addSink(name, behavior)
 
-  override def union[CCT, CCU](other: FlowBuilder[T, U, CCT, CCU]): FlowBuilder[T, U, CCU | CU, CCU | CU] =
-    val behavior = Tasks.identity[CU | CCU]
-    addTaskFrom[CU, CCU, CT, CCT, CU | CCU](behavior, this, other)
+  // TODO: deprecated
+  // override def union[CCT, CCU](other: FlowBuilder[T, U, CCT, CCU]): FlowBuilder[T, U, CCU | CU, CCU | CU] =
+  //   val behavior = Tasks.identity[CU | CCU]
+  //   addTaskFrom[CU, CCU, CT, CCT, CU | CCU](behavior, this, other)
+
+  override def union(others: List[FlowBuilder[T, U, _, CU]]): FlowBuilder[T, U, CU, CU] =
+    val behavior = Tasks.identity[CU]
+    addTaskFrom2(behavior, this :: others)
+
+  override def from[CU, CCU](others: FlowBuilder[T, U, _, CU]*)(task: Task[CU, CCU]): FlowBuilder[T, U, CU, CCU] =
+    addTaskFrom2[CU, CCU](task, others.toList)
 
   override def map[CCU](f: MapTaskContext[CU, CCU] ?=> CU => CCU): FlowBuilder[T, U, CU, CCU] =
     val behavior = Tasks.map[CU, CCU](f)

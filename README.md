@@ -13,6 +13,9 @@ We recommend the following steps to get started.
 ## Examples
 Examples can be found in the [examples](src/main/scala/portals/examples) directory, or in the [test](src/test/scala/portals) directory.
 
+## Benchmark
+Execute the benchmark by running `sh benchmark.sh`.
+
 ## Contributing
 Contributions are welcome! To contribute please follow these guideines.
 * Familiarize yourself with the technologies and concepts.

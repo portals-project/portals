@@ -12,16 +12,19 @@ trait SyncWorkflow extends Executable with Recvable {
 class RuntimeWorkflow(val staticWf: Workflow[_, _]) extends SyncWorkflow {
   private val logger = Logger(staticWf.path)
 
+  // if the workflow has been stopped due to a seal
+  private var stopped = false
+
   var tasks = Map[String, RuntimeBehavior[_, _]]()
   var sources = Map[String, RuntimeBehavior[_, _]]()
   var sinkEventBuffer = Map[String, ju.List[WrappedEvent[_]]]()
-  var sourceAtomBuffer = Map[String, LinkedList[AtomSeq]]()
+  var sourceAtomBuffer = Map[String, LinkedList[EventBatch]]()
   var sinks = Map[String, RuntimeBehavior[_, _]]()
   var connections = Map[String, Set[String]]()
   var subscribers = List[Recvable]()
 
   // TODO: assume only one source
-  def recv(from: AtomicStreamRefKind[_], seq: AtomSeq) = {
+  def recv(from: AtomicStreamRefKind[_], seq: EventBatch) = {
     logger.debug(s"${staticWf.path} receives from ${from.path}")
     sourceAtomBuffer.head._2.add(seq)
   }
@@ -66,10 +69,16 @@ class RuntimeWorkflow(val staticWf: Workflow[_, _]) extends SyncWorkflow {
         val selectedSource = nonEmptySourceBuffers.map(_._1).head
         logger.debug(s"consume one atom(event seq) from ${selectedSource}")
         val atomSeq = sourceAtomBuffer(selectedSource).poll()
-        atomSeq.events.foreach(event => {
-          executionQueue.add((sources(selectedSource), event))
-          microStep()
-        })
+        atomSeq match
+          case AtomSeq(seq) =>
+            seq.foreach(event => {
+              executionQueue.add((sources(selectedSource), event))
+              microStep()
+            })
+          case SealSeq =>
+            executionQueue.add((sources(selectedSource), Seal))
+            microStep()
+            stopped = true // stop the workflow
         logger.debug(s"step ${stepId} finished")
       }
     stepId += 1
@@ -85,25 +94,30 @@ class RuntimeWorkflow(val staticWf: Workflow[_, _]) extends SyncWorkflow {
   // TODO if picked an empty Atom
   def isEmpty(): Boolean = {
     // logger.debug(s"isEmpty returns ${sourceAtomBuffer.filter(_._2.isEmpty).size == sourceAtomBuffer.size}")
-    sourceAtomBuffer.filter(_._2.isEmpty).size == sourceAtomBuffer.size
+    // workflow does not process events if it is stopped
+    sourceAtomBuffer.filter(_._2.isEmpty).size > 0 | stopped
   }
 
   def onRuntimeBehaviorEventSubmit[I, O](behavior: RuntimeBehavior[I, O], key: Key[Int], event: O): Unit =
     dispatchEvent(behavior, Event(key, event))
   def onRuntimeBehaviorAtomSubmit(behavior: RuntimeBehavior[_, _]): Unit =
-    dispatchEvent(behavior, Atom())
+    dispatchEvent(behavior, Atom)
   def dispatchEvent(behavior: RuntimeBehavior[_, _], event: WrappedEvent[_]): Unit = {
     // if is sink
     if (sinks.contains(behavior.name)) {
       sinkEventBuffer(behavior.name).add(event)
       event match {
-        case Atom() =>
+        case Atom =>
           val atom = sinkEventBuffer(behavior.name).asScala.toList
           sinkEventBuffer(behavior.name).clear()
           // only broadcast to subscribers if the atomSeq is not empty
           if (atom.length > 1) {
             subscribers.foreach(_.recv(staticWf.stream, AtomSeq(atom)))
           }
+        case Seal =>
+          val atom = sinkEventBuffer(behavior.name).asScala.toList
+          sinkEventBuffer(behavior.name).clear()
+          subscribers.foreach(_.recv(staticWf.stream, SealSeq))
         case _ =>
       }
     } else {
@@ -136,7 +150,7 @@ object RuntimeWorkflow {
       val fullName = wf.path + "/" + name
       val rtBehavior = RuntimeBehavior(fullName, rtwf, behavior, 0)
       rtwf.sources += (fullName -> rtBehavior)
-      rtwf.sourceAtomBuffer += (fullName -> new LinkedList[AtomSeq]())
+      rtwf.sourceAtomBuffer += (fullName -> new LinkedList[EventBatch]())
     })
 
     wf.sinks.foreach((name, behavior) => {
@@ -190,7 +204,7 @@ class RuntimeBehavior[I, O](
         ctx.state.key = key
         behavior.onNext(using ctx)(item.asInstanceOf[I]) // TODO: better type cast
       }
-      case Atom() => {
+      case Atom => {
         // not possible to stash more than one atom in each buffer at sync runtime, no need to stash
         if (upStreamCnt <= 1) {
           behavior.onAtomComplete(using ctx)
@@ -202,3 +216,9 @@ class RuntimeBehavior[I, O](
           }
         }
       }
+      case Seal =>
+        behavior.onComplete(using ctx)
+        rtwf.dispatchEvent(self, Seal)
+      case Error(t) =>
+        behavior.onError(using ctx)(t)
+        rtwf.dispatchEvent(self, Error(t))

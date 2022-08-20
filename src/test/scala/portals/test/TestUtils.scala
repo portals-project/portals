@@ -1,5 +1,6 @@
 package portals.test
 
+import scala.collection.mutable
 import scala.collection.mutable.Queue
 import scala.util.Try
 
@@ -162,3 +163,74 @@ object TestUtils:
 
     def contains(el: T): Boolean =
       queue.contains(Event(el))
+
+object AsyncTestUtils:
+  import scala.concurrent.duration.*
+  import scala.concurrent.Await
+  import scala.concurrent.Promise
+  private val atMost = 5.seconds
+
+  class CompletionWatcher():
+    private val promise = Promise[Boolean]()
+    private val future = promise.future
+
+    def complete(value: Boolean = true): Unit =
+      if !promise.isCompleted then promise.success(value)
+
+    def waitForCompletion(): Boolean =
+      // while !future.isCompleted do ()
+      Await.result(future, atMost)
+
+    def task[T](p: T => Boolean) = Tasks.map[T, T] { x => { if p(x) then complete(true); x } }
+
+    // def taskOpt[T](p: T => Option[Boolean]) = Tasks.map[T, T] { x => { p(x) match { case Some(b) => complete(b); }; x } }
+
+    def workflow[T](stream: AtomicStreamRef[T], builder: ApplicationBuilder)(p: T => Boolean): Workflow[T, T] =
+      builder
+        .workflows[T, T]("completer")
+        .source[T](stream)
+        .task(task(p(_)))
+        .sink[T]()
+        .freeze()
+
+  class Timer():
+    private var startTime: Option[Long] = None
+    private var stopTime: Option[Long] = None
+
+    def start: Unit =
+      startTime = Some(System.nanoTime())
+
+    def stop: Unit =
+      stopTime = Some(System.nanoTime())
+
+    private def isDefined: Boolean = startTime.isDefined && stopTime.isDefined
+
+    def statistics: String =
+      if !isDefined then ???
+      else
+        "Time for this run: " + (stopTime.get - startTime.get) + " ns" + "\n"
+          + "Time for this run: " + (stopTime.get - startTime.get) / 1000.0 + " us" + "\n"
+          + "Time for this run: " + (stopTime.get - startTime.get) / 1000000.0 + " ms" + "\n"
+          + "Time for this run: " + (stopTime.get - startTime.get) / 1000000000.0 + " s"
+
+  object Asserter:
+    def workflow[T](stream: AtomicStreamRef[T], builder: ApplicationBuilder)(p: T => Boolean): Workflow[T, T] =
+      builder
+        .workflows[T, T]("asserter")
+        .source[T](stream)
+        .map { x => { assertTrue(p(x)); x } }
+        .sink[T]()
+        .freeze()
+
+    def workflowRange(stream: AtomicStreamRef[Int], builder: ApplicationBuilder)(from: Int, to: Int) =
+      val range = Range(from, to).iterator
+      workflow[Int](stream, builder) { x => x == range.next() }
+
+    def task[T](p: T => Boolean) = Tasks.map[T, T] { x => { assertTrue(p(x)); x } }
+
+    def taskRange(from: Int, to: Int) =
+      val range = Range(from, to).iterator
+      Tasks.map[Int, Int] { x => { assertTrue(x == range.next()); x } }
+
+    def taskIterator[T](iterator: Iterator[T]) =
+      Tasks.map[Int, Int] { x => { assertTrue(x == iterator.next()); x } }

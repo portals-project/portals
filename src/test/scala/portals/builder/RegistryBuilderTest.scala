@@ -105,11 +105,11 @@ class RegistryBuilderTest:
       val builder = ApplicationBuilders
         .application("app1")
 
-      val generator = builder.generators.fromRange(0, 100, 5)
+      val sequencer = builder.sequencers("sequencer").random[Int]()
 
       val _ = builder
         .workflows[Int, Int]("workflow")
-        .source(generator.stream)
+        .source(sequencer.stream)
         .sink()
         .freeze()
 
@@ -141,6 +141,22 @@ class RegistryBuilderTest:
       val app = builder.build()
 
       // ASTPrinter.println(app)
+
+      system.launch(app)
+    }
+
+    {
+      val builder = ApplicationBuilders
+        .application("data")
+
+      val generator = builder.generators.fromRange(0, 100, 5)
+
+      // REGISTRY
+      val extSequencer = builder.registry.sequencers.get[Int]("/app1/sequencers/sequencer")
+
+      val connection = builder.connections.connect(generator.stream, extSequencer)
+
+      val app = builder.build()
 
       system.launch(app)
     }

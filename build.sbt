@@ -1,6 +1,7 @@
 val scala3Version = "3.1.3"
 val junitInterfaceVersion = "0.11"
 val logbackversion = "1.2.11"
+val akkaVersion = "2.6.18"
 
 // We are no longer dependent on Java 9, but keep in case we add it back
 // // FIXME: do this in a better way, we require at least Java 9, or classVersion 53 for Flow
@@ -24,5 +25,6 @@ lazy val root = project
       "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
       "ch.qos.logback" % "logback-classic" % "1.2.11",
       "com.lihaoyi" %% "pprint" % "0.7.0",
+      "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
     )
   )

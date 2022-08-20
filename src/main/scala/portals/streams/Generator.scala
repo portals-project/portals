@@ -71,10 +71,16 @@ private[portals] object GeneratorImpls:
 
   /** External */
   case class External[T](ref: ExternalRef[T]) extends Generator[T]:
+    // need lock for thread support
+    import java.util.concurrent.locks.ReentrantLock
+
     private var formingAtom: Seq[GeneratorEvent[T]] = Seq.empty
     private var events: Seq[GeneratorEvent[T]] = Seq.empty
 
+    private val lock = ReentrantLock()
+
     val cb = (ge: GeneratorEvent[T]) =>
+      lock.lock()
       ge match
         case Event(key, t) =>
           formingAtom = formingAtom :+ Event(key, t)
@@ -88,14 +94,21 @@ private[portals] object GeneratorImpls:
           formingAtom = formingAtom :+ Seal
           events = events ++ formingAtom
           formingAtom = Seq.empty
+      lock.unlock()
     end cb
 
     ref.cb = cb
 
-    def generate(): GeneratorEvent[T] = events match
-      case head :: tail =>
-        events = tail
-        head
+    def generate(): GeneratorEvent[T] =
+      lock.lock()
+      events match
+        case head :: tail =>
+          events = tail
+          lock.unlock()
+          head
+        case _ => // shouldn't happen
+          lock.unlock()
+          ???
 
     def hasNext(): Boolean = !events.isEmpty
   end External // case class

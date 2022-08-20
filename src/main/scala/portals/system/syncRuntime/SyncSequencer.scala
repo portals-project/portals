@@ -10,18 +10,18 @@ trait SyncSequencer extends Executable, Recvable {
 class RuntimeSequencer[T](val staticSequencer: AtomicSequencer[T]) extends SyncSequencer {
 
 //   val upStreamBuffer = upStreams.map(s => s -> new LinkedList[AtomSeq]()).toMap
-  var upStreamBuffer = Map[AtomicStreamRefKind[T], LinkedList[AtomSeq]]()
+  var upStreamBuffer = Map[AtomicStreamRefKind[T], LinkedList[EventBatch]]()
   var subscribers = Set[Recvable]() // note: seems always wf
 
   def subscribe(upStream: AtomicStreamRefKind[_]) = {
-    upStreamBuffer = upStreamBuffer + (upStream.asInstanceOf[AtomicStreamRefKind[T]] -> new LinkedList[AtomSeq]())
+    upStreamBuffer = upStreamBuffer + (upStream.asInstanceOf[AtomicStreamRefKind[T]] -> new LinkedList[EventBatch]())
   }
 
   def subscribedBy(recvable: Recvable) = {
     subscribers = subscribers + recvable
   }
 
-  override def recv(from: AtomicStreamRefKind[_], event: AtomSeq): Unit = {
+  override def recv(from: AtomicStreamRefKind[_], event: EventBatch): Unit = {
     upStreamBuffer(from.asInstanceOf[AtomicStreamRefKind[T]]).add(event)
   }
 

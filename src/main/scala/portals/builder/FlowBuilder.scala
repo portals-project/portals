@@ -32,7 +32,14 @@ trait FlowBuilder[T, U, CT, CU]:
   // Structural operations
   //////////////////////////////////////////////////////////////////////////////
 
-  def union[CCT, CCU](other: FlowBuilder[T, U, CCT, CCU]): FlowBuilder[T, U, CCU | CU, CCU | CU]
+  // TODO: deprecate and replaced by unionStar
+  // def union[CCT, CCU](other: FlowBuilder[T, U, CCT, CCU]): FlowBuilder[T, U, CCU | CU, CCU | CU]
+
+  def union(others: List[FlowBuilder[T, U, _, CU]]): FlowBuilder[T, U, CU, CU]
+
+  def union(others: FlowBuilder[T, U, _, CU]*): FlowBuilder[T, U, CU, CU] = union(others.toList)
+
+  def from[CU, CCU](others: FlowBuilder[T, U, _, CU]*)(task: Task[CU, CCU]): FlowBuilder[T, U, CU, CCU]
 
   //////////////////////////////////////////////////////////////////////////////
   // Stateful transformations

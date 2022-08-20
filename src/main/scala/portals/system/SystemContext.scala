@@ -1,6 +1,7 @@
 package portals
 
 trait SystemContext:
+  // TODO: consider removing, if not used.
   val registry: GlobalRegistry
 
   def launch(application: Application): Unit

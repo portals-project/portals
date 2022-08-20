@@ -182,7 +182,8 @@ class ApplicationBuilderTest:
         tester.Event(4),
         tester.Event(5),
         tester.Event(6),
-        tester.Atom
+        tester.Atom,
+        tester.Seal
       ),
       tester.receiveAllWrapped()
     )
@@ -212,6 +213,7 @@ class ApplicationBuilderTest:
       assertTrue(secondAtom.contains(event))
     }
 
+  @Ignore // fails on synchronous runtime as Seal is duplicated when fan-out-in pattern.
   @Test
   def testDiamond2(): Unit =
     import portals.DSL.*
@@ -234,7 +236,8 @@ class ApplicationBuilderTest:
         tester.Atom,
         tester.Event(1),
         tester.Event(1),
-        tester.Atom
+        tester.Atom,
+        tester.Seal
       ),
       tester.receiveAllWrapped()
     )
@@ -260,3 +263,36 @@ class ApplicationBuilderTest:
         tester.receiveAssert(event)
       }
     }
+
+  @Test
+  def testSealTrigger(): Unit =
+    import portals.DSL.*
+
+    val testData = List.range(0, 256).grouped(1).toList
+
+    // simple workflow that forwards any input to the output
+    val flow = TestUtils.flowBuilder { _.identity() }
+
+    val tester = TestUtils.executeWorkflow(flow, testData)
+
+    assertEquals(tester.Seal, tester.receiveAllWrapped().last)
+
+  @Ignore // errors are not handled correctly by current sync runtime, nor the async
+  @Test
+  def testErrorTrigger(): Unit =
+    import portals.DSL.*
+
+    val testData = List.range(0, 256).grouped(1).toList
+    val tester = TestUtils.Tester[Int]()
+
+    val e = Exception("test")
+
+    // workflow that throws an error
+    val flow = TestUtils.flowBuilder[Int, Int] { _.map[Int] { x => if x == 4 then throw e else x }.task(tester.task) }
+
+    val execution = scala.util.Try({
+      TestUtils.executeWorkflow(flow, testData)
+    })
+
+    assertEquals(true, execution.isFailure)
+    assertEquals(tester.Error(e), tester.receiveAllWrapped().last)

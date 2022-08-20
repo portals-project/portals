@@ -12,7 +12,7 @@ class RuntimeGenerator[T](val g: AtomicGenerator[T]) extends SyncGenerator:
   private val logger = Logger(g.path)
 
   val eventBuffer = new LinkedList[WrappedEvent[T]]()
-  val atomBuffer = new LinkedList[AtomSeq]()
+  val atomBuffer = new LinkedList[EventBatch]()
   var subscribers = List[Recvable]()
 
   def subscribedBy(subscriber: Recvable) = subscribers ::= subscriber
@@ -25,14 +25,15 @@ class RuntimeGenerator[T](val g: AtomicGenerator[T]) extends SyncGenerator:
       event match {
         case portals.Generator.Event(key, e) => eventBuffer.add(Event(key, e))
         case portals.Generator.Atom =>
-          eventBuffer.add(Atom())
+          eventBuffer.add(Atom)
           if (eventBuffer.size() > 1) {
             val atom = AtomSeq(eventBuffer.asScala.toList)
             atomBuffer.add(atom)
           }
           eventBuffer.clear()
         case portals.Generator.Error(_) => ???
-        case _ =>
+        case portals.Generator.Seal =>
+          atomBuffer.add(SealSeq)
       }
     }
 

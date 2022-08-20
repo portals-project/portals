@@ -34,10 +34,6 @@ class PingPongTest:
 
       val sequencer = pinger.sequencers("sequencer").random[Pong]()
 
-      val generator = pinger.generators.fromList(List(Pong(128)))
-
-      val _ = pinger.connections.connect(generator.stream, sequencer)
-
       val _ = pinger
         .workflows[Pong, Ping]("workflow")
         .source[Pong](sequencer.stream)
@@ -74,6 +70,22 @@ class PingPongTest:
       system.launch(pongerApp)
     }
 
+    {
+      val builder = ApplicationBuilders.application("generator")
+
+      val generator = builder.generators.fromList(List(Pong(128)))
+
+      val extSequencer = builder.registry.sequencers.get[Pong]("/pinger/sequencers/sequencer")
+
+      val connection = builder.connections.connect(generator.stream, extSequencer)
+
+      val app = builder.build()
+
+      system.launch(app)
+    }
+
     system.stepAll()
+
+    system.shutdown()
 
     assertEquals((127 until 0 by -1).map(Pong(_)).toList, tester.receiveAll())

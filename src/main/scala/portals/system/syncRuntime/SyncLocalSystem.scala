@@ -11,7 +11,7 @@ import portals.Generator.GeneratorEvent
 
 // be able to receive AtomSeq from upstream atomicStream
 trait Recvable:
-  def recv(from: AtomicStreamRefKind[_], event: AtomSeq): Unit
+  def recv(from: AtomicStreamRefKind[_], event: EventBatch): Unit
 
 trait Executable:
   def isEmpty(): Boolean
@@ -19,7 +19,9 @@ trait Executable:
   def stepAll(): Unit
   def subscribedBy(subscriber: Recvable): Unit
 
-case class AtomSeq(val events: List[WrappedEvent[_]])
+sealed trait EventBatch
+case class AtomSeq(val events: List[WrappedEvent[_]]) extends EventBatch
+case object SealSeq extends EventBatch
 
 class SyncLocalSystem extends LocalSystemContext:
   private val logger = Logger("syncLocalSystem")
@@ -57,7 +59,9 @@ class SyncLocalSystem extends LocalSystemContext:
     }
 
     var executableWorkflows = syncRegistry.workflows.filter(!_._2.isEmpty()).values.toList
-    if (executableWorkflows.size == 0) { throw new Exception("No workflow to execute, should not happen") }
+
+    // this case may occur due to a sealed workflow/stream
+    // if (executableWorkflows.size == 0) { throw new Exception("No workflow to execute, should not happen") }
 
     // execute until no workflow is executable
     while (executableWorkflows.size > 0) {
