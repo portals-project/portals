@@ -1,4 +1,4 @@
-package portals.benchmarks
+package portals.benchmark
 
 class BenchmarkConfig:
   private var config = Map.empty[String, String]

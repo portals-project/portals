@@ -1,6 +1,8 @@
 package portals
 
 import portals.system.async.AsyncLocalSystem
+import portals.system.async.AsyncLocalSystemWithoutAlignment
+import portals.system.async.DataParallelSystem
 
 object Systems:
   def syncLocal(): LocalSystemContext = new SyncLocalSystem()
@@ -17,3 +19,8 @@ object Systems:
   // }
 
   def asyncLocal(): SystemContext = new AsyncLocalSystem()
+
+  // TODO: replace with some other way of doing this :p
+  def asyncLocalWOA(): SystemContext = new AsyncLocalSystemWithoutAlignment()
+
+  def dataParallel(nPartitions: Int): SystemContext = new DataParallelSystem(nPartitions)

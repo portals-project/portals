@@ -1,19 +1,18 @@
-package portals.benchmarks
+package portals.benchmark
 
 class BenchmarkRunner():
   import BenchmarkRunner.*
 
   private val config = new BenchmarkConfig
-  config.set("--iterations", 5)
+  config.set("--iterations", 5) // default
 
   def warmup(benchmark: Benchmark, args: List[String] = List.empty) =
     config.parseArgs(args)
     benchmark.initialize(args)
     for (i <- 1 to config.getInt("--iterations")) {
       benchmark.runOneIteration()
+      benchmark.cleanupOneIteration()
     }
-    benchmark.runOneIteration()
-    benchmark.cleanupOneIteration()
 
   def run(benchmark: Benchmark, args: List[String] = List.empty) =
     config.parseArgs(args)
@@ -23,12 +22,10 @@ class BenchmarkRunner():
 
     for (i <- 1 to config.getInt("--iterations")) {
       timer.run { benchmark.runOneIteration() }
+      benchmark.cleanupOneIteration()
     }
 
-    benchmark.cleanupOneIteration()
-
-    println(config.args)
-    println(timer.statistics)
+    println("name " + benchmark.name + " " + args.mkString(" ") + " " + timer.statistics)
 
 object BenchmarkRunner:
   class BenchmarkTimer():
@@ -48,4 +45,4 @@ object BenchmarkRunner:
 
     private def average(results: List[Long]) = results.sum / results.length
 
-    def statistics: String = "Average: " + toSeconds(average(results)) + " seconds"
+    def statistics: String = "average(s) " + toSeconds(average(results))

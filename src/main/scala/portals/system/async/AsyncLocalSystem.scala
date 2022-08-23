@@ -30,25 +30,25 @@ class AsyncLocalSystem extends SystemContext:
 
   val registry: GlobalRegistry = null
 
-  private def launchStream[T](stream: AtomicStream[T]): Unit =
+  private[AsyncLocalSystem] def launchStream[T](stream: AtomicStream[T]): Unit =
     val aref = system.spawnAnonymous(AtomicStreamExecutor(stream.path))
     streams = streams + (stream.path -> aref)
 
-  private def launchSequencer[T](sequencer: AtomicSequencer[T]): Unit =
+  private[AsyncLocalSystem] def launchSequencer[T](sequencer: AtomicSequencer[T]): Unit =
     val stream = streams(sequencer.stream.path)
     val aref = system.spawnAnonymous(AtomicSequencerExecutor(sequencer.path, sequencer.sequencer, stream))
     sequencers = sequencers + (sequencer.path -> aref)
 
-  private def launchConnection[T](connection: AtomicConnection[T]): Unit =
+  private[AsyncLocalSystem] def launchConnection[T](connection: AtomicConnection[T]): Unit =
     AtomicConnectionsExecutor.connect(streams(connection.from.path), sequencers(connection.to.path))
 
-  private def launchGenerator[T](generator: AtomicGenerator[T]): Unit =
+  private[AsyncLocalSystem] def launchGenerator[T](generator: AtomicGenerator[T]): Unit =
     val stream = streams(generator.stream.path)
     val aref =
       system.spawnAnonymous(AtomicGeneratorExecutor[T](generator.path, generator.generator, stream))
     generators += generator.path -> aref
 
-  private def launchWorkflow[T, U](workflow: Workflow[T, U]): Unit =
+  private[AsyncLocalSystem] def launchWorkflow[T, U](workflow: Workflow[T, U]): Unit =
     val stream = streams(workflow.stream.path)
 
     var runtimeWorkflow: Map[String, ActorRef[Command]] = Map.empty
