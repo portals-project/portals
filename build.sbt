@@ -1,19 +1,7 @@
-val scala3Version = "3.1.3"
+val scala3Version = "3.2.0"
 val junitInterfaceVersion = "0.11"
 val logbackversion = "1.2.11"
-val akkaVersion = "2.6.18"
-
-// We are no longer dependent on Java 9, but keep in case we add it back
-// // FIXME: do this in a better way, we require at least Java 9, or classVersion 53 for Flow
-// initialize := {
-//   val _ = initialize.value // run the previous initialization
-//   val classVersion = sys.props("java.class.version")
-//   val specVersion = sys.props("java.specification.version")
-//   assert(
-//     classVersion.toFloat.toInt >= 53, // 53 is Java 9
-//     "Java 9 or above required. Current Java version: " + specVersion + ", " + classVersion + ".",
-//   )
-// }
+val akkaVersion = "2.6.20"
 
 lazy val root = project
   .in(file("."))
@@ -21,10 +9,12 @@ lazy val root = project
     name := "workflows",
     version := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
+    resolvers += "confluent" at "https://packages.confluent.io/maven/", // NEXMark benchmark
     libraryDependencies ++= Seq(
       "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
       "ch.qos.logback" % "logback-classic" % "1.2.11",
       "com.lihaoyi" %% "pprint" % "0.7.0",
       "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
+      "org.apache.beam" % "beam-sdks-java-nexmark" % "2.41.0", // NEXMark benchmark
     )
   )

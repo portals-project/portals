@@ -10,11 +10,17 @@ trait SyncSequencer extends Executable, Recvable {
 class RuntimeSequencer[T](val staticSequencer: AtomicSequencer[T]) extends SyncSequencer {
 
 //   val upStreamBuffer = upStreams.map(s => s -> new LinkedList[AtomSeq]()).toMap
-  var upStreamBuffer = Map[AtomicStreamRefKind[T], LinkedList[EventBatch]]()
+  var upStreamBuffer = Map[String, LinkedList[EventBatch]]()
   var subscribers = Set[Recvable]() // note: seems always wf
 
+  private def getPath(stream: AtomicStreamRefKind[_]): String =
+    stream match
+      case AtomicStreamRef(path) => path
+      case ExtAtomicStreamRef(path) => path
+
   def subscribe(upStream: AtomicStreamRefKind[_]) = {
-    upStreamBuffer = upStreamBuffer + (upStream.asInstanceOf[AtomicStreamRefKind[T]] -> new LinkedList[EventBatch]())
+    val path = getPath(upStream)
+    upStreamBuffer = upStreamBuffer + (path -> new LinkedList[EventBatch]())
   }
 
   def subscribedBy(recvable: Recvable) = {
@@ -22,13 +28,15 @@ class RuntimeSequencer[T](val staticSequencer: AtomicSequencer[T]) extends SyncS
   }
 
   override def recv(from: AtomicStreamRefKind[_], event: EventBatch): Unit = {
-    upStreamBuffer(from.asInstanceOf[AtomicStreamRefKind[T]]).add(event)
+    val path = getPath(from)
+    upStreamBuffer(path).add(event)
   }
 
   override def step(): Unit = {
     val nonEmptyUpstreamRefs = upStreamBuffer.filter(!_._2.isEmpty()).keySet.toList
-    val selected = staticSequencer.sequencer.sequence(nonEmptyUpstreamRefs: _*).get
-    subscribers.foreach(_.recv(staticSequencer.stream, upStreamBuffer(selected).poll()))
+    val refs = nonEmptyUpstreamRefs.map(AtomicStreamRef[T](_)).toList
+    val selected = staticSequencer.sequencer.sequence(refs: _*).get
+    subscribers.foreach(_.recv(staticSequencer.stream, upStreamBuffer(selected.path).poll()))
   }
 
   override def stepAll(): Unit = while (!isEmpty()) step()

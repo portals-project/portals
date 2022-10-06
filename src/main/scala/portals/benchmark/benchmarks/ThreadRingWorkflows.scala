@@ -7,8 +7,9 @@ import portals.DSL.*
 
 object ThreadRingWorkflows extends Benchmark:
   private val config = BenchmarkConfig()
-  config.set("--nEvents", 1024 * 1024) // number of events
-  config.set("--nChainLength", 128) // chain length
+    .setRequired("--nEvents") // 1024 * 1024
+    .setRequired("--nChainLength") // 128
+    .setRequired("--sSystem") // async
 
   override val name = "ThreadRingWorkflows"
 
@@ -20,10 +21,16 @@ object ThreadRingWorkflows extends Benchmark:
   override def runOneIteration(): Unit =
     val nEvents = config.getInt("--nEvents")
     val chainLength = config.getInt("--nChainLength")
+    val sSystem = config.get("--sSystem")
 
     val completer = CompletionWatcher()
 
-    val system = Systems.asyncLocal()
+    val system = sSystem match
+      case "async" => Systems.asyncLocal()
+      case "noGuarantees" => Systems.asyncLocalNoGuarantees()
+      case "microBatching" => Systems.asyncLocalMicroBatching()
+      case "sync" => Systems.syncLocal()
+      case _ => ???
 
     val builder = ApplicationBuilders.application("app")
 
@@ -45,7 +52,13 @@ object ThreadRingWorkflows extends Benchmark:
     }
 
     // completer
-    val completes = completer.workflow(prev.stream, builder) { _ == 0 }
+    val completes = builder
+      .workflows[Int, Int]("completer")
+      .source(prev.stream)
+      .task(completer.task(_ == 0))
+      .processor(x => if x != 0 then ctx.emit(x))
+      .sink()
+      .freeze()
 
     // cycle back
     val _ = builder.connections.connect(completes.stream, sequencer)
@@ -53,6 +66,8 @@ object ThreadRingWorkflows extends Benchmark:
     val application = builder.build()
 
     system.launch(application)
+
+    if sSystem == "sync" then system.asInstanceOf[LocalSystemContext].stepAll()
 
     completer.waitForCompletion()
 

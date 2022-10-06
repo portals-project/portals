@@ -6,13 +6,15 @@ import java.util.concurrent.TimeoutException
 import scala.concurrent.duration.*
 import scala.concurrent.Await
 import scala.concurrent.Promise
+import scala.util.hashing.MurmurHash3
+import scala.util.Random
 
 import portals.*
 import portals.DSL.*
 
 object BenchmarkUtils:
   class CompletionWatcher():
-    private val atMost = 10.seconds
+    private val atMost = 20.seconds
     private val promise = Promise[Boolean]()
     private val future = promise.future
 
@@ -33,7 +35,7 @@ object BenchmarkUtils:
         .freeze()
 
   class CountingCompletionWatcher(count: Int):
-    private val atMost = 10.seconds
+    private val atMost = 20.seconds
     private val countDownLatch = CountDownLatch(count)
 
     def complete(): Unit =
@@ -51,3 +53,25 @@ object BenchmarkUtils:
         .task(task(p(_)))
         .sink[T]()
         .freeze()
+
+  object Computation:
+    lazy val _r = new Random(System.nanoTime());
+    lazy val _hole = Blackhole()
+    def apply(difficulty: Int): Unit =
+      var _x = _r.nextString(8)
+      for i <- 0 until difficulty do _x = MurmurHash3.stringHash(_x.toString()).toString()
+      _hole.consume(_x)
+
+  // see https://github.com/msteindorfer/jmh/blob/master/jmh-core/src/main/java/org/openjdk/jmh/infra/Blackhole.java#L291
+  class Blackhole():
+    val _r = new Random(System.nanoTime());
+    val _tlr = _r.nextInt();
+    var _mask: Int = 0
+    var _hole: Any = null
+
+    def consume[T](t: T): Unit =
+      val mask = _mask
+      val tlr = _tlr * 1664525 + 1013904223
+      if ((tlr & mask) == 0) then
+        _hole = t
+        _mask = (mask << 1) + 1

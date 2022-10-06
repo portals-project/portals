@@ -7,7 +7,8 @@ import portals.DSL.*
 
 object PingPongBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
-  config.set("--nEvents", 1024 * 512) // number of events
+    .setRequired("--nEvents") // 1024 * 1024
+    .setRequired("--sSystem") // "async"
 
   private case class Ping(i: Int)
 
@@ -20,9 +21,11 @@ object PingPongBenchmark extends Benchmark:
     val workflow = builder
       .workflows[Ping, Ping]("workflow")
       .source(sequencer.stream)
-      .map { case Ping(i) =>
-        if i == 0 then completer.complete()
-        Ping(i - 1)
+      .flatMap { case Ping(i) =>
+        if i > 0 then List(Ping(i - 1))
+        else
+          completer.complete()
+          List.empty
       }
       .sink()
       .freeze()
@@ -34,14 +37,20 @@ object PingPongBenchmark extends Benchmark:
   override def initialize(args: List[String]): Unit =
     config.parseArgs(args)
 
-  override def cleanupOneIteration(): Unit = () // do nothing
+  override def cleanupOneIteration(): Unit = ()
 
   override def runOneIteration(): Unit =
     val nEvents = config.getInt("--nEvents")
+    val sSystem = config.get("--sSystem")
 
     val completer = CompletionWatcher()
 
-    val system = Systems.asyncLocal()
+    val system = sSystem match
+      case "async" => Systems.asyncLocal()
+      case "noGuarantees" => Systems.asyncLocalNoGuarantees()
+      case "microBatching" => Systems.asyncLocalMicroBatching()
+      case "sync" => Systems.syncLocal()
+      case _ => ???
 
     // create pinger and ponger apps
     val pingerApp = pinger("pinger", completer)
@@ -64,7 +73,10 @@ object PingPongBenchmark extends Benchmark:
     system.launch(pongerApp)
     system.launch(runApp)
 
+    if sSystem == "sync" then system.asInstanceOf[LocalSystemContext].stepAll()
+
     // wait for completion
-    completer.waitForCompletion()
+    try completer.waitForCompletion()
+    catch case e => { system.shutdown(); throw e }
 
     system.shutdown()

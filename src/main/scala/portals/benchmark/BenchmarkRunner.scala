@@ -4,23 +4,24 @@ class BenchmarkRunner():
   import BenchmarkRunner.*
 
   private val config = new BenchmarkConfig
-  config.set("--iterations", 5) // default
+  config.setRequired("--nIterations") // 5
 
   def warmup(benchmark: Benchmark, args: List[String] = List.empty) =
     config.parseArgs(args)
     benchmark.initialize(args)
-    for (i <- 1 to config.getInt("--iterations")) {
+    for (i <- 1 to config.getInt("--nIterations")) {
       benchmark.runOneIteration()
       benchmark.cleanupOneIteration()
     }
 
+  // TODO: this should be guarded against long running blocking executions
   def run(benchmark: Benchmark, args: List[String] = List.empty) =
     config.parseArgs(args)
     benchmark.initialize(args)
 
     val timer = BenchmarkTimer()
 
-    for (i <- 1 to config.getInt("--iterations")) {
+    for (i <- 1 to config.getInt("--nIterations")) {
       timer.run { benchmark.runOneIteration() }
       benchmark.cleanupOneIteration()
     }

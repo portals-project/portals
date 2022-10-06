@@ -79,6 +79,7 @@ class RuntimeWorkflow(val staticWf: Workflow[_, _]) extends SyncWorkflow {
             executionQueue.add((sources(selectedSource), Seal))
             microStep()
             stopped = true // stop the workflow
+          case null => () // ignore for now
         logger.debug(s"step ${stepId} finished")
       }
     stepId += 1
@@ -194,31 +195,35 @@ class RuntimeBehavior[I, O](
   val self = this
   ctx.cb = new TaskCallback[I, O] {
     def submit(key: Key[Int], event: O): Unit = rtwf.onRuntimeBehaviorEventSubmit(self, key, event)
-    def fuse(): Unit = rtwf.onRuntimeBehaviorAtomSubmit(self)
+    def fuse(): Unit = () // rtwf.onRuntimeBehaviorAtomSubmit(self)
   }
+
+  val preparedBehavior = Tasks.prepareTask(behavior, ctx)
 
   def step[T](item: WrappedEvent[T]): Unit =
     item match
       case Event(key, item) => {
         ctx.key = key
         ctx.state.key = key
-        behavior.onNext(using ctx)(item.asInstanceOf[I]) // TODO: better type cast
+        preparedBehavior.onNext(using ctx)(item.asInstanceOf[I]) // TODO: better type cast
       }
       case Atom => {
         // not possible to stash more than one atom in each buffer at sync runtime, no need to stash
         if (upStreamCnt <= 1) {
-          behavior.onAtomComplete(using ctx)
+          preparedBehavior.onAtomComplete(using ctx)
+          rtwf.onRuntimeBehaviorAtomSubmit(self)
         } else {
           currentAtomCnt += 1
           if (currentAtomCnt == upStreamCnt) {
-            behavior.onAtomComplete(using ctx)
+            preparedBehavior.onAtomComplete(using ctx)
+            rtwf.onRuntimeBehaviorAtomSubmit(self)
             currentAtomCnt = 0
           }
         }
       }
       case Seal =>
-        behavior.onComplete(using ctx)
+        preparedBehavior.onComplete(using ctx)
         rtwf.dispatchEvent(self, Seal)
       case Error(t) =>
-        behavior.onError(using ctx)(t)
+        preparedBehavior.onError(using ctx)(t)
         rtwf.dispatchEvent(self, Error(t))

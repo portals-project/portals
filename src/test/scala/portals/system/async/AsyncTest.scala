@@ -15,7 +15,6 @@ import portals.test.AsyncTestUtils.Asserter
 
 @RunWith(classOf[JUnit4])
 class AsyncTest:
-  // @Ignore
   @Test
   def lotsOfEventsTest(): Unit =
     import portals.DSL.*
@@ -46,7 +45,6 @@ class AsyncTest:
 
     system.shutdown()
 
-  // @Ignore
   @Test
   def largeAtomsTest(): Unit =
     import portals.DSL.*
@@ -77,7 +75,6 @@ class AsyncTest:
 
     system.shutdown()
 
-  // @Ignore
   @Test
   def chainOfWorkflowsTest(): Unit =
     import portals.DSL.*
@@ -123,7 +120,6 @@ class AsyncTest:
 
     system.shutdown()
 
-  // @Ignore
   @Test
   def chainOfTasksTest(): Unit =
     import portals.DSL.*
@@ -164,7 +160,6 @@ class AsyncTest:
 
     system.shutdown()
 
-  // @Ignore
   @Test
   def taskFanOutInTest(): Unit =
     import portals.DSL.*

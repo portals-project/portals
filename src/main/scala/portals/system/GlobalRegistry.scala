@@ -1,5 +1,6 @@
 package portals
 
+// TODO: remove
 class GlobalRegistry
 // private var map: Map[String, (IStreamRef[_], OStreamRef[_])] = Map()
 

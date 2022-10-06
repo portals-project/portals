@@ -5,12 +5,15 @@ import portals.benchmark.*
 import portals.benchmark.BenchmarkUtils.*
 import portals.DSL.*
 
-object CountingActorBenchmark extends Benchmark:
+object ChainOfTasksWithWork extends Benchmark:
   private val config = BenchmarkConfig()
-    .setRequired("--nEvents") // 1024 * 1024
-    .setRequired("--nAtomSize") // 128
+  config.setRequired("--nEvents") // number of events
+  config.setRequired("--nAtomSize") // atom size
+  config
+    .setRequired("--nChainLength") // chain length
+    .setRequired("--sSystem") // "async"
 
-  override val name = "CountingActorBenchmark"
+  override val name = "ChainOfTasksWithWork"
 
   override def initialize(args: List[String]): Unit =
     config.parseArgs(args)
@@ -20,6 +23,7 @@ object CountingActorBenchmark extends Benchmark:
   override def runOneIteration(): Unit =
     val nEvents = config.getInt("--nEvents")
     val nAtomSize = config.getInt("--nAtomSize")
+    val nChainLength = config.getInt("--nChainLength")
     val sSystem = config.get("--sSystem")
 
     val completer = CompletionWatcher()
@@ -35,17 +39,19 @@ object CountingActorBenchmark extends Benchmark:
 
     val generator = builder.generators.fromRange(0, nEvents, nAtomSize)
 
-    var workflow = builder
+    var prev = builder
       .workflows[Int, Int]("workflow")
       .source[Int](generator.stream)
-      .init {
-        var state: Int = 0
-        Tasks.map { x =>
-          state += 1
-          if state == nEvents - 1 then completer.complete(true)
-          x
-        }
+
+    Range(0, nChainLength).foreach { i =>
+      prev = prev.map { x =>
+        Computation(1024)
+        x
       }
+    }
+
+    prev
+      .task { completer.task { _ == nEvents - 1 } }
       .sink()
       .freeze()
 
