@@ -7,5 +7,4 @@ target/
 .metals/
 .vscode/
 *metals.sbt
-ignoredir/
 *.DS_Store
