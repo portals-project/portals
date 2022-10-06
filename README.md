@@ -1,13 +1,13 @@
 # Portals
 
-[![Build Status](https://github.com/jonasspenger/portals/actions/workflows/build-test.yaml/badge.svg)](https://github.com/jonasspenger/portals/actions/workflows/build-test.yaml)
+[![Build Status](https://github.com/portals-project/portals/actions/workflows/build-test.yaml/badge.svg)](https://github.com/portals-project/portals/actions/workflows/build-test.yaml)
 
 Welcome to the Portals repo!
 
 ## Getting Started Guide
 We recommend the following steps to get started.
 * [Install Scala](https://www.scala-lang.org/download/), we recommend working with sbt, together with [Metals](https://scalameta.org/metals/docs/editors/vscode/) on VS Code. 
-* Clone the repository `git clone https://github.com/jonasspenger/portals.git`.
+* Clone the repository `git clone https://github.com/portals-project/portals.git`.
 * Compile the project `sbt compile`, run all tests `sbt test`, or execute a main class for the project `sbt run <argument>*`.
 
 ## Examples
@@ -34,8 +34,5 @@ Contributions are welcome! To contribute please follow these guideines.
   7. Submit a pull-request (include a reference to the issue).
   8. After review and approval (LGTM) the pull-request will be merged. 
 
-# Portals Legacy
-To find the old repo look through the branches for [!old-dump](https://github.com/jonasspenger/portals/tree/!old-dump), and for [legacy](https://github.com/jonasspenger/portals/tree/legacy).
-
 ## Design Documents
-To find out more about Portals and the programming model, please visit the [Portals-Meta](https://github.com/jonasspenger/portals-meta) page. There you will find a walkthrough through the model.
+To find out more about Portals and the programming model, please visit the [Portals-Meta](https://github.com/portals-project/portals-meta) page. There you will find a walkthrough through the model.
