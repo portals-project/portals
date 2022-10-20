@@ -110,6 +110,24 @@ trait FlowBuilder[T, U, CT, CU]:
       _onNext: TaskContext[WT, WU] ?=> (TaskContext[WT, WU] ?=> WT => Task[WT, WU]) => WT => Unit
   ): FlowBuilder[T | WT, U | WU, CT, CU]
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Portals
+  //////////////////////////////////////////////////////////////////////////////
+
+  class PortalFlowBuilder[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])]():
+    def asker[CCU](
+        f: AskerTaskContext[CU, CCU, Req, Rep, Portals] ?=> CU => Task[CU, CCU]
+    ): FlowBuilder[T, U, CU, CCU] =
+      this.asInstanceOf[FlowBuilder[T, U, CU, CCU]] // todo implement
+
+    def replier[CCU](f1: TaskContext[CU, CCU] ?=> CU => Task[CU, CCU])(
+        f2: ReplierTaskContext[CU, CCU, Req, Rep, Portals] ?=> Req => Task[CU, CCU]
+    ): FlowBuilder[T, U, CU, CCU] =
+      this.asInstanceOf[FlowBuilder[T, U, CU, CCU]]
+
+  def portal[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](portals: Portals*) =
+    new PortalFlowBuilder[Req, Rep, Portals]()
+
 end FlowBuilder // trait
 
 object FlowBuilder:

@@ -296,3 +296,86 @@ class ApplicationBuilderTest:
 
     assertEquals(true, execution.isFailure)
     assertEquals(tester.Error(e), tester.receiveAllWrapped().last)
+
+  @Test
+  def testPortal(): Unit =
+    import portals.DSL.*
+
+    val testData = List(1, 2, 3, 4)
+
+    val tester = new TestUtils.Tester[Int]()
+
+    val builder = ApplicationBuilders.application("application")
+
+    val generator = builder.generators.fromList(testData)
+
+    val empty = builder.generators.fromList[Int](List.empty)
+
+    val portal = builder.portals.portal[Int, String]("portal")
+    val otherPortal = builder.portals.portal[Int, String]("otherPortal")
+
+    val replier = builder
+      .workflows[Int, Int]("replier")
+      .source(generator.stream) // perhaps rename stream to out
+      .logger("replier") // log events, because why not
+      .portal(portal)
+      .replier { event =>
+        ctx.emit(event) // do nothing :)
+        // probably scrap the idea of returning the next behavior, is it really useful? or does it have strange implications?
+        Tasks.same
+      } { request =>
+        val reply = request.toString()
+        ctx.reply(reply)
+        Tasks.same
+      }
+      .checkExpectedType[Int]()
+      .sink()
+      .freeze()
+
+    val asker = builder
+      .workflows[Int, Int]("asker")
+      .source(empty.stream)
+      .logger("asker")
+      .portal(portal)
+      .asker { event => // if we do ctx => event then the otherPortal is no longer valid, but so be it.
+        val request = event
+        val future: Future[String] = ctx.ask(portal)(request)
+        // val otherFuture: Future[String] = ctx.ask(otherPortal)(request) // this is still allowed :/
+        ctx.await(future) {
+          ctx.log.info("awaited reply: " + future.value)
+          // at this point we should think about if it makes sense to always
+          // designate the next behavior, or if this should be reserved for the
+          // state machines?
+          Tasks.same
+        }
+        ctx.emit(event)
+        Tasks.same
+      }
+      .checkExpectedType[Int]()
+      .sink()
+      .freeze()
+
+    // val _ = builder.connections.connect(workflow.stream, sequencer)
+
+    // val generator = builder.generators.fromList[Int](List(8))
+    // val _ = builder.connections.connect(generator.stream, sequencer)
+
+    // val application = builder.build()
+
+    // val system = Systems.syncLocal()
+
+    // system.launch(application)
+
+    // system.stepAll()
+    // system.shutdown()
+
+    // // the output counts down atoms (List with single elements) from 7 to 0 and stops
+    // assertEquals(Some(List(7)), tester.receiveAtom())
+    // assertEquals(Some(List(6)), tester.receiveAtom())
+    // assertEquals(Some(List(5)), tester.receiveAtom())
+    // assertEquals(Some(List(4)), tester.receiveAtom())
+    // assertEquals(Some(List(3)), tester.receiveAtom())
+    // assertEquals(Some(List(2)), tester.receiveAtom())
+    // assertEquals(Some(List(1)), tester.receiveAtom())
+    // assertEquals(Some(List(0)), tester.receiveAtom())
+    // assertNotEquals(Some(List(-1)), tester.receiveAtom())

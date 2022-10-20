@@ -33,7 +33,7 @@ object DSL:
 
   def await[T, U, Req, Rep, Portals <: AtomicPortalRefType[Req, Rep]](using
       ctx: AskerTaskContext[T, U, Req, Rep, Portals]
-  )(future: Future[Rep])(f: Option[Rep] => Task[T, U]): Task[T, U] = ctx.await(future)(f)
+  )(future: Future[Rep])(f: => Task[T, U]): Task[T, U] = ctx.await(future)(f)
 
   extension [T, U, Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](using
       AskerTaskContext[T, U, Req, Rep, Portals]

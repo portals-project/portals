@@ -1,3 +1,4 @@
 package portals
 
-trait Future[T]
+trait Future[T]:
+  def value: Option[T]
