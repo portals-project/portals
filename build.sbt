@@ -6,7 +6,7 @@ val akkaVersion = "2.6.20"
 lazy val root = project
   .in(file("."))
   .settings(
-    name := "workflows",
+    name := "portals",
     version := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
     resolvers += "confluent" at "https://packages.confluent.io/maven/", // NEXMark benchmark
