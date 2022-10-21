@@ -114,19 +114,16 @@ trait FlowBuilder[T, U, CT, CU]:
   // Portals
   //////////////////////////////////////////////////////////////////////////////
 
-  class PortalFlowBuilder[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])]():
+  trait PortalFlowBuilder[Req, Rep]:
     def asker[CCU](
-        f: AskerTaskContext[CU, CCU, Req, Rep, Portals] ?=> CU => Task[CU, CCU]
-    ): FlowBuilder[T, U, CU, CCU] =
-      this.asInstanceOf[FlowBuilder[T, U, CU, CCU]] // todo implement
+        f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Task[CU, CCU]
+    ): FlowBuilder[T, U, CU, CCU]
 
     def replier[CCU](f1: TaskContext[CU, CCU] ?=> CU => Task[CU, CCU])(
-        f2: ReplierTaskContext[CU, CCU, Req, Rep, Portals] ?=> Req => Task[CU, CCU]
-    ): FlowBuilder[T, U, CU, CCU] =
-      this.asInstanceOf[FlowBuilder[T, U, CU, CCU]]
+        f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Task[CU, CCU]
+    ): FlowBuilder[T, U, CU, CCU]
 
-  def portal[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](portals: Portals*) =
-    new PortalFlowBuilder[Req, Rep, Portals]()
+  def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*): PortalFlowBuilder[Req, Rep]
 
 end FlowBuilder // trait
 

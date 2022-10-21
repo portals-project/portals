@@ -372,12 +372,12 @@ export WithWrapperExtension.*
 ////////////////////////////////////////////////////////////////////////////////
 /** Portals Extension. */
 object PortalsExtension:
-  class PortalsTasks[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])]():
-    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep, Portals] ?=> T => Task[T, U]): Task[T, U] =
+  class PortalsTasks[Req, Rep]():
+    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => Task[T, U]): Task[T, U] =
       Tasks.same // TODO: implement
 
     def replier[T, U](f1: TaskContext[T, U] ?=> T => Task[T, U])(
-        f2: ReplierTaskContext[T, U, Req, Rep, Portals] ?=> Req => Task[T, U]
+        f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => Task[T, U]
     ): Task[T, U] =
       Tasks.same // TODO: implement
 
@@ -389,8 +389,8 @@ object PortalsExtension:
     // do in the next step. The types for the portals Req, Rep, are inferred from the passed
     // portals that are created using these types. For now the Req and Rep types have to match,
     // but we can make it so that they can be different in the future.
-    def portal[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](portals: Portals*) =
-      new PortalsTasks[Req, Rep, Portals]()
+    def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) =
+      new PortalsTasks[Req, Rep]()
   }
 end PortalsExtension
 export PortalsExtension.*

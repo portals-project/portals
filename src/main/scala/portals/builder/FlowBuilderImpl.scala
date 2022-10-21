@@ -255,4 +255,24 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
       updateTask(name, newBehavior)
     }
     this.asInstanceOf[FlowBuilder[T | WT, U | WU, CT, CU]]
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Portals
+  //////////////////////////////////////////////////////////////////////////////
+
+  class PortalFlowBuilderImpl[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) extends PortalFlowBuilder[Req, Rep]:
+    def asker[CCU](
+        f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Task[CU, CCU]
+    ): FlowBuilder[T, U, CU, CCU] =
+      val behavior = Tasks.portal[Req, Rep](portals: _*).asker[CU, CCU](f)
+      addTask(behavior)
+
+    def replier[CCU](f1: TaskContext[CU, CCU] ?=> CU => Task[CU, CCU])(
+        f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Task[CU, CCU]
+    ): FlowBuilder[T, U, CU, CCU] =
+      val behavior = Tasks.portal[Req, Rep](portals: _*).replier[CU, CCU](f1)(f2)
+      addTask(behavior)
+
+  def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*): PortalFlowBuilder[Req, Rep] =
+    new PortalFlowBuilderImpl[Req, Rep]()
 end FlowBuilderImpl //

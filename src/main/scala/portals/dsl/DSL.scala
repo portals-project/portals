@@ -23,22 +23,22 @@ object DSL:
   // Portals DSL
   //////////////////////////////////////////////////////////////////////////////
 
-  def ask[T, U, Req, Rep, Portals <: AtomicPortalRefType[Req, Rep]](using
-      ctx: AskerTaskContext[T, U, Req, Rep, Portals]
-  )(portal: Portals)(req: Req): Unit = ctx.ask(portal)(req)
+  def ask[T, U, Req, Rep](using
+      ctx: AskerTaskContext[T, U, Req, Rep]
+  )(portal: AtomicPortalRefType[Req, Rep])(req: Req): Unit = ctx.ask(portal)(req)
 
-  def reply[T, U, Req, Rep, Portals <: AtomicPortalRefType[Req, Rep]](using
-      ctx: ReplierTaskContext[T, U, Req, Rep, Portals]
+  def reply[T, U, Req, Rep](using
+      ctx: ReplierTaskContext[T, U, Req, Rep]
   )(rep: Rep): Unit = ctx.reply(rep)
 
-  def await[T, U, Req, Rep, Portals <: AtomicPortalRefType[Req, Rep]](using
-      ctx: AskerTaskContext[T, U, Req, Rep, Portals]
+  def await[T, U, Req, Rep](using
+      ctx: AskerTaskContext[T, U, Req, Rep]
   )(future: Future[Rep])(f: => Task[T, U]): Task[T, U] = ctx.await(future)(f)
 
-  extension [T, U, Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](using
-      AskerTaskContext[T, U, Req, Rep, Portals]
-  )(portal: Portals) {
-    def ask(req: Req): Future[Rep] = ctx.ask(portal)(req)
+  extension [T, U, Req, Rep](portal: AtomicPortalRefType[Req, Rep]) {
+    def ask(using
+        AskerTaskContext[T, U, Req, Rep]
+    )(req: Req): Future[Rep] = ctx.ask(portal)(req)
   }
 
 end DSL // object
