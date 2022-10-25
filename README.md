@@ -15,3 +15,5 @@ We recommend the following steps to get started.
 ## Examples
 Examples can be found in the [examples](examples/src/main/scala/portals/examples) directory. You can run an example by running the command `sbt examples/run`.
 
+## Tests
+The tests are located in the [test](core/src/test/scala/portals) directory. You can run the tests by running the command `sbt test`.
