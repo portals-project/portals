@@ -26,12 +26,19 @@ lazy val portals = project
     libraryDependencies += "com.lihaoyi" %% "pprint" % pprintversion,
   )
 
-lazy val benchmarks = project
+lazy val benchmark = project
   .in(file("benchmark"))
   .settings(
     name := "portals-benchmark",
     resolvers += "confluent" at "https://packages.confluent.io/maven/", // NEXMark benchmark
     libraryDependencies += "org.apache.beam" % "beam-sdks-java-nexmark" % nexmarkVersion, // NEXMark benchmark
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
+  )
+  .dependsOn(portals)
+
+lazy val examples = project
+  .in(file("examples"))
+  .settings(
+    name := "portals-examples",
   )
   .dependsOn(portals)

@@ -8,10 +8,11 @@ Welcome to the Portals repo!
 We recommend the following steps to get started.
 * [Install Scala](https://www.scala-lang.org/download/), we recommend working with sbt, together with [Metals](https://scalameta.org/metals/docs/editors/vscode/) on VS Code. 
 * Clone the repository `git clone https://github.com/portals-project/portals.git`.
-* Compile the project `sbt compile`, run all tests `sbt test`, or execute a main class for the project `sbt run <argument>*`.
+* Compile the project `sbt compile`.
+* Check out the [examples](examples/src/main/scala/portals/examples) or [tests](core/src/test/scala/portals).
 
 ## Examples
-Examples can be found in the [examples](src/main/scala/portals/examples) directory, or in the [test](src/test/scala/portals) directory.
+Examples can be found in the [examples](examples/src/main/scala/portals/examples) directory. You can run an example by running the command `sbt examples/run`.
 
 ## Contributing
 Contributions are welcome! To contribute please follow these guideines.
@@ -30,6 +31,3 @@ Contributions are welcome! To contribute please follow these guideines.
   6. [Group/squash commit](https://github.com/akka/akka/blob/main/CONTRIBUTING.md#creating-commits-and-writing-commit-messages).
   7. Submit a pull-request (include a reference to the issue).
   8. After review and approval (LGTM) the pull-request will be merged. 
-
-## Design Documents
-To find out more about Portals and the programming model, please visit the [Portals-Meta](https://github.com/portals-project/portals-meta) page. There you will find a walkthrough through the model.
