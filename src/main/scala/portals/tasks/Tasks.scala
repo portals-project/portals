@@ -372,6 +372,14 @@ export WithWrapperExtension.*
 ////////////////////////////////////////////////////////////////////////////////
 /** Portals Extension. */
 object PortalsExtension:
+  import Tasks.*
+
+  /** internal API */
+  private[portals] case class Ask[T](id: Int, event: T)
+
+  /** internal API */
+  private[portals] case class Reply[T](id: Int, event: T)
+
   class PortalsTasks[Req, Rep]():
     def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => Task[T, U]): Task[T, U] =
       Tasks.same // TODO: implement
@@ -392,5 +400,37 @@ object PortalsExtension:
     def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) =
       new PortalsTasks[Req, Rep]()
   }
+
+  type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]
+
+  private[portals] case class AskerTask[T, U, Req, Rep](
+      f: AskerTaskContext[T, U, Req, Rep] => T => Task[T, U]
+  ) extends BaseTask[T | Reply[Rep], U | Ask[Req]]:
+    var continuations = Map.empty[Int, Continuation[T, U, Req, Rep]]
+    var futures = Map.empty[Int, Option[Any]]
+
+    override def onNext(using ctx: TaskContext[T | Reply[Rep], U | Ask[Req]])(
+        t: T | Reply[Rep]
+    ): Task[T | Reply[Rep], U | Ask[Req]] = t match
+      case Reply[Rep](id, event) =>
+        // set value of future :)
+        futures = futures.updated(id, Some(event))
+
+        // get continuation
+        val continuation = continuations.get(id)
+        continuations = continuations.removed(id)
+
+        // construct Context
+        val actx = AskerTaskContext.fromTaskContext[T, U, Req, Rep](ctx)
+
+        // execute continuation
+        continuation.get(using actx)
+
+        Tasks.same
+      case event =>
+        val actx = AskerTaskContext.fromTaskContext[T, U, Req, Rep](ctx)
+        f(actx)
+        Tasks.same
+
 end PortalsExtension
 export PortalsExtension.*
