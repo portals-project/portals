@@ -116,11 +116,11 @@ trait FlowBuilder[T, U, CT, CU]:
 
   trait PortalFlowBuilder[Req, Rep]:
     def asker[CCU](
-        f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Task[CU, CCU]
+        f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => AskerTask[CU, CCU, Req, Rep]
     ): FlowBuilder[T, U, CU, CCU]
 
-    def replier[CCU](f1: TaskContext[CU, CCU] ?=> CU => Task[CU, CCU])(
-        f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Task[CU, CCU]
+    def replier[CCU](f1: TaskContext[CU, CCU] ?=> CU => ReplierTask[CU, CCU, Req, Rep])(
+        f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => ReplierTask[CU, CCU, Req, Rep]
     ): FlowBuilder[T, U, CU, CCU]
 
   def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*): PortalFlowBuilder[Req, Rep]

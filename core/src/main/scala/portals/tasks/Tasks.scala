@@ -381,22 +381,16 @@ object PortalsExtension:
   private[portals] case class Reply[T](id: Int, event: T)
 
   class PortalsTasks[Req, Rep]():
-    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => Task[T, U]): Task[T, U] =
-      Tasks.same // TODO: implement
+    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => AskerTask[T, U, Req, Rep]): AskerTask[T, U, Req, Rep] =
+      new AskerTask[T, U, Req, Rep](ctx => f(using ctx))
 
-    def replier[T, U](f1: TaskContext[T, U] ?=> T => Task[T, U])(
-        f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => Task[T, U]
-    ): Task[T, U] =
-      Tasks.same // TODO: implement
+    def replier[T, U](f1: TaskContext[T, U] ?=> T => ReplierTask[T, U, Req, Rep])(
+        f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => ReplierTask[T, U, Req, Rep]
+    ): ReplierTask[T, U, Req, Rep] =
+      new ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))
 
   extension (t: Tasks) {
-    // Note: I prefer the name `portals` here, but there is a name conflict with the package `portals` if we import this method here.
-    // Note: here we have added this extra step via `portal`, the reason is that we don't want the user
-    // to have to specify the types for the portals here (as they are singleton types),
-    // yet we want to enable the user to specify the processing types T U, which they can
-    // do in the next step. The types for the portals Req, Rep, are inferred from the passed
-    // portals that are created using these types. For now the Req and Rep types have to match,
-    // but we can make it so that they can be different in the future.
+    /* Note: the reason we have this extra step via `portal` is to avoid the user having to specify the Req and Rep types. */
     def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) =
       new PortalsTasks[Req, Rep]()
   }
@@ -404,33 +398,22 @@ object PortalsExtension:
   type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]
 
   private[portals] case class AskerTask[T, U, Req, Rep](
-      f: AskerTaskContext[T, U, Req, Rep] => T => Task[T, U]
-  ) extends BaseTask[T | Reply[Rep], U | Ask[Req]]:
-    var continuations = Map.empty[Int, Continuation[T, U, Req, Rep]]
-    var futures = Map.empty[Int, Option[Any]]
+      f: AskerTaskContext[T, U, Req, Rep] => T => AskerTask[T, U, Req, Rep]
+  ) extends BaseTask[T, U]:
 
-    override def onNext(using ctx: TaskContext[T | Reply[Rep], U | Ask[Req]])(
-        t: T | Reply[Rep]
-    ): Task[T | Reply[Rep], U | Ask[Req]] = t match
-      case Reply[Rep](id, event) =>
-        // set value of future :)
-        futures = futures.updated(id, Some(event))
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
+      f(ctx.asInstanceOf)(t)
 
-        // get continuation
-        val continuation = continuations.get(id)
-        continuations = continuations.removed(id)
+  private[portals] case class ReplierTask[T, U, Req, Rep](
+      f1: TaskContext[T, U] => T => ReplierTask[T, U, Req, Rep],
+      f2: ReplierTaskContext[T, U, Req, Rep] => Req => ReplierTask[T, U, Req, Rep]
+  ) extends BaseTask[T, U]:
 
-        // construct Context
-        val actx = AskerTaskContext.fromTaskContext[T, U, Req, Rep](ctx)
+    def requestingOnNext(using ctx: ReplierTaskContext[T, U, Req, Rep])(req: Req): ReplierTask[T, U, Req, Rep] =
+      f2(ctx)(req)
 
-        // execute continuation
-        continuation.get(using actx)
-
-        Tasks.same
-      case event =>
-        val actx = AskerTaskContext.fromTaskContext[T, U, Req, Rep](ctx)
-        f(actx)
-        Tasks.same
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
+      f1(ctx)(t)
 
 end PortalsExtension
 export PortalsExtension.*
