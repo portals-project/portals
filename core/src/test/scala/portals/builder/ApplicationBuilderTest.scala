@@ -319,12 +319,9 @@ class ApplicationBuilderTest:
       .portal(portal)
       .replier { event =>
         ctx.emit(event) // do nothing :)
-        // probably scrap the idea of returning the next behavior, is it really useful? or does it have strange implications?
-        Tasks.same
       } { request =>
         val reply = (request * 1024)
         ctx.reply(reply)
-        Tasks.same
       }
       .checkExpectedType[Int]()
       .sink()
@@ -334,18 +331,14 @@ class ApplicationBuilderTest:
       .workflows[Int, Int]("asker")
       .source(empty.stream)
       .portal(portal)
-      .asker { event => // if we do ctx => event then the otherPortal is no longer valid, but so be it.
+      .asker { event =>
         val request = event
         val future = ctx.ask(portal)(request)
         ctx.await(future) {
           ctx.log.info("awaited reply: " + future.value.get)
           ctx.emit(future.value.get)
-          // at this point we should think about if it makes sense to always
-          // designate the next behavior, or if this should be reserved for the
-          // state machines?
           Tasks.same
         }
-        Tasks.same
       }
       .task(tester.task)
       .logger("asker")

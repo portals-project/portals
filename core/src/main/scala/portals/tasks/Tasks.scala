@@ -381,11 +381,11 @@ object PortalsExtension:
   private[portals] case class Reply[T](id: Int, event: T)
 
   class PortalsTasks[Req, Rep]():
-    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => AskerTask[T, U, Req, Rep]): AskerTask[T, U, Req, Rep] =
+    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => Unit): AskerTask[T, U, Req, Rep] =
       new AskerTask[T, U, Req, Rep](ctx => f(using ctx))
 
-    def replier[T, U](f1: TaskContext[T, U] ?=> T => ReplierTask[T, U, Req, Rep])(
-        f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => ReplierTask[T, U, Req, Rep]
+    def replier[T, U](f1: TaskContext[T, U] ?=> T => Unit)(
+        f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => Unit
     ): ReplierTask[T, U, Req, Rep] =
       new ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))
 
@@ -398,22 +398,24 @@ object PortalsExtension:
   type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]
 
   private[portals] case class AskerTask[T, U, Req, Rep](
-      f: AskerTaskContext[T, U, Req, Rep] => T => AskerTask[T, U, Req, Rep]
+      f: AskerTaskContext[T, U, Req, Rep] => T => Unit
   ) extends BaseTask[T, U]:
 
     override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
       f(ctx.asInstanceOf)(t)
+      Tasks.same
 
   private[portals] case class ReplierTask[T, U, Req, Rep](
-      f1: TaskContext[T, U] => T => ReplierTask[T, U, Req, Rep],
-      f2: ReplierTaskContext[T, U, Req, Rep] => Req => ReplierTask[T, U, Req, Rep]
+      f1: TaskContext[T, U] => T => Unit,
+      f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit
   ) extends BaseTask[T, U]:
 
-    def requestingOnNext(using ctx: ReplierTaskContext[T, U, Req, Rep])(req: Req): ReplierTask[T, U, Req, Rep] =
+    def requestingOnNext(using ctx: ReplierTaskContext[T, U, Req, Rep])(req: Req): Unit =
       f2(ctx)(req)
 
     override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
       f1(ctx)(t)
+      Tasks.same
 
 end PortalsExtension
 export PortalsExtension.*
