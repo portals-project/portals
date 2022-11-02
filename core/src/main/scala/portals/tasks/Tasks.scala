@@ -308,7 +308,7 @@ object WithAndThenExtension:
       override private[portals] def fuse(): Unit = ???
       private[portals] var key: portals.Key[Int] = ctx.key
       private[portals] var path: String = ctx.path
-      private[portals] var system: portals.System = ctx.system
+      private[portals] var system: portals.PortalsSystem = ctx.system
       private[portals] var _ctx: TaskContext[T, U] = ctx
     }
   end fromTaskContext // def

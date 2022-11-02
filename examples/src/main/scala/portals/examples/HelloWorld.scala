@@ -28,7 +28,7 @@ import portals.*
 
   // ASTPrinter.println(application) // print the application AST
 
-  val system = Systems.default()
+  val system = Systems.test()
 
   system.launch(application)
 

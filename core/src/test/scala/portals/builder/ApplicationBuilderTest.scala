@@ -59,7 +59,6 @@ class ApplicationBuilderTest:
     assertEquals(Some(List(0)), tester.receiveAtom())
     assertNotEquals(Some(List(-1)), tester.receiveAtom())
 
-
   @Test
   def testChainOfWorkflows(): Unit =
     import portals.DSL.*

@@ -2,6 +2,7 @@ package portals.benchmark.benchmarks
 
 import portals.*
 import portals.benchmark.*
+import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
 import portals.system.test.*
 import portals.DSL.*

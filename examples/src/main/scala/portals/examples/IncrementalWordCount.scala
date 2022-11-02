@@ -56,7 +56,7 @@ import portals.*
 
   // ASTPrinter.println(application)
 
-  val system = Systems.default()
+  val system = Systems.test()
   system.launch(application)
 
   system.stepUntilComplete()

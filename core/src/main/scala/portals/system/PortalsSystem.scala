@@ -1,5 +1,5 @@
 package portals
 
-trait System:
+trait PortalsSystem:
   def launch(application: Application): Unit
   def shutdown(): Unit

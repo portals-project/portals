@@ -1,21 +1,13 @@
 package portals
 
-import portals.system.async.AsyncLocalSystem
-import portals.system.async.DataParallelSystem
-import portals.system.async.MicroBatchingSystem
-import portals.system.async.NoGuaranteesSystem
+import portals.system.parallel.*
 import portals.system.test.*
 
-object Systems:
-  def default(): TestSystem = new TestSystem()
+trait Systems
+
+object Systems extends Systems:
+  def default(): PortalsSystem = test()
 
   def test(): TestSystem = new TestSystem()
 
-  def parallel(): System = new AsyncLocalSystem()
-
-  def asyncLocalNoGuarantees(): System = new NoGuaranteesSystem()
-
-  def asyncLocalMicroBatching(): System = new MicroBatchingSystem()
-
-  def dataParallel(nPartitions: Int, nParallelism: Int): System =
-    new DataParallelSystem(nPartitions, nParallelism)
+  def parallel(): PortalsSystem = new ParallelSystem()
