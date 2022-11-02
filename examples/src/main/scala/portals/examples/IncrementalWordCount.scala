@@ -56,8 +56,8 @@ import portals.*
 
   // ASTPrinter.println(application)
 
-  val system = Systems.syncLocal()
+  val system = Systems.default()
   system.launch(application)
 
-  system.stepAll()
+  system.stepUntilComplete()
   system.shutdown()

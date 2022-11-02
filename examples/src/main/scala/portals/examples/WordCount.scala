@@ -66,8 +66,8 @@ import portals.*
   val application = builder
     .build()
 
-  val system = Systems.syncLocal()
+  val system = Systems.default()
   system.launch(application)
 
-  system.stepAll()
+  system.stepUntilComplete()
   system.shutdown()

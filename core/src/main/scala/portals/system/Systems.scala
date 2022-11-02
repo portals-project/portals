@@ -4,8 +4,11 @@ import portals.system.async.AsyncLocalSystem
 import portals.system.async.DataParallelSystem
 import portals.system.async.MicroBatchingSystem
 import portals.system.async.NoGuaranteesSystem
+import portals.system.test.*
 
 object Systems:
+  def default(): TestSystem = new TestSystemImpl()
+
   def syncLocal(): LocalSystemContext = new SyncLocalSystem()
 
   // // for testing async system instead of local
