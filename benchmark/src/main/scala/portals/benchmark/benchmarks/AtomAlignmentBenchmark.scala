@@ -3,6 +3,7 @@ package portals.benchmark.benchmarks
 import portals.*
 import portals.benchmark.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.test.*
 import portals.DSL.*
 
 object AtomAlignmentBenchmark extends Benchmark:
@@ -28,10 +29,10 @@ object AtomAlignmentBenchmark extends Benchmark:
     val completer = CompletionWatcher()
 
     val system = sSystem match
-      case "async" => Systems.asyncLocal()
+      case "async" => Systems.parallel()
       case "noGuarantees" => Systems.asyncLocalNoGuarantees()
       case "microBatching" => Systems.asyncLocalMicroBatching()
-      case "sync" => Systems.syncLocal()
+      case "sync" => Systems.test()
       case _ => ???
 
     val builder = ApplicationBuilders.application("runOneIteration")
@@ -67,7 +68,7 @@ object AtomAlignmentBenchmark extends Benchmark:
 
     system.launch(app)
 
-    if sSystem == "sync" then system.asInstanceOf[SyncLocalSystem].stepAll()
+    if sSystem == "sync" then system.asInstanceOf[TestSystem].stepUntilComplete()
 
     // TODO: should trigger shutdown even if Await is timed out
     completer.waitForCompletion()

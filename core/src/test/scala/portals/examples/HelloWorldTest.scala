@@ -46,11 +46,11 @@ class HelloWorldTest:
 
     // ASTPrinter.println(application)
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     system.launch(application)
 
-    system.stepAll()
+    system.stepUntilComplete()
     system.shutdown()
 
     tester.receiveAssert(message)

@@ -110,6 +110,7 @@ class TestRuntime:
     application.connections.foreach { conn =>
       rctx.addConnection(conn)
       graphTracker.addEdge(conn.from.path, conn.to.path)
+      progressTracker.initProgress(conn.to.path, conn.from.path)
     }
 
     // launch generators

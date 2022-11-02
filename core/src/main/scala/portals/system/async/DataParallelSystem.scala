@@ -17,7 +17,7 @@ import com.typesafe.config.ConfigFactory
 
 import portals.*
 
-class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) extends SystemContext:
+class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) extends System:
   import AkkaRunner.Events.*
 
   val config = ConfigFactory

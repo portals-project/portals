@@ -25,7 +25,7 @@ object ChainOfWorkflowsBenchmark extends Benchmark:
 
     val completer = CompletionWatcher()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     val builder = ApplicationBuilders.application("app")
 

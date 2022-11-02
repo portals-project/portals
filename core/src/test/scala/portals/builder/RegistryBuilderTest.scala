@@ -17,7 +17,7 @@ class RegistryBuilderTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     ////////////////////////////////////////////////////////////////////////////
     // App 1
@@ -68,7 +68,7 @@ class RegistryBuilderTest:
     // Execute
     ////////////////////////////////////////////////////////////////////////////
 
-    system.stepAll()
+    system.stepUntilComplete()
 
     system.shutdown()
 
@@ -96,7 +96,7 @@ class RegistryBuilderTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     ////////////////////////////////////////////////////////////////////////////
     // App 1
@@ -165,7 +165,7 @@ class RegistryBuilderTest:
     // Execute
     ////////////////////////////////////////////////////////////////////////////
 
-    system.stepAll()
+    system.stepUntilComplete()
 
     system.shutdown()
 

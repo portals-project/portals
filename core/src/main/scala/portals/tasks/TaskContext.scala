@@ -36,7 +36,7 @@ private[portals] trait TaskContext[T, U]
 
   /** The `SystemContext` that this task belongs to */
   // has to be var so that it can be swapped at runtime
-  private[portals] var system: SystemContext
+  private[portals] var system: System
 
 object TaskContext:
   def apply[T, U](): TaskContextImpl[T, U] = new TaskContextImpl[T, U]

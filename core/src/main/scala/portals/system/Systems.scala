@@ -9,33 +9,13 @@ import portals.system.test.*
 object Systems:
   def default(): TestSystem = new TestSystem()
 
-  def syncLocal(): LocalSystemContext = new SyncLocalSystem()
+  def test(): TestSystem = new TestSystem()
 
-  // // for testing async system instead of local
-  // def syncLocal(): LocalSystemContext = new LocalSystemContext {
-  //   private val system = AsyncLocalSystem()
-  //   def launch(application: Application): Unit = system.launch(application)
-  //   def shutdown(): Unit = system.shutdown()
-  //   def isEmpty(): Boolean = false
-  //   def step(): Unit = Thread.sleep(100)
-  //   def stepAll(): Unit = Thread.sleep(1000)
-  // }
+  def parallel(): System = new AsyncLocalSystem()
 
-  // // // for testing microbatching system instead of local
-  // def syncLocal(): LocalSystemContext = new LocalSystemContext {
-  //   private val system = MicroBatchingSystem()
-  //   def launch(application: Application): Unit = system.launch(application)
-  //   def shutdown(): Unit = system.shutdown()
-  //   def isEmpty(): Boolean = false
-  //   def step(): Unit = Thread.sleep(100)
-  //   def stepAll(): Unit = Thread.sleep(1000)
-  // }
+  def asyncLocalNoGuarantees(): System = new NoGuaranteesSystem()
 
-  def asyncLocal(): SystemContext = new AsyncLocalSystem()
+  def asyncLocalMicroBatching(): System = new MicroBatchingSystem()
 
-  def asyncLocalNoGuarantees(): SystemContext = new NoGuaranteesSystem()
-
-  def asyncLocalMicroBatching(): SystemContext = new MicroBatchingSystem()
-
-  def dataParallel(nPartitions: Int, nParallelism: Int): SystemContext =
+  def dataParallel(nPartitions: Int, nParallelism: Int): System =
     new DataParallelSystem(nPartitions, nParallelism)

@@ -27,9 +27,9 @@ object TestUtils:
       .sink()
       .freeze()
     val app = builder.build()
-    val system = Systems.syncLocal()
+    val system = Systems.test()
     system.launch(app)
-    system.stepAll()
+    system.stepUntilComplete()
     system.shutdown()
     tester
 
@@ -58,10 +58,10 @@ object TestUtils:
 
     val app = builder.build()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     system.launch(app)
-    system.stepAll()
+    system.stepUntilComplete()
     system.shutdown()
 
     tester

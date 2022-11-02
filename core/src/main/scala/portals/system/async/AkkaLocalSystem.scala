@@ -9,7 +9,7 @@ import akka.util.Timeout
 
 import portals.*
 
-abstract class AkkaLocalSystem extends SystemContext:
+abstract class AkkaLocalSystem extends System:
   import AkkaRunner.Events.*
 
   given timeout: Timeout = Timeout(3.seconds)

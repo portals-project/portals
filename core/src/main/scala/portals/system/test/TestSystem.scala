@@ -2,7 +2,7 @@ package portals.system.test
 
 import portals.*
 
-class TestSystem():
+class TestSystem() extends System:
   val runtime = TestRuntime()
 
   /** Launch a Portals application. */

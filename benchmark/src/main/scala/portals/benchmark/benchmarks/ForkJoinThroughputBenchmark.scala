@@ -3,6 +3,7 @@ package portals.benchmark.benchmarks
 import portals.*
 import portals.benchmark.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.test.*
 import portals.DSL.*
 
 object ForkJoinThroughputBenchmark extends Benchmark:
@@ -26,12 +27,12 @@ object ForkJoinThroughputBenchmark extends Benchmark:
     val sSystem = config.get("--sSystem")
 
     val system = sSystem match
-      case "async" => Systems.asyncLocal()
+      case "async" => Systems.parallel()
       case "noGuarantees" => Systems.asyncLocalNoGuarantees()
       case "microBatching" => Systems.asyncLocalMicroBatching()
       // TODO: make sync work for this case
       // sync currently not supported, as the sync system does not support multiple workflows subscribing to the same stream
-      case "sync" => ??? // Systems.syncLocal()
+      case "sync" => ??? // Systems.test()
       case _ => ???
 
     val builder = ApplicationBuilders.application("app")
@@ -85,7 +86,7 @@ object ForkJoinThroughputBenchmark extends Benchmark:
 
     system.launch(application)
 
-    if sSystem == "sync" then system.asInstanceOf[LocalSystemContext].stepAll()
+    if sSystem == "sync" then system.asInstanceOf[TestSystem].stepUntilComplete()
 
     completer.waitForCompletion()
 
