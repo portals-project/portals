@@ -232,6 +232,7 @@ object AkkaRunnerImpl extends AkkaRunner:
                 preparedTask.onComplete
               case portals.Error(t) =>
                 preparedTask.onError(t)
+              case _ => ???
 
           // event stash and atom stash are used to store away events until alignment is completed,
           // at which point they can be unstashed to execute one atom.
@@ -322,6 +323,7 @@ object AkkaRunnerImpl extends AkkaRunner:
                   preparedTask.onError(t)
                   throw t
                   Behaviors.stopped
+                case _ => ???
 
           }
         }

@@ -145,6 +145,7 @@ object NoGuaranteesRunner extends AkkaRunner:
             case portals.Error(t) =>
               preparedTask.onError(t)
               Behaviors.same
+            case _ => ???
         }
       }
   end AtomicTaskExecutor

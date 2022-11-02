@@ -310,26 +310,29 @@ class ApplicationBuilderTest:
     val generator = builder.generators.fromList(testData)
 
     val empty = builder.generators.fromList[Int](List.empty)
+    val othergen = builder.generators.fromList[Int](testData)
 
     val portal = builder.portals.portal[Int, Int]("portal")
 
     val replier = builder
       .workflows[Int, Int]("replier")
-      .source(generator.stream) // perhaps rename stream to out
+      .source(empty.stream)
       .portal(portal)
       .replier { event =>
         ctx.emit(event) // do nothing :)
       } { request =>
         val reply = (request * 1024)
         ctx.reply(reply)
+        ctx.emit(request)
       }
       .checkExpectedType[Int]()
+      .logger("replier")
       .sink()
       .freeze()
 
     val asker = builder
       .workflows[Int, Int]("asker")
-      .source(empty.stream)
+      .source(generator.stream)
       .portal(portal)
       .asker { event =>
         val request = event

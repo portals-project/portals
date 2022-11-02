@@ -374,32 +374,25 @@ export WithWrapperExtension.*
 object PortalsExtension:
   import Tasks.*
 
-  /** internal API */
-  private[portals] case class Ask[T](id: Int, event: T)
-
-  /** internal API */
-  private[portals] case class Reply[T](id: Int, event: T)
-
-  class PortalsTasks[Req, Rep]():
+  class PortalsTasks[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*):
     def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => Unit): AskerTask[T, U, Req, Rep] =
-      new AskerTask[T, U, Req, Rep](ctx => f(using ctx))
+      new AskerTask[T, U, Req, Rep](ctx => f(using ctx))(portals: _*)
 
     def replier[T, U](f1: TaskContext[T, U] ?=> T => Unit)(
         f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => Unit
     ): ReplierTask[T, U, Req, Rep] =
-      new ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))
+      new ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))(portals: _*)
 
   extension (t: Tasks) {
     /* Note: the reason we have this extra step via `portal` is to avoid the user having to specify the Req and Rep types. */
     def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) =
-      new PortalsTasks[Req, Rep]()
+      new PortalsTasks[Req, Rep](portals: _*)
   }
-
-  type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]
 
   private[portals] case class AskerTask[T, U, Req, Rep](
       f: AskerTaskContext[T, U, Req, Rep] => T => Unit
-  ) extends BaseTask[T, U]:
+  )(val portals: AtomicPortalRefType[Req, Rep]*)
+      extends BaseTask[T, U]:
 
     override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
       f(ctx.asInstanceOf)(t)
@@ -408,7 +401,8 @@ object PortalsExtension:
   private[portals] case class ReplierTask[T, U, Req, Rep](
       f1: TaskContext[T, U] => T => Unit,
       f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit
-  ) extends BaseTask[T, U]:
+  )(val portals: AtomicPortalRefType[Req, Rep]*)
+      extends BaseTask[T, U]:
 
     def requestingOnNext(using ctx: ReplierTaskContext[T, U, Req, Rep])(req: Req): Unit =
       f2(ctx)(req)

@@ -9,10 +9,15 @@ class SyncRegistry extends GlobalRegistry:
   var sequencers = Map[String, SyncSequencer]()
   var workflows = Map[String, SyncWorkflow]()
   var generators = Map[String, SyncGenerator]()
+  var portals = Map[String, RuntimePortal]()
 
   private val logger = Logger("syncRegistry")
   var hangingConnections = Set[AtomicConnection[_]]()
 //   var executables = List[Executable]()
+
+  def addPortal(portal: AtomicPortal[_, _]): Unit =
+    val rtportal = RuntimePortal(portal)
+    portals += (portal.path -> rtportal)
 
   def addSequencer[T](app: Application, seq: AtomicSequencer[_]): Unit = {
     // find out how many upstreams this sequencer has
@@ -54,8 +59,28 @@ class SyncRegistry extends GlobalRegistry:
 
     application.generators.foreach(g => addGenerator(g))
 
+    application.portals.foreach { portal => addPortal(portal) }
+
     // launch workflows
     application.workflows.foreach(workflow => addWorkflow(application, workflow))
+
+    // register workflows to portals
+    application.workflows.foreach { workflow =>
+      val portalDeps = workflow.tasks.flatMap { (name, task) =>
+        task match
+          case at @ ReplierTask(_, _) => at.portals
+          case _ => List.empty
+      }.toList
+
+      portalDeps.foreach { p =>
+        portals
+          .get(p.path)
+          .get
+          .subscribe(
+            workflows.get(workflow.path).get
+          )
+      }
+    }
 
     // register workflow to whom it consumes
     application.workflows.foreach(workflow =>

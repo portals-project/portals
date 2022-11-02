@@ -192,6 +192,14 @@ class RuntimeBehavior[I, O](
   val ctx = TaskContext[I, O]()
   var currentAtomCnt = 0
 
+  var _seq = 0
+  def nextSeq: Int =
+    _seq += 1
+    _seq
+
+  var continuations = Map.empty[Int, Continuation[I, O, Any, Any]]
+  var futures = Map.empty[Int, FutureImpl[Any]]
+
   val self = this
   ctx.cb = new TaskCallback[I, O] {
     def submit(key: Key[Int], event: O): Unit = rtwf.onRuntimeBehaviorEventSubmit(self, key, event)
@@ -205,7 +213,38 @@ class RuntimeBehavior[I, O](
       case Event(key, item) => {
         ctx.key = key
         ctx.state.key = key
-        preparedBehavior.onNext(using ctx)(item.asInstanceOf[I]) // TODO: better type cast
+
+        var asked = List.empty[(AtomicPortalRefKind[_, _], Int, Any)]
+
+        preparedBehavior match
+          case AskerTask(_) => {
+            val actx = new AskerTaskContext[I, O, Any, Any] {
+              def ask(portal: portals.AtomicPortalRefKind[Any, Any])(req: Any): portals.Future[Any] =
+                val id = nextSeq
+                asked = (portal, id, req) :: asked
+                val future = new FutureImpl[Any](id)
+                futures = futures.updated(id, future)
+                future
+
+              def await(future: portals.Future[Any])(f: => portals.Task[I, O]): portals.Task[I, O] =
+                continuations = continuations.updated(future.asInstanceOf[FutureImpl[_]]._id, f)
+                Tasks.same
+
+              def emit(u: O): Unit = ctx.emit(u)
+              def log: portals.Logger = ctx.log
+              def state: portals.TaskState[Any, Any] = ctx.state
+              private[portals] def fuse(): Unit = ctx.fuse()
+              private[portals] var key: portals.Key[Int] = ctx.key
+              private[portals] var path: String = ctx.path
+              private[portals] var system: portals.SystemContext = ctx.system
+            }
+            preparedBehavior.asInstanceOf[AskerTask[I, O, Any, Any]].onNext(using actx)(item.asInstanceOf[I])
+            // TODO: do something with the collected asked messages :)
+
+          }
+          // replier task is like a regular task for this :)
+          case _ =>
+            preparedBehavior.onNext(using ctx)(item.asInstanceOf[I]) // TODO: better type cast
       }
       case Atom => {
         // not possible to stash more than one atom in each buffer at sync runtime, no need to stash
@@ -227,3 +266,5 @@ class RuntimeBehavior[I, O](
       case Error(t) =>
         preparedBehavior.onError(using ctx)(t)
         rtwf.dispatchEvent(self, Error(t))
+      case Ask(key, id, event) => ???
+      case Reply(key, id, event) => ???

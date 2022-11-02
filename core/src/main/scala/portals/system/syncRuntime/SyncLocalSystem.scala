@@ -48,15 +48,16 @@ class SyncLocalSystem extends LocalSystemContext:
       val selectedGenerator = executableGenerators(executionIndex % executableGenerators.size)
       logger.debug(s"Executing generator ${selectedGenerator.g.path}")
       selectedGenerator.step()
-
       // if still no workflow to execute, meaning this atom is at the sequencer now
-      if (syncRegistry.workflows.filter(!_._2.isEmpty()).values.toList.size == 0) {
-        executableSequencers = syncRegistry.sequencers.filter(!_._2.isEmpty()).values.toList
-        val selectedSequencer = executableSequencers(executionIndex % executableSequencers.size)
-        logger.debug(s"Executing sequencer ${selectedSequencer.staticSequencer.path}")
-        selectedSequencer.step()
+      scala.util.Try {
+          if (syncRegistry.workflows.filter(!_._2.isEmpty()).values.toList.size == 0) {
+            executableSequencers = syncRegistry.sequencers.filter(!_._2.isEmpty()).values.toList
+            val selectedSequencer = executableSequencers(executionIndex % executableSequencers.size)
+            logger.debug(s"Executing sequencer ${selectedSequencer.staticSequencer.path}")
+            selectedSequencer.step()
+          }
+        }
       }
-    }
 
     var executableWorkflows = syncRegistry.workflows.filter(!_._2.isEmpty()).values.toList
 

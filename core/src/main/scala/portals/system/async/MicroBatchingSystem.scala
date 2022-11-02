@@ -216,6 +216,7 @@ object MicroBatchingRunner extends AkkaRunner:
                 throw t
                 // Behaviors.stopped
                 Behaviors.same // we don't stop here as otherwise we might not finish the previous batch
+              case _ => ???
         }
       }
 
@@ -254,6 +255,7 @@ object MicroBatchingRunner extends AkkaRunner:
               subscribers.foreach(_ ! Event(path, event))
               throw t
               Behaviors.stopped
+            case _ => ???
         }
       }
 
@@ -303,6 +305,7 @@ object MicroBatchingRunner extends AkkaRunner:
               preparedTask.onError(t)
               subscribers.foreach { sub => sub ! Event(path, portals.Error(t)) }
               Behaviors.stopped
+            case _ => ???
         }
       }
   end AtomicTaskExecutor
