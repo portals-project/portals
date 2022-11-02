@@ -1,8 +1,6 @@
 package portals.system.test
 
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.*
 
 import portals.*
 
@@ -24,6 +22,38 @@ private[portals] class TestRuntimeContext():
   def addGenerator(genr: AtomicGenerator[_]): Unit = _generators += genr.path -> TestGenerator(genr)(using this)
   def addConnection(conn: AtomicConnection[_]): Unit = _connections += conn.path -> TestConnection(conn)(using this)
 
+/** Internal API. Tracks the progress for a path with respect to other streams. */
+class TestProgressTracker:
+  // progress tracker for each Path;
+  // for a Path (String) this gives the progress w.r.t. all input dependencies (Map[String, Long])
+  private var progress: Map[String, Map[String, Long]] = Map.empty
+
+  /** Set the progress of path and dependency to index. */
+  def setProgress(path: String, dependency: String, idx: Long): Unit =
+    progress +=
+      path ->
+        (progress(path) + (dependency -> idx))
+
+  /** Increments the progress of path w.r.t. dependency by 1. If the dependency doesn't exist yet, then we set the new
+    * index to 0.
+    */
+  def incrementProgress(path: String, dependency: String): Unit =
+    progress +=
+      path ->
+        (progress(path) + (dependency -> (progress(path)(dependency) + 1)))
+
+  /** Initialize the progress tracker for a certain path and dependency to -1. */
+  def initProgress(path: String, dependency: String): Unit =
+    progress += path -> (progress.getOrElse(path, Map.empty) + (dependency -> -1L))
+
+  /** Get the current progress of the path and dependency. */
+  def getProgress(path: String, dependency: String): Option[Long] =
+    progress.get(path).flatMap(deps => deps.get(dependency))
+
+  /** Get the current progress of the path. */
+  def getProgress(path: String): Option[Map[String, Long]] =
+    progress.get(path)
+
 /** Internal API. Tracks the graph which is spanned by all applications in Portals. */
 class TestGraphTracker:
   /** Set of all pairs <from, to> edges. */
@@ -41,9 +71,13 @@ class TestStreamTracker:
     * starting from 'from' until (including) 'to' can be read.
     */
   private var _progress: Map[String, (Long, Long)] = Map.empty
+
   def initStream(stream: String): Unit = _progress += stream -> (0, -1)
+
   def setProgress(stream: String, from: Long, to: Long): Unit = _progress += stream -> (from, to)
+
   def incrementProgress(stream: String): Unit = _progress += stream -> (_progress(stream)._1, _progress(stream)._2 + 1)
+
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
 class TestRuntime:
@@ -86,9 +120,9 @@ class TestRuntime:
       graphTracker.addEdge(genr.path, genr.stream.path)
     }
 
-  private def hasInput(to: String, from: String): Boolean =
-    val progress = progressTracker.getProgress(to, from).get
-    val streamProgress = streamTracker.getProgress(from).get._2
+  private def hasInput(path: String, dependency: String): Boolean =
+    val progress = progressTracker.getProgress(path, dependency).get
+    val streamProgress = streamTracker.getProgress(dependency).get._2
     progress < streamProgress
 
   private def hasInput(to: String): Boolean =
@@ -105,35 +139,30 @@ class TestRuntime:
     rctx.generators.find((path, genr) => genr.generator.generator.hasNext())
 
   private def distributeAtoms(listOfAtoms: List[TestAtom]): Unit =
-    listOfAtoms.foreach(atom =>
-      atom match
-        case ta @ TestAtomBatch(path, list) =>
-          rctx.streams(path).enqueue(ta)
-          streamTracker.incrementProgress(path)
-    )
+    listOfAtoms.foreach { case ta @ TestAtomBatch(path, list) =>
+      rctx.streams(path).enqueue(ta)
+      streamTracker.incrementProgress(path)
+    }
 
   private def stepWorkflow(path: String, wf: TestWorkflow): Unit =
-    // TODO: rename to "from" and "to" instead of path and dependency, it gets confusing.
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
     val outputAtoms = wf.process(inputAtom)
     distributeAtoms(outputAtoms)
-    progressTracker.incrementProgress(path, from) // increment the progress :))
+    progressTracker.incrementProgress(path, from)
 
-  private def stepSequencer(path: String, seqr: TestSequencer): Try[Unit] =
+  private def stepSequencer(path: String, seqr: TestSequencer): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
     val outputAtoms = seqr.process(inputAtom)
     distributeAtoms(outputAtoms)
-    progressTracker.incrementProgress(path, from) // increment the progress :))
-    Success(())
+    progressTracker.incrementProgress(path, from)
 
-  private def stepGenerator(path: String, genr: TestGenerator): Try[Unit] =
+  private def stepGenerator(path: String, genr: TestGenerator): Unit =
     val outputAtoms = genr.process()
     distributeAtoms(outputAtoms)
-    Success(())
 
   /** Take a step. This will cause one of the processing entities (Workflows, Sequencers, etc.) to process one atom and
     * produce one (or more) atoms. Throws an exception if it cannot take a step.
@@ -159,8 +188,8 @@ class TestRuntime:
     */
   def canStep(): Boolean =
     chooseWorkflow().isDefined
-      | chooseSequencer().isDefined
-      | chooseGenerator().isDefined
+      || chooseSequencer().isDefined
+      || chooseGenerator().isDefined
 
   /** Terminate the runtime. */
   def shutdown(): Unit = () // do nothing :)
