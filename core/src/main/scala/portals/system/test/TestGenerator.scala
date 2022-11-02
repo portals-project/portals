@@ -3,7 +3,7 @@ package portals.system.test
 import portals.*
 import portals.Generator
 
-case class TestGenerator()(generator: AtomicGenerator[_])(using rctx: TestRuntimeContext):
+case class TestGenerator(val generator: AtomicGenerator[_])(using rctx: TestRuntimeContext):
   def process(): List[TestAtom] =
     var atom = List.empty[WrappedEvent[_]]
     var stop = false
@@ -20,10 +20,4 @@ case class TestGenerator()(generator: AtomicGenerator[_])(using rctx: TestRuntim
         case Generator.Error(t) =>
           atom = Error(t) :: atom
           stop = true
-    List(TestAtomBatch(generator.stream.path, atom))
-
-  def inputs: Map[String, Long] = Map.empty
-
-  def hasInput(): Boolean = generator.generator.hasNext()
-
-  def cleanup(): Unit = ???
+    List(TestAtomBatch(generator.stream.path, atom.reverse))

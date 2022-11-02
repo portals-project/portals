@@ -2,24 +2,24 @@ package portals.system.test
 
 import portals.Application
 
-trait TestSystem:
-  /** Launch a Portals application. */
-  def launch(application: Application): Unit
+// trait TestSystem:
+//   /** Launch a Portals application. */
+//   def launch(application: Application): Unit
 
-  def step(): Unit
+//   def step(): Unit
 
-  def stepUntilComplete(): Unit
+//   def stepUntilComplete(): Unit
 
-  /** Shutdown the system. */
-  def shutdown(): Unit
+//   /** Shutdown the system. */
+//   def shutdown(): Unit
 
-class TestSystemImpl() extends TestSystem:
-  val runtime = TestRuntimeImpl()
+class TestSystem():
+  val runtime = TestRuntime()
 
-  override def launch(application: Application): Unit = runtime.launch(application)
+  def launch(application: Application): Unit = runtime.launch(application)
 
-  override def step(): Unit = runtime.step()
+  def step(): Unit = runtime.step()
 
-  override def stepUntilComplete(): Unit = runtime.stepUntilComplete()
+  def stepUntilComplete(): Unit = runtime.stepUntilComplete()
 
-  override def shutdown(): Unit = runtime.shutdown()
+  def shutdown(): Unit = runtime.shutdown()

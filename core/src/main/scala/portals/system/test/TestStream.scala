@@ -1,5 +1,5 @@
 package portals.system.test
-
+import portals.*
 trait TestStream:
   /** Enqueue an atom to the atomic stream. */
   def enqueue(ta: TestAtom): Unit
@@ -21,7 +21,7 @@ trait TestStream:
   // /** Returns the range of indexes that can be read. */
   // def getIdxRange(path: String): (Long, Long)
 
-case class TestAtomicStream()(using rctx: TestRuntimeContext) extends TestStream:
+case class TestAtomicStream(stream: AtomicStream[_])(using rctx: TestRuntimeContext) extends TestStream:
   var atomQueue = List.empty[TestAtom]
   var index: Long = -1
 

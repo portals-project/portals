@@ -52,7 +52,7 @@ case class ExtAtomicStreamRef[T](path: String) extends AtomicStreamRefKind[T]
 /** Atomic Sequencer. */
 case class AtomicSequencer[T](
     path: String,
-    private[portals] ins: List[AtomicStreamRef[T]],
+    // private[portals] ins: List[AtomicStreamRef[T]], // deprecated
     stream: AtomicStreamRef[T],
     private[portals] sequencer: Sequencer[T]
 ) extends AST

@@ -7,7 +7,7 @@ import portals.system.async.NoGuaranteesSystem
 import portals.system.test.*
 
 object Systems:
-  def default(): TestSystem = new TestSystemImpl()
+  def default(): TestSystem = new TestSystem()
 
   def syncLocal(): LocalSystemContext = new SyncLocalSystem()
 

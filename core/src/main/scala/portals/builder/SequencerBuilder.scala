@@ -19,7 +19,7 @@ class SequencerBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) 
     val _stream = AtomicStreamRef(aStream)
     val aSequencer = AtomicSequencer[T](
       path = _path,
-      ins = _ins,
+      // ins = _ins,
       stream = _stream,
       sequencer = _sequencer,
     )
