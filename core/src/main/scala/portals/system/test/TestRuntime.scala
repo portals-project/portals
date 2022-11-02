@@ -16,7 +16,7 @@ private[portals] class TestRuntimeContext():
   def sequencers: Map[String, TestSequencer] = _sequencers
   def generators: Map[String, TestGenerator] = _generators
   def connections: Map[String, TestConnection] = _connections
-  def addStream(stream: AtomicStream[_]): Unit = _streams += stream.path -> TestAtomicStream(stream)(using this)
+  def addStream(stream: AtomicStream[_]): Unit = _streams += stream.path -> TestStream(stream)(using this)
   def addWorkflow(wf: Workflow[_, _]): Unit = _workflows += wf.path -> TestWorkflow(wf)(using this)
   def addSequencer(seqr: AtomicSequencer[_]): Unit = _sequencers += seqr.path -> TestSequencer(seqr)(using this)
   def addGenerator(genr: AtomicGenerator[_]): Unit = _generators += genr.path -> TestGenerator(genr)(using this)
