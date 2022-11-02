@@ -1,7 +1,5 @@
 package portals.system.test
 
-import scala.util.*
-
 import portals.*
 
 /** Internal API. Holds runtime information of the executed applications. */

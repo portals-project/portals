@@ -4,7 +4,7 @@ import portals.*
 
 // TODO: the sequencer should not buffer events like this :(, but we need to change
 // the sequencer first.
-case class TestSequencer(sequencer: AtomicSequencer[_])(using rctx: TestRuntimeContext):
+class TestSequencer(sequencer: AtomicSequencer[_])(using rctx: TestRuntimeContext):
   private var streams: Map[String, List[List[WrappedEvent[_]]]] = Map.empty
 
   def process(atom: TestAtom): List[TestAtom] = atom match

@@ -2,7 +2,7 @@ package portals.system.test
 
 import portals.*
 
-private[portals] case class TestGenerator(val generator: AtomicGenerator[_])(using rctx: TestRuntimeContext):
+private[portals] class TestGenerator(val generator: AtomicGenerator[_])(using rctx: TestRuntimeContext):
   def process(): List[TestAtom] =
     var atom = List.empty[WrappedEvent[_]]
     var stop = false

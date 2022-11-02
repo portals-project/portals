@@ -1,6 +1,6 @@
 package portals.system.test
 
-import portals.Application
+import portals.*
 
 class TestSystem():
   val runtime = TestRuntime()

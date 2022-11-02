@@ -1,60 +1,48 @@
 package portals.system.test
 
 import portals.*
-import portals.Generator
 
-// trait TestProcessor:
-//   def process(): List[TestAtom] = ???
+private class CollectingTaskCallBack extends TaskCallback[Any, Any]:
+  private var _output = List.empty[WrappedEvent[Any]]
 
-//   /** Processes the atom, and produces a new list of atoms. The produced list of atoms may either be a regular atom for
-//     * an output atomic stream, or an atom for a portal. See the `TestAtom` trait for the distinction.
-//     */
-//   def process(atom: TestAtom): List[TestAtom] = ???
+  def submit(key: Key[Int], event: Any): Unit = _output = Event(key, event) :: _output
 
-//   var _inputs: Set[String]
+  def fuse(): Unit = _output = Atom :: _output
 
-//   /** Returns a set of inputs of a processor to the index. */
-//   def inputs: Set[String]
+  def getOutput(): List[WrappedEvent[Any]] = _output.reverse
 
-//   /** Returns true if the processor has some input from one of the dependencies. */
-//   def hasInput(): Boolean
+  def clear(): Unit = _output = List.empty
 
-//   /** Performs GC and cleans up any left-over data that is no longer needed. */
-//   def cleanup(): Unit
-
-case class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
+class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
+  /** Processes the atom, and produces a new list of atoms.
+    *
+    * The produced list of atoms may either be a regular atom for an output atomic stream, or an atom for a portal. See
+    * the `TestAtom` trait for the distinction.
+    */
   def process(atom: TestAtom): List[TestAtom] = atom match
     case a @ TestAtomBatch(path, list) => processAtom(a)
-    // case p @ TestPortalBatch(path, list) => processPortal(p)
 
+  /** Internal API. Processes a TestAtomBatch. */
   private def processAtom(atom: TestAtomBatch[_]): List[TestAtom] =
-    // The atom is processed in a depth-first traversal down the DAG starting
+    // Info: The atom is processed in a depth-first traversal down the DAG starting
     // from the root (i.e., source).
     // For each node (i.e., task) we process the whole batch, this, in turn,
     // produces a batch of new events, these are then further processed by the
     // chained tasks in depth-first order.
 
-    def recProcess(atom: TestAtomBatch[_]): List[TestAtom] =
+    // TODO: we should probably not do this recursively, it would be easier to follow the code if it was
+    // done with a while loop.
+    def recProcess(path: String, atom: TestAtomBatch[_]): List[TestAtom] =
       // if the path is a sink, then simply return the batch of events with correct path
-      if wf.sinks.contains(atom.path) then List(TestAtomBatch(wf.stream.path, atom.list))
-      else
-        // execute task
-        val task = wf.tasks(atom.path)
+      if wf.sinks.contains(path) then List(TestAtomBatch(wf.stream.path, atom.list))
+      else // else execute the task, and execute downstream tasks recursively on the output
 
-        var output = List.empty[WrappedEvent[Any]]
-        // construct side effect collecting task cb
-        val tcb = new TaskCallback[Any, Any] {
-          def submit(key: Key[Int], event: Any): Unit =
-            output = Event(key, event) :: output
-
-          def fuse(): Unit =
-            output = Atom :: output
-        }
-
-        // construct task context
+        val task = wf.tasks(path)
+        val tcb = CollectingTaskCallBack()
         val tctx = TaskContext[Any, Any]()
         tctx.cb = tcb
 
+        // TODO: this should only be executed once
         val preppedTask = Tasks.prepareTask(task, tctx.asInstanceOf)
 
         atom.list.foreach { event =>
@@ -66,15 +54,12 @@ case class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
             case Atom => preppedTask.onAtomComplete(using tctx.asInstanceOf)
             case Seal => preppedTask.onComplete(using tctx.asInstanceOf)
             case Error(t) => preppedTask.onError(using tctx.asInstanceOf)(t)
-            // case _ => ??? // not handled for now hehe
         }
 
-        output = (Atom :: output).reverse
-
         // execute on all children
-        val connectionsFromThisPath = wf.connections.filter((from, to) => from == atom.path).map((from, to) => to)
+        val connectionsFromThisPath = wf.connections.filter((from, to) => from == path).map((from, to) => to)
         connectionsFromThisPath.toList.flatMap { to =>
-          recProcess(TestAtomBatch(to, output))
+          recProcess(to, TestAtomBatch(atom.path, tcb.getOutput()))
         }
 
     // TODO: currently, we may have multiple sources, this should change...
@@ -82,37 +67,6 @@ case class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
     wf.sources.toList.flatMap { (path, task) =>
       val connectionsFromThisPath = wf.connections.filter((from, to) => from == path)
       connectionsFromThisPath.flatMap { (_, to) =>
-        recProcess(TestAtomBatch(to, atom.list))
+        recProcess(to, TestAtomBatch(atom.path, atom.list))
       }
     }
-
-  // private def processPortal(atom: TestPortalBatch[_]) = ???
-
-  // var _inputs: Map[String, Long] = Map(wf.consumes.path -> -1)
-  // def inputs: Map[String, Long] = _inputs
-
-  // def hasInput(): Boolean =
-  //   rctx.streams
-  //     .filter((path, stream) => this.inputs.contains(path))
-  //     .exists((path, stream) => inputs(path) < stream.getIdxRange()._2)
-
-  // def cleanup(): Unit = () // nothing to clean up :)
-
-// @main def testThisFile(): Unit =
-//   val wf = ApplicationBuilders
-//     .application("asdf")
-//     .workflows[Int, Int]()
-//     .source(null)
-//     .map[Int] { ctx ?=> event =>
-//       ctx.log.info("asdf" + event); event
-//     }
-//     .map { event => event }
-//     .logger()
-//     .sink()
-//     .freeze()
-
-//   val testWF = TestWorkflow(wf)
-
-//   val testEvents = TestAtomBatch("doesn't matter :)", List(Event(Key(0), 0), Event(Key(1), 1), Seal, Atom))
-
-//   testWF.process(testEvents)
