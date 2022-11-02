@@ -26,7 +26,6 @@ class ApplicationBuilderTest:
     val workflow = builder
       .workflows[Int, Int]("wf")
       .source[Int](sequencer.stream)
-      .logger()
       .flatMap[Int] { ctx ?=> x =>
         if (x > 0) List(x - 1)
         else List.empty
@@ -60,240 +59,241 @@ class ApplicationBuilderTest:
     assertEquals(Some(List(0)), tester.receiveAtom())
     assertNotEquals(Some(List(-1)), tester.receiveAtom())
 
-  // @Test
-  // def testChainOfWorkflows(): Unit =
-  //   import portals.DSL.*
 
-  //   val tester = new TestUtils.Tester[Int]()
+  @Test
+  def testChainOfWorkflows(): Unit =
+    import portals.DSL.*
 
-  //   val builder = ApplicationBuilders.application("app")
+    val tester = new TestUtils.Tester[Int]()
 
-  //   // 0, Atom, 1, Atom, ..., 4, Atom, Seal
-  //   val input = List.range(0, 5).grouped(1).toList
-  //   val generator = builder.generators.fromListOfLists(input)
+    val builder = ApplicationBuilders.application("app")
 
-  //   def workflowFactory(name: String, stream: AtomicStreamRef[Int]): Workflow[Int, Int] =
-  //     builder
-  //       .workflows[Int, Int](name)
-  //       .source[Int](stream)
-  //       .map(_ + 1)
-  //       .sink()
-  //       .freeze()
+    // 0, Atom, 1, Atom, ..., 4, Atom, Seal
+    val input = List.range(0, 5).grouped(1).toList
+    val generator = builder.generators.fromListOfLists(input)
 
-  //   // chain length 4
-  //   val wf1 = workflowFactory("wf1", generator.stream)
-  //   val wf2 = workflowFactory("wf2", wf1.stream)
-  //   val wf3 = workflowFactory("wf3", wf2.stream)
-  //   val wf4 = workflowFactory("wf4", wf3.stream)
-  //   val twf = tester.workflow(wf4.stream, builder)
+    def workflowFactory(name: String, stream: AtomicStreamRef[Int]): Workflow[Int, Int] =
+      builder
+        .workflows[Int, Int](name)
+        .source[Int](stream)
+        .map(_ + 1)
+        .sink()
+        .freeze()
 
-  //   val application = builder.build()
+    // chain length 4
+    val wf1 = workflowFactory("wf1", generator.stream)
+    val wf2 = workflowFactory("wf2", wf1.stream)
+    val wf3 = workflowFactory("wf3", wf2.stream)
+    val wf4 = workflowFactory("wf4", wf3.stream)
+    val twf = tester.workflow(wf4.stream, builder)
 
-  //   val system = Systems.test()
-  //   system.launch(application)
+    val application = builder.build()
 
-  //   system.stepUntilComplete()
-  //   system.shutdown()
+    val system = Systems.test()
+    system.launch(application)
 
-  //   input.foreach { list =>
-  //     list.foreach { message =>
-  //       // receive message + length of chain (4)
-  //       tester.receiveAssert(message + 4)
-  //     }
-  //   }
+    system.stepUntilComplete()
+    system.shutdown()
 
-  // @Test
-  // def testChainOfTasks(): Unit =
-  //   import portals.DSL.*
+    input.foreach { list =>
+      list.foreach { message =>
+        // receive message + length of chain (4)
+        tester.receiveAssert(message + 4)
+      }
+    }
 
-  //   val tester = new TestUtils.Tester[Int]()
+  @Test
+  def testChainOfTasks(): Unit =
+    import portals.DSL.*
 
-  //   val builder = ApplicationBuilders
-  //     .application("app")
+    val tester = new TestUtils.Tester[Int]()
 
-  //   // 0, Atom, 1, Atom, ..., 4, Atom, Seal
-  //   val input = List.range(0, 5).grouped(1).toList
-  //   val generator = builder.generators.fromListOfLists(input)
+    val builder = ApplicationBuilders
+      .application("app")
 
-  //   val workflow = builder
-  //     .workflows[Int, Int]("workflow")
-  //     .source[Int](generator.stream)
-  //     // chain length 4
-  //     .map(_ + 1)
-  //     .map(_ + 1)
-  //     .map(_ + 1)
-  //     .map(_ + 1)
-  //     .task(tester.task)
-  //     // .logger()
-  //     .sink()
-  //     .freeze()
+    // 0, Atom, 1, Atom, ..., 4, Atom, Seal
+    val input = List.range(0, 5).grouped(1).toList
+    val generator = builder.generators.fromListOfLists(input)
 
-  //   val application = builder.build()
+    val workflow = builder
+      .workflows[Int, Int]("workflow")
+      .source[Int](generator.stream)
+      // chain length 4
+      .map(_ + 1)
+      .map(_ + 1)
+      .map(_ + 1)
+      .map(_ + 1)
+      .task(tester.task)
+      // .logger()
+      .sink()
+      .freeze()
 
-  //   val system = Systems.test()
-  //   system.launch(application)
+    val application = builder.build()
 
-  //   system.stepUntilComplete()
-  //   system.shutdown()
+    val system = Systems.test()
+    system.launch(application)
 
-  //   input.foreach { list =>
-  //     list.foreach { message =>
-  //       // receive message + length of chain (4)
-  //       tester.receiveAssert(message + 4)
-  //     }
-  //   }
+    system.stepUntilComplete()
+    system.shutdown()
 
-  // @Test
-  // def basicAtomsTest(): Unit =
-  //   import portals.DSL.*
+    input.foreach { list =>
+      list.foreach { message =>
+        // receive message + length of chain (4)
+        tester.receiveAssert(message + 4)
+      }
+    }
 
-  //   val testData = List.range(0, 1024).grouped(128).toList
+  @Test
+  def basicAtomsTest(): Unit =
+    import portals.DSL.*
 
-  //   // simple workflow that forwards any input to the output
-  //   val flow = TestUtils.flowBuilder {
-  //     _.identity()
-  //   }
+    val testData = List.range(0, 1024).grouped(128).toList
 
-  //   val tester = TestUtils.executeWorkflow(flow, testData)
+    // simple workflow that forwards any input to the output
+    val flow = TestUtils.flowBuilder {
+      _.identity()
+    }
 
-  //   testData.foreach { atom =>
-  //     assertEquals(Some(atom), tester.receiveAtom())
-  //   }
+    val tester = TestUtils.executeWorkflow(flow, testData)
 
-  // @Test
-  // def basicAtomTest(): Unit =
-  //   import portals.DSL.*
+    testData.foreach { atom =>
+      assertEquals(Some(atom), tester.receiveAtom())
+    }
 
-  //   val testData = List(List(1), List(2, 3), List(4, 5, 6))
+  @Test
+  def basicAtomTest(): Unit =
+    import portals.DSL.*
 
-  //   // simple workflow that forwards any input to the output
-  //   val flow = TestUtils.flowBuilder {
-  //     _.identity()
-  //   }
+    val testData = List(List(1), List(2, 3), List(4, 5, 6))
 
-  //   val tester = TestUtils.executeWorkflow(flow, testData)
+    // simple workflow that forwards any input to the output
+    val flow = TestUtils.flowBuilder {
+      _.identity()
+    }
 
-  //   assertEquals(
-  //     List(
-  //       tester.Event(1),
-  //       tester.Atom,
-  //       tester.Event(2),
-  //       tester.Event(3),
-  //       tester.Atom,
-  //       tester.Event(4),
-  //       tester.Event(5),
-  //       tester.Event(6),
-  //       tester.Atom,
-  //       tester.Seal
-  //     ),
-  //     tester.receiveAllWrapped()
-  //   )
+    val tester = TestUtils.executeWorkflow(flow, testData)
 
-  // @Test
-  // def testDiamond(): Unit =
-  //   import portals.DSL.*
+    assertEquals(
+      List(
+        tester.Event(1),
+        tester.Atom,
+        tester.Event(2),
+        tester.Event(3),
+        tester.Atom,
+        tester.Event(4),
+        tester.Event(5),
+        tester.Event(6),
+        tester.Atom,
+        tester.Seal
+      ),
+      tester.receiveAllWrapped()
+    )
 
-  //   val testData = List.range(0, 256).grouped(128).toList
+  @Test
+  def testDiamond(): Unit =
+    import portals.DSL.*
 
-  //   // simple workflow that forwards any input to the output
-  //   val flow = TestUtils.flowBuilder { flow =>
-  //     val flow1 = flow.identity()
-  //     val flow2 = flow.identity()
-  //     flow1.union(flow2)
-  //   }
+    val testData = List.range(0, 256).grouped(128).toList
 
-  //   val tester = TestUtils.executeWorkflow(flow, testData)
+    // simple workflow that forwards any input to the output
+    val flow = TestUtils.flowBuilder { flow =>
+      val flow1 = flow.identity()
+      val flow2 = flow.identity()
+      flow1.union(flow2)
+    }
 
-  //   val firstAtom = testData(0)
-  //   tester.receiveAtom().get.foreach { event =>
-  //     assertTrue(firstAtom.contains(event))
-  //   }
+    val tester = TestUtils.executeWorkflow(flow, testData)
 
-  //   val secondAtom = testData(1)
-  //   tester.receiveAtom().get.foreach { event =>
-  //     assertTrue(secondAtom.contains(event))
-  //   }
+    val firstAtom = testData(0)
+    tester.receiveAtom().get.foreach { event =>
+      assertTrue(firstAtom.contains(event))
+    }
 
-  // @Ignore // fails on synchronous runtime as Seal is duplicated when fan-out-in pattern.
-  // @Test
-  // def testDiamond2(): Unit =
-  //   import portals.DSL.*
+    val secondAtom = testData(1)
+    tester.receiveAtom().get.foreach { event =>
+      assertTrue(secondAtom.contains(event))
+    }
 
-  //   val testData = List.range(0, 2).grouped(1).toList
+  @Ignore // fails on synchronous runtime as Seal is duplicated when fan-out-in pattern.
+  @Test
+  def testDiamond2(): Unit =
+    import portals.DSL.*
 
-  //   // simple workflow that forwards any input to the output
-  //   val flow = TestUtils.flowBuilder { flow =>
-  //     val flow1 = flow.identity()
-  //     val flow2 = flow.identity()
-  //     flow1.union(flow2)
-  //   }
+    val testData = List.range(0, 2).grouped(1).toList
 
-  //   val tester = TestUtils.executeWorkflow(flow, testData)
+    // simple workflow that forwards any input to the output
+    val flow = TestUtils.flowBuilder { flow =>
+      val flow1 = flow.identity()
+      val flow2 = flow.identity()
+      flow1.union(flow2)
+    }
 
-  //   assertEquals(
-  //     List(
-  //       tester.Event(0),
-  //       tester.Event(0),
-  //       tester.Atom,
-  //       tester.Event(1),
-  //       tester.Event(1),
-  //       tester.Atom,
-  //       tester.Seal
-  //     ),
-  //     tester.receiveAllWrapped()
-  //   )
+    val tester = TestUtils.executeWorkflow(flow, testData)
 
-  // @Test
-  // def testDiamond3(): Unit =
-  //   import portals.DSL.*
+    assertEquals(
+      List(
+        tester.Event(0),
+        tester.Event(0),
+        tester.Atom,
+        tester.Event(1),
+        tester.Event(1),
+        tester.Atom,
+        tester.Seal
+      ),
+      tester.receiveAllWrapped()
+    )
 
-  //   val testData = List.range(0, 256).grouped(1).toList
+  @Test
+  def testDiamond3(): Unit =
+    import portals.DSL.*
 
-  //   // simple workflow that forwards any input to the output
-  //   val flow = TestUtils.flowBuilder { flow =>
-  //     val flow1 = flow.identity()
-  //     val flow2 = flow.identity()
-  //     flow1.union(flow2)
-  //   }
+    val testData = List.range(0, 256).grouped(1).toList
 
-  //   val tester = TestUtils.executeWorkflow(flow, testData)
+    // simple workflow that forwards any input to the output
+    val flow = TestUtils.flowBuilder { flow =>
+      val flow1 = flow.identity()
+      val flow2 = flow.identity()
+      flow1.union(flow2)
+    }
 
-  //   testData.foreach { atom =>
-  //     atom.foreach { event =>
-  //       tester.receiveAssert(event)
-  //       tester.receiveAssert(event)
-  //     }
-  //   }
+    val tester = TestUtils.executeWorkflow(flow, testData)
 
-  // @Test
-  // def testSealTrigger(): Unit =
-  //   import portals.DSL.*
+    testData.foreach { atom =>
+      atom.foreach { event =>
+        tester.receiveAssert(event)
+        tester.receiveAssert(event)
+      }
+    }
 
-  //   val testData = List.range(0, 256).grouped(1).toList
+  @Test
+  def testSealTrigger(): Unit =
+    import portals.DSL.*
 
-  //   // simple workflow that forwards any input to the output
-  //   val flow = TestUtils.flowBuilder { _.identity() }
+    val testData = List.range(0, 256).grouped(1).toList
 
-  //   val tester = TestUtils.executeWorkflow(flow, testData)
+    // simple workflow that forwards any input to the output
+    val flow = TestUtils.flowBuilder { _.identity() }
 
-  //   assertEquals(tester.Seal, tester.receiveAllWrapped().last)
+    val tester = TestUtils.executeWorkflow(flow, testData)
 
-  // @Ignore // errors are not handled correctly by current sync runtime, nor the async
-  // @Test
-  // def testErrorTrigger(): Unit =
-  //   import portals.DSL.*
+    assertEquals(tester.Seal, tester.receiveAllWrapped().last)
 
-  //   val testData = List.range(0, 256).grouped(1).toList
-  //   val tester = TestUtils.Tester[Int]()
+  @Ignore // errors are not handled correctly by current sync runtime, nor the async
+  @Test
+  def testErrorTrigger(): Unit =
+    import portals.DSL.*
 
-  //   val e = Exception("test")
+    val testData = List.range(0, 256).grouped(1).toList
+    val tester = TestUtils.Tester[Int]()
 
-  //   // workflow that throws an error
-  //   val flow = TestUtils.flowBuilder[Int, Int] { _.map[Int] { x => if x == 4 then throw e else x }.task(tester.task) }
+    val e = Exception("test")
 
-  //   val execution = scala.util.Try({
-  //     TestUtils.executeWorkflow(flow, testData)
-  //   })
+    // workflow that throws an error
+    val flow = TestUtils.flowBuilder[Int, Int] { _.map[Int] { x => if x == 4 then throw e else x }.task(tester.task) }
 
-  //   assertEquals(true, execution.isFailure)
-  //   assertEquals(tester.Error(e), tester.receiveAllWrapped().last)
+    val execution = scala.util.Try({
+      TestUtils.executeWorkflow(flow, testData)
+    })
+
+    assertEquals(true, execution.isFailure)
+    assertEquals(tester.Error(e), tester.receiveAllWrapped().last)
