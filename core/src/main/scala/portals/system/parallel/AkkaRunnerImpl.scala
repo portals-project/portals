@@ -151,11 +151,11 @@ object AkkaRunnerImpl extends AkkaRunner:
 
                 // get the sequencers choice
                 // TODO: change the way the sequencer choses the next event.
-                sequencer.sequence(atoms.keys.map(x => AtomicStreamRef.apply[T](x)).toList: _*) match
+                sequencer.sequence(atoms.keys.toList*) match
                   case None => Behaviors.same // no choice was made
 
                   case Some(choice) =>
-                    val sender = choice.path
+                    val sender = choice
                     atoms(sender).head.foreach { e => stream ! Event(path, e) }
                     atoms += sender -> atoms(sender).tail
                     if atoms(sender).isEmpty then atoms -= sender
