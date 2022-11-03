@@ -13,8 +13,8 @@ class ApplicationBuilderContext(_path: String):
       app = app.copy(streams = app.streams :+ x)
     case x: AtomicSequencer[_] =>
       app = app.copy(sequencers = app.sequencers :+ x)
-    case x: AtomicSplitter[_] =>
-      app = app.copy(splitters = app.splitters :+ x)
+    // case x: AtomicSplitter[_] =>
+    //   app = app.copy(splitters = app.splitters :+ x)
     case x: AtomicConnection[_] =>
       app = app.copy(connections = app.connections :+ x)
     case x: AtomicPortal[_, _] =>
@@ -34,6 +34,8 @@ class ApplicationBuilderContext(_path: String):
     "$" + _next_id.toString
 
   def name_or_id(name: String): String = if name == null then this.next_id() else name
+
+  def name_or_id(): String = this.next_id()
 
   // TODO: get rid of this anomaly
   var _workflowBuilders: List[WorkflowBuilder[_, _]] = List.empty

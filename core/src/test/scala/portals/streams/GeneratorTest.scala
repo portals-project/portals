@@ -28,7 +28,7 @@ class GeneratorTest:
       .source(generator.stream)
       .task(tester.task)
       // .logger()
-      .sink("sink")
+      .sink()
       .freeze()
 
     val app = builder.build()
@@ -63,7 +63,7 @@ class GeneratorTest:
       .source(generator.stream)
       .task(tester.task)
       // .logger()
-      .sink("sink")
+      .sink()
       .freeze()
 
     val app = builder.build()
@@ -106,7 +106,7 @@ class GeneratorTest:
       .source(generator.stream)
       .task(tester.task)
       // .logger()
-      .sink("sink")
+      .sink()
       .freeze()
 
     val app = builder.build()

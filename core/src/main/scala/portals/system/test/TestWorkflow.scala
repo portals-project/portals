@@ -45,11 +45,13 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   private def processAtom(atom: TestAtomBatch[_]): List[TestAtom] =
     var outputs: Map[String, TestAtomBatch[_]] = Map.empty
 
-    wf.sources.foreach { src =>
-      outputs += src._1 -> atom
+    // source
+    {
+      outputs += wf.source -> atom
     }
 
-    sortedTasks.concat(wf.sinks).foreach { (path, task) =>
+    // tasks
+    sortedTasks.foreach { (path, task) =>
       val froms = wf.connections.filter((from, to) => to == path).map(_._1)
       var seald = false
       var errord = false
@@ -88,5 +90,30 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
       outputs += path -> TestAtomBatch(wf.stream.path, output)
     }
 
-    // TODO: also single sink, will change things :).
-    wf.sinks.map(_._1).map(outputs(_)).toList
+    // sink
+    {
+      val toSinks = wf.connections.filter((from, to) => to == wf.sink).map(_._1)
+      var _output = List.empty[WrappedEvent[_]]
+      var atomd = false
+      var seald = false
+      var errord = false
+
+      toSinks.foreach { from =>
+        val atom = outputs(from)
+        atom.list.foreach { event =>
+          event match
+            case Event(key, e) => _output = Event(key, e) :: _output
+            case Atom => atomd = true
+            case Seal => seald = true
+            case Error(t) => errord = true
+        }
+      }
+
+      if errord then ??? // TODO: how to handle errors?
+      else if seald then _output = Seal :: _output
+      else if atomd then _output = Atom :: _output
+
+      outputs += wf.sink -> TestAtomBatch(wf.stream.path, _output.reverse)
+    }
+
+    List(outputs(wf.sink))

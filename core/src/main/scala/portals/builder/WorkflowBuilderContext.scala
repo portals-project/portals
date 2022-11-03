@@ -6,9 +6,9 @@ class WorkflowBuilderContext[T, U](_path: String, _name: String)(using val bctx:
   val path: String = _path
 
   var tasks: Map[String, Task[_, _]] = Map.empty
+  var source: Option[String] = None
+  var sink: Option[String] = None
   var connections: List[(String, String)] = List.empty
-  var sources: Map[String, Task[T, _]] = Map.empty
-  var sinks: Map[String, Task[_, U]] = Map.empty
 
   private val _stream: AtomicStream[U] = AtomicStream[U](path + "/" + "stream")
 
@@ -27,8 +27,8 @@ class WorkflowBuilderContext[T, U](_path: String, _name: String)(using val bctx:
         consumes = consumes,
         stream = streamref,
         tasks = tasks,
-        sources = sources,
-        sinks = sinks,
+        source = source.get,
+        sink = sink.get,
         connections = connections
       )
       bctx.addToContext(wf)

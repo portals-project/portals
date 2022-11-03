@@ -7,7 +7,7 @@ trait WorkflowBuilder[T, U]:
 
   def freeze(): Workflow[T, U]
 
-  def source[TT >: T <: T](ref: AtomicStreamRefKind[T], name: String = null): FlowBuilder[T, U, TT, TT]
+  def source[TT >: T <: T](ref: AtomicStreamRefKind[T]): FlowBuilder[T, U, TT, TT]
 
   // check if workflow is well-formed
   def check(): Boolean
