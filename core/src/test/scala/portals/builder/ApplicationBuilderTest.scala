@@ -213,7 +213,7 @@ class ApplicationBuilderTest:
       assertTrue(secondAtom.contains(event))
     }
 
-  @Ignore // fails on synchronous runtime as Seal is duplicated when fan-out-in pattern.
+  // @Ignore // fails on synchronous runtime as Seal is duplicated when fan-out-in pattern.
   @Test
   def testDiamond2(): Unit =
     import portals.DSL.*

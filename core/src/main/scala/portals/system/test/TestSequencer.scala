@@ -16,5 +16,9 @@ class TestSequencer(sequencer: AtomicSequencer[_])(using rctx: TestRuntimeContex
           val output = streams(p.path).head
           if streams(p.path).tail.isEmpty then streams = streams.removed(path)
           else streams = streams.updated(path, streams(p.path).tail)
-          List(TestAtomBatch(sequencer.stream.path, output))
+          // CONSUME EMPTY ATOMS!
+          if output == List(Atom) then List.empty
+          // CONSUME SEALS
+          else if output == List(Seal) then List.empty
+          else List(TestAtomBatch(sequencer.stream.path, output))
         case None => ??? // might happen, but we will change things so this won't happen.

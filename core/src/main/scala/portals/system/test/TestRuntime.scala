@@ -124,9 +124,9 @@ class TestRuntime:
     val streamProgress = streamTracker.getProgress(dependency).get._2
     progress < streamProgress
 
-  private def hasInput(to: String): Boolean =
-    val inputs = graphTracker.getInputs(to).get
-    inputs.exists(inpt => hasInput(to, inpt))
+  private def hasInput(path: String): Boolean =
+    val inputs = graphTracker.getInputs(path).get
+    inputs.exists(inpt => hasInput(path, inpt))
 
   private def chooseWorkflow(): Option[(String, TestWorkflow)] =
     rctx.workflows.find((path, wf) => hasInput(path))
