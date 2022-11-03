@@ -3,8 +3,8 @@ package portals.system.test
 import portals.*
 
 class TestStream(stream: AtomicStream[_])(using rctx: TestRuntimeContext):
-  var atomQueue = List.empty[TestAtom]
-  var index: Long = -1
+  private var atomQueue = List.empty[TestAtom]
+  private var index: Long = -1
 
   /** Enqueue an atom to the atomic stream. */
   def enqueue(ta: TestAtom): Unit =

@@ -3,7 +3,7 @@ package portals.system.test
 import portals.*
 
 class TestSystem() extends PortalsSystem:
-  val runtime = TestRuntime()
+  private val runtime = TestRuntime()
 
   /** Launch a Portals application. */
   def launch(application: Application): Unit = runtime.launch(application)

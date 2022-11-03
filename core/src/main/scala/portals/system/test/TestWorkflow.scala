@@ -21,7 +21,10 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   private val tctx = TaskContext[Any, Any]()
   tctx.cb = tcb
 
-  // get the ordinal of a path using the workflow's connections, which are sorted
+  /** Gets the ordinal of a path with respect to the topology of the graph.
+    *
+    * To be used to sort the graph in topological order.
+    */
   private def getOrdinal(path: String): Int =
     val idx = wf.connections.reverse.map(_._1).indexOf(path)
     if idx == -1 then wf.connections.reverse.size else idx
@@ -40,21 +43,18 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
 
   /** Internal API. Processes a TestAtomBatch. */
   private def processAtom(atom: TestAtomBatch[_]): List[TestAtom] =
-    // atoms that are produced and consumed
     var outputs: Map[String, TestAtomBatch[_]] = Map.empty
 
-    // for every source, this will change :), add the atom to its output
     wf.sources.foreach { src =>
       outputs += src._1 -> atom
     }
 
-    // for each task, process all inputs, and add output to outputs
     sortedTasks.concat(wf.sinks).foreach { (path, task) =>
       val froms = wf.connections.filter((from, to) => to == path).map(_._1)
       var seald = false
       var errord = false
       var atomd = false
-      // process each input from a from
+
       froms.foreach { from =>
         val atom = outputs(from)
         atom.list.foreach { event =>
@@ -64,6 +64,9 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
               tctx.state.key = key
               task.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
             case Atom =>
+              // Here we don't simply emit the atom, as a task may have multiple
+              // inputs which would then send one atom-marker each.
+              // This is why we have this intermediate step here, same for seald.
               atomd = true
             case Seal =>
               seald = true
@@ -72,7 +75,7 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
               task.onError(using tctx.asInstanceOf)(t)
         }
       }
-      if errord then ???
+      if errord then ??? // TODO: how to handle errors?
       else if seald then
         task.onComplete(using tctx.asInstanceOf)
         tcb.putEvent(Seal)
@@ -87,50 +90,3 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
 
     // TODO: also single sink, will change things :).
     wf.sinks.map(_._1).map(outputs(_)).toList
-
-  //   // Info: The atom is processed in a depth-first traversal down the DAG starting
-  //   // from the root (i.e., source).
-  //   // For each node (i.e., task) we process the whole batch, this, in turn,
-  //   // produces a batch of new events, these are then further processed by the
-  //   // chained tasks in depth-first order.
-
-  //   // TODO: we should probably not do this recursively, it would be easier to follow the code if it was
-  //   // done with a while loop.
-  //   def recProcess(path: String, atom: TestAtomBatch[_]): List[TestAtom] =
-  //     // if the path is a sink, then simply return the batch of events with correct path
-  //     if wf.sinks.contains(path) then List(TestAtomBatch(wf.stream.path, atom.list))
-  //     else // else execute the task, and execute downstream tasks recursively on the output
-
-  //       val task = wf.tasks(path)
-  //       val tcb = CollectingTaskCallBack()
-  //       val tctx = TaskContext[Any, Any]()
-  //       tctx.cb = tcb
-
-  //       // TODO: this should only be executed once
-  //       val preppedTask = Tasks.prepareTask(task, tctx.asInstanceOf)
-
-  //       atom.list.foreach { event =>
-  //         event match
-  //           case Event(key, e) =>
-  //             tctx.key = key
-  //             tctx.state.key = key
-  //             preppedTask.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
-  //           case Atom => preppedTask.onAtomComplete(using tctx.asInstanceOf)
-  //           case Seal => preppedTask.onComplete(using tctx.asInstanceOf)
-  //           case Error(t) => preppedTask.onError(using tctx.asInstanceOf)(t)
-  //       }
-
-  //       // execute on all children
-  //       val connectionsFromThisPath = wf.connections.filter((from, to) => from == path).map((from, to) => to)
-  //       connectionsFromThisPath.toList.flatMap { to =>
-  //         recProcess(to, TestAtomBatch(atom.path, tcb.getOutput()))
-  //       }
-
-  //   // TODO: currently, we may have multiple sources, this should change...
-  //   // For each source, we invoke the recursive method recProcess to process the atom.
-  //   wf.sources.toList.flatMap { (path, task) =>
-  //     val connectionsFromThisPath = wf.connections.filter((from, to) => from == path)
-  //     connectionsFromThisPath.flatMap { (_, to) =>
-  //       recProcess(to, TestAtomBatch(atom.path, atom.list))
-  //     }
-  //   }
