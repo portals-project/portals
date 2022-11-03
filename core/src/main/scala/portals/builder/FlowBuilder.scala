@@ -24,9 +24,9 @@ trait FlowBuilder[T, U, CT, CU]:
   // Sources and sinks
   //////////////////////////////////////////////////////////////////////////////
 
-  private[portals] def source[CC >: T <: T](ref: AtomicStreamRefKind[T], name: String = null): FlowBuilder[T, U, CC, CC]
+  private[portals] def source[CC >: T <: T](ref: AtomicStreamRefKind[T]): FlowBuilder[T, U, CC, CC]
 
-  def sink[CC >: CU | U <: CU & U](name: String = null): FlowBuilder[T, U, U, U]
+  def sink[CC >: CU | U <: CU & U](): FlowBuilder[T, U, U, U]
 
   //////////////////////////////////////////////////////////////////////////////
   // Structural operations

@@ -13,8 +13,8 @@ private[portals] class WorkflowBuilderImpl[T, U](using wbctx: WorkflowBuilderCon
 
   override def freeze(): Workflow[T, U] = wbctx.freeze()
 
-  override def source[TT >: T <: T](ref: AtomicStreamRefKind[T], name: String = null): FlowBuilder[T, U, TT, TT] =
-    FlowBuilder(None).source(ref, name)
+  override def source[TT >: T <: T](ref: AtomicStreamRefKind[T]): FlowBuilder[T, U, TT, TT] =
+    FlowBuilder(None).source(ref)
 
   override def check(): Boolean = ???
 end WorkflowBuilderImpl

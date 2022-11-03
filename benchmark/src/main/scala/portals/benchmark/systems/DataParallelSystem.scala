@@ -85,9 +85,10 @@ class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) exte
 
     var runtimeWorkflow: Map[String, ActorRef[Event[_]]] = Map.empty
 
-    workflow.sinks.foreach { (name, _) =>
-      val deps = workflow.connections.filter(_._2 == name).map(x => x._1).toSet
-      runtimeWorkflow = runtimeWorkflow + (name -> system.spawnAnonymous(akkaRunner.sink(name, Set(stream), deps)))
+    {
+      val deps = workflow.connections.filter(_._2 == workflow.sink).map(x => x._1).toSet
+      runtimeWorkflow =
+        runtimeWorkflow + (workflow.sink -> system.spawnAnonymous(akkaRunner.sink(workflow.sink, Set(stream), deps)))
     }
 
     // here we assume the connections are topologically sorted :)
@@ -105,17 +106,19 @@ class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) exte
         )
         runtimeWorkflow = runtimeWorkflow + (to -> aref)
     }
-    workflow.sources.foreach { (name, t) =>
-      val toto = workflow.connections.filter(_._1 == name).map(x => x._2)
+
+    {
+      val toto = workflow.connections.filter(_._1 == workflow.source).map(x => x._2)
       val aref = system.spawnAnonymous(
         akkaRunner.source(
-          name,
+          workflow.source,
           runtimeWorkflow.filter(x => toto.contains(x._1)).map(_._2).toSet
         )
       )
       akkaRunner.connect(partitions(partition).streams(workflow.consumes.path), aref)
-      runtimeWorkflow = runtimeWorkflow + (name -> aref)
+      runtimeWorkflow = runtimeWorkflow + (workflow.source -> aref)
     }
+
     partitions(partition).workflows += (workflow.path -> runtimeWorkflow)
 
   def launch(application: Application): Unit =

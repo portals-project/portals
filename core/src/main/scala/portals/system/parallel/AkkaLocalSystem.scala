@@ -46,9 +46,10 @@ abstract class AkkaLocalSystem extends PortalsSystem:
 
     var runtimeWorkflow: Map[String, ActorRef[Event[_]]] = Map.empty
 
-    workflow.sinks.foreach { (name, _) =>
-      val deps = workflow.connections.filter(_._2 == name).map(x => x._1).toSet
-      runtimeWorkflow = runtimeWorkflow + (name -> system.spawnAnonymous(runner.sink(name, Set(stream), deps)))
+    { // remnant from when we had multiple sinks in a workflow, can probably do this differently now :).
+      val deps = workflow.connections.filter(_._2 == workflow.sink).map(x => x._1).toSet
+      runtimeWorkflow =
+        runtimeWorkflow + (workflow.sink -> system.spawnAnonymous(runner.sink(workflow.sink, Set(stream), deps)))
     }
 
     // here we assume the connections are topologically sorted :)
@@ -66,17 +67,19 @@ abstract class AkkaLocalSystem extends PortalsSystem:
         )
         runtimeWorkflow = runtimeWorkflow + (to -> aref)
     }
-    workflow.sources.foreach { (name, t) =>
-      val toto = workflow.connections.filter(_._1 == name).map(x => x._2)
+
+    { // remnant from when we had multiple sources in a workflow, can probably do this differently now :).
+      val toto = workflow.connections.filter(_._1 == workflow.source).map(x => x._2)
       val aref = system.spawnAnonymous(
         runner.source(
-          name,
+          workflow.source,
           runtimeWorkflow.filter(x => toto.contains(x._1)).map(_._2).toSet
         )
       )
       runner.connect(streams(workflow.consumes.path), aref)
-      runtimeWorkflow = runtimeWorkflow + (name -> aref)
+      runtimeWorkflow = runtimeWorkflow + (workflow.source -> aref)
     }
+
     workflows = workflows + (workflow.path -> runtimeWorkflow)
 
   def launch(application: Application): Unit =
