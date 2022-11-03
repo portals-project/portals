@@ -1,4 +1,4 @@
-package portals.system.async
+package portals.system.parallel
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.Await

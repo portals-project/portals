@@ -11,6 +11,7 @@ import akka.actor.typed.Behavior
 import com.typesafe.config.ConfigFactory
 
 import portals.benchmark.*
+import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
 
 object AkkaBenchmark extends Benchmark:

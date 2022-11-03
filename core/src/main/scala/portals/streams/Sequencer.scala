@@ -6,19 +6,19 @@ import scala.util.Random
 trait Sequencer[T] extends Serializable:
   /** Sequencing strategy.
     *
-    * @param streams
-    *   streams (with ready atoms) to be sequenced
+    * @param paths
+    *   paths (with ready atoms) to be sequenced
     * @return
     *   Next stream to be consumed in the produced sequence, can also be None
     */
-  def sequence(streams: AtomicStreamRefKind[T]*): Option[AtomicStreamRefKind[T]]
+  def sequence(paths: String*): Option[String]
 end Sequencer
 
 private[portals] object SequencerImpls:
   case class RandomSequencer[T]() extends Sequencer[T]:
-    def sequence(streams: AtomicStreamRefKind[T]*): Option[AtomicStreamRefKind[T]] =
-      if streams.isEmpty then None
-      else Some(streams(Random.nextInt(streams.size)))
+    def sequence(paths: String*): Option[String] =
+      if paths.isEmpty then None
+      else Some(paths(Random.nextInt(paths.size)))
   end RandomSequencer
 
 end SequencerImpls

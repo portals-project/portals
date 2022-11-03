@@ -83,10 +83,10 @@ class WordCountTest:
     val application = builder
       .build()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
     system.launch(application)
 
-    system.stepAll()
+    system.stepUntilComplete()
     system.shutdown()
 
     // check that the output is correct

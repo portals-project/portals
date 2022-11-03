@@ -1,4 +1,4 @@
-package portals.system.async
+package portals.system.parallel
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Await
@@ -9,7 +9,7 @@ import akka.util.Timeout
 
 import portals.*
 
-abstract class AkkaLocalSystem extends SystemContext:
+abstract class AkkaLocalSystem extends PortalsSystem:
   import AkkaRunner.Events.*
 
   given timeout: Timeout = Timeout(3.seconds)
@@ -23,25 +23,25 @@ abstract class AkkaLocalSystem extends SystemContext:
 
   val runner: AkkaRunner
 
-  private[async] def launchStream[T](stream: AtomicStream[T]): Unit =
+  private[parallel] def launchStream[T](stream: AtomicStream[T]): Unit =
     val aref = system.spawnAnonymous(runner.atomicStream(stream.path))
     streams = streams + (stream.path -> aref)
 
-  private[async] def launchSequencer[T](sequencer: AtomicSequencer[T]): Unit =
+  private[parallel] def launchSequencer[T](sequencer: AtomicSequencer[T]): Unit =
     val stream = streams(sequencer.stream.path)
     val aref = system.spawnAnonymous(runner.sequencer(sequencer.path, sequencer.sequencer, stream))
     sequencers = sequencers + (sequencer.path -> aref.asInstanceOf[ActorRef[Event[_]]])
 
-  private[async] def launchConnection[T](connection: AtomicConnection[T]): Unit =
+  private[parallel] def launchConnection[T](connection: AtomicConnection[T]): Unit =
     runner.connect(streams(connection.from.path), sequencers(connection.to.path))
 
-  private[async] def launchGenerator[T](generator: AtomicGenerator[T]): Unit =
+  private[parallel] def launchGenerator[T](generator: AtomicGenerator[T]): Unit =
     val stream = streams(generator.stream.path)
     val aref =
       system.spawnAnonymous(runner.generator[T](generator.path, generator.generator, stream))
     generators += generator.path -> aref
 
-  private[async] def launchWorkflow[T, U](workflow: Workflow[T, U]): Unit =
+  private[parallel] def launchWorkflow[T, U](workflow: Workflow[T, U]): Unit =
     val stream = streams(workflow.stream.path)
 
     var runtimeWorkflow: Map[String, ActorRef[Event[_]]] = Map.empty

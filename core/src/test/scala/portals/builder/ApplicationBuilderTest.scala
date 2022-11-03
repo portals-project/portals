@@ -41,11 +41,11 @@ class ApplicationBuilderTest:
 
     val application = builder.build()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     system.launch(application)
 
-    system.stepAll()
+    system.stepUntilComplete()
     system.shutdown()
 
     // the output counts down atoms (List with single elements) from 7 to 0 and stops
@@ -88,10 +88,10 @@ class ApplicationBuilderTest:
 
     val application = builder.build()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
     system.launch(application)
 
-    system.stepAll()
+    system.stepUntilComplete()
     system.shutdown()
 
     input.foreach { list =>
@@ -129,10 +129,10 @@ class ApplicationBuilderTest:
 
     val application = builder.build()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
     system.launch(application)
 
-    system.stepAll()
+    system.stepUntilComplete()
     system.shutdown()
 
     input.foreach { list =>
@@ -213,7 +213,7 @@ class ApplicationBuilderTest:
       assertTrue(secondAtom.contains(event))
     }
 
-  @Ignore // fails on synchronous runtime as Seal is duplicated when fan-out-in pattern.
+  // @Ignore // fails on synchronous runtime as Seal is duplicated when fan-out-in pattern.
   @Test
   def testDiamond2(): Unit =
     import portals.DSL.*

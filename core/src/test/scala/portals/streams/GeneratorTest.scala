@@ -33,13 +33,13 @@ class GeneratorTest:
 
     val app = builder.build()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     // ASTPrinter.println(app)
 
     system.launch(app)
 
-    system.stepAll()
+    system.stepUntilComplete()
     system.shutdown()
 
     Iterator.range(0, 10).foreach { x =>
@@ -68,7 +68,7 @@ class GeneratorTest:
 
     val app = builder.build()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     // ASTPrinter.println(app)
 
@@ -111,7 +111,7 @@ class GeneratorTest:
 
     val app = builder.build()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     // ASTPrinter.println(app)
 
@@ -123,7 +123,7 @@ class GeneratorTest:
     }
     ext_ref.seal()
 
-    system.stepAll()
+    system.stepUntilComplete()
 
     system.shutdown()
 
