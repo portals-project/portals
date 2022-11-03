@@ -43,11 +43,11 @@ class SequencerTest:
 
     // ASTPrinter.println(app)
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     system.launch(app)
 
-    system.stepAll()
+    system.stepUntilComplete()
 
     system.shutdown()
 

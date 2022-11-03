@@ -2,6 +2,7 @@ package portals.benchmark.benchmarks
 
 import portals.*
 import portals.benchmark.*
+import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
 import portals.DSL.*
 
@@ -25,7 +26,7 @@ object ChainOfWorkflowsBenchmark extends Benchmark:
 
     val completer = CompletionWatcher()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     val builder = ApplicationBuilders.application("app")
 

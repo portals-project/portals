@@ -1,4 +1,4 @@
-package portals.system.async
+package portals.benchmark.systems
 
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.ArrayDeque
@@ -12,6 +12,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
 import portals.*
+import portals.system.parallel.*
 
 class MicroBatchingSystem extends AkkaLocalSystem:
   import AkkaRunner.Events.*

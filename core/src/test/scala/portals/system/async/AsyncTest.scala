@@ -37,7 +37,7 @@ class AsyncTest:
 
     val application = builder.build()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     system.launch(application)
 
@@ -67,7 +67,7 @@ class AsyncTest:
 
     val application = builder.build()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     system.launch(application)
 
@@ -112,7 +112,7 @@ class AsyncTest:
 
     val application = builder.build()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     system.launch(application)
 
@@ -152,7 +152,7 @@ class AsyncTest:
 
     val application = builder.build()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     system.launch(application)
 
@@ -191,7 +191,7 @@ class AsyncTest:
 
     val application = builder.build()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     system.launch(application)
 
@@ -236,7 +236,7 @@ class AsyncTest:
 
     val application = builder.build()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     system.launch(application)
 
@@ -274,7 +274,7 @@ class AsyncTest:
 
     val application = builder.build()
 
-    val system = Systems.asyncLocal()
+    val system = Systems.parallel()
 
     system.launch(application)
 

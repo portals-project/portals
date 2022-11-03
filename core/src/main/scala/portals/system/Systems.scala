@@ -1,38 +1,22 @@
 package portals
 
-import portals.system.async.AsyncLocalSystem
-import portals.system.async.DataParallelSystem
-import portals.system.async.MicroBatchingSystem
-import portals.system.async.NoGuaranteesSystem
+import portals.system.parallel.*
+import portals.system.test.*
 
-object Systems:
-  def syncLocal(): LocalSystemContext = new SyncLocalSystem()
+trait Systems
 
-  // // for testing async system instead of local
-  // def syncLocal(): LocalSystemContext = new LocalSystemContext {
-  //   private val system = AsyncLocalSystem()
-  //   def launch(application: Application): Unit = system.launch(application)
-  //   def shutdown(): Unit = system.shutdown()
-  //   def isEmpty(): Boolean = false
-  //   def step(): Unit = Thread.sleep(100)
-  //   def stepAll(): Unit = Thread.sleep(1000)
-  // }
+object Systems extends Systems:
+  def default(): PortalsSystem = test()
 
-  // // // for testing microbatching system instead of local
-  // def syncLocal(): LocalSystemContext = new LocalSystemContext {
-  //   private val system = MicroBatchingSystem()
-  //   def launch(application: Application): Unit = system.launch(application)
-  //   def shutdown(): Unit = system.shutdown()
-  //   def isEmpty(): Boolean = false
-  //   def step(): Unit = Thread.sleep(100)
-  //   def stepAll(): Unit = Thread.sleep(1000)
-  // }
+  def test(): TestSystem = new TestSystem()
 
-  def asyncLocal(): SystemContext = new AsyncLocalSystem()
+  // def test(): TestSystem =
+  //   val _x = new ParallelSystem
+  //   new TestSystem {
+  //     override def launch(application: Application): Unit = _x.launch(application)
+  //     override def shutdown(): Unit = _x.shutdown()
+  //     override def step(): Unit = Thread.sleep(500)
+  //     override def stepUntilComplete(): Unit = Thread.sleep(500)
+  //   }
 
-  def asyncLocalNoGuarantees(): SystemContext = new NoGuaranteesSystem()
-
-  def asyncLocalMicroBatching(): SystemContext = new MicroBatchingSystem()
-
-  def dataParallel(nPartitions: Int, nParallelism: Int): SystemContext =
-    new DataParallelSystem(nPartitions, nParallelism)
+  def parallel(): PortalsSystem = new ParallelSystem()

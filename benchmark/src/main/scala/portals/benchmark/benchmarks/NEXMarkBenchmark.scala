@@ -2,7 +2,9 @@ package portals.benchmark.benchmarks
 
 import portals.*
 import portals.benchmark.*
+import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.test.*
 import portals.DSL.*
 
 object NEXMarkBenchmarkUtil:
@@ -252,17 +254,17 @@ object NEXMarkBenchmark extends Benchmark:
     val queryWorkflow = query(generator.stream, builder, completer)
 
     val system = sSystem match
-      case "async" => Systems.asyncLocal()
+      case "async" => Systems.parallel()
       case "noGuarantees" => Systems.asyncLocalNoGuarantees()
       case "microBatching" => Systems.asyncLocalMicroBatching()
-      case "sync" => Systems.syncLocal()
+      case "sync" => Systems.test()
       case _ => ???
 
     val app = builder.build()
 
     system.launch(app)
 
-    if sSystem == "sync" then system.asInstanceOf[LocalSystemContext].stepAll()
+    if sSystem == "sync" then system.asInstanceOf[TestSystem].stepUntilComplete()
 
     completer.waitForCompletion()
 

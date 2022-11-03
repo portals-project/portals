@@ -27,7 +27,7 @@ class PingPongTest:
 
     val tester = new TestUtils.Tester[Pong]()
 
-    val system = Systems.syncLocal()
+    val system = Systems.test()
 
     {
       val pinger = ApplicationBuilders.application("pinger")
@@ -84,7 +84,7 @@ class PingPongTest:
       system.launch(app)
     }
 
-    system.stepAll()
+    system.stepUntilComplete()
 
     system.shutdown()
 
