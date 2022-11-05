@@ -100,10 +100,7 @@ object Tasks extends Tasks:
     override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] = Tasks.same
     override def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U] = Tasks.same
     override def onComplete(using ctx: TaskContext[T, U]): Task[T, U] = Tasks.same
-    override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] =
-      // TODO: we should remove ctx.fuse() from here, but this currently breaks the tests
-      ctx.fuse()
-      Tasks.same
+    override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] = Tasks.same
 
   //////////////////////////////////////////////////////////////////////////////
   // Checks and Preparations
@@ -305,7 +302,6 @@ object WithAndThenExtension:
       override def state: TaskState[Any, Any] = _ctx.state
       override def emit(event: U) = emitted = emitted :+ event
       override def log: Logger = _ctx.log
-      override private[portals] def fuse(): Unit = ???
       private[portals] var key: portals.Key[Int] = ctx.key
       private[portals] var path: String = ctx.path
       private[portals] var system: portals.PortalsSystem = ctx.system

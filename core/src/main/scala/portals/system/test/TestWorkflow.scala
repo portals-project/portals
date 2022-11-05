@@ -8,7 +8,7 @@ private class CollectingTaskCallBack[T, U] extends TaskCallback[T, U]:
   def submit(key: Key[Int], event: U): Unit = _output = Event(key, event) :: _output
 
   // deprecated :), remove it
-  def fuse(): Unit = ()
+  // def fuse(): Unit = ()
 
   def putEvent(event: WrappedEvent[U]): Unit = _output = event :: _output
 

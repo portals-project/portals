@@ -95,7 +95,6 @@ object TestUtils:
         Tasks.same
       override def onAtomComplete(using ctx: TaskContext[T, T]): Task[T, T] =
         queue.enqueue(Atom)
-        ctx.fuse()
         Tasks.same
     }
 

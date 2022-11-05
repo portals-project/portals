@@ -16,8 +16,9 @@ private[portals] trait TaskContext[T, U]
   /** Emit an event */
   def emit(event: U): Unit
 
-  /** Finishes the ongoing atom and starts a new tick */
-  private[portals] def fuse(): Unit // or tick()
+  // deprecated
+  // /** Finishes the ongoing atom and starts a new tick */
+  // private[portals] def fuse(): Unit // or tick()
 
   /** Logger */
   def log: Logger

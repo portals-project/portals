@@ -277,7 +277,6 @@ object MicroBatchingRunner extends AkkaRunner:
         tctx.cb = new TaskCallback[T, U] {
           def submit(key: Key[Int], event: U): Unit =
             subscribers.foreach { sub => sub ! Event(path, portals.Event(tctx.key, event)) }
-          def fuse(): Unit = () // do nothing, for now, but deprecated, remove it.
         }
 
         val preparedTask = Tasks.prepareTask(task, tctx)
