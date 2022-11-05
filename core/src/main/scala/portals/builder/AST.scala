@@ -17,10 +17,9 @@ case class Application(
     path: String, // path of access from registry. this is /name for the app
     private[portals] workflows: List[Workflow[_, _]] = List.empty,
     private[portals] generators: List[AtomicGenerator[_]] = List.empty,
-    // TODO: consider removing streams here, as they are implicit from the production of the workflows, sequencers, etc.
     private[portals] streams: List[AtomicStream[_]] = List.empty,
     private[portals] sequencers: List[AtomicSequencer[_]] = List.empty,
-    private[portals] splitters: List[AtomicSplitter[_]] = List.empty,
+    // private[portals] splitters: List[AtomicSplitter[_]] = List.empty,
     private[portals] connections: List[AtomicConnection[_]] = List.empty,
     private[portals] portals: List[AtomicPortal[_, _]] = List.empty,
     private[portals] externalStreams: List[ExtAtomicStreamRef[_]] = List.empty,
@@ -34,8 +33,8 @@ case class Workflow[T, U](
     private[portals] consumes: AtomicStreamRefKind[T],
     stream: AtomicStreamRef[U],
     private[portals] tasks: Map[String, Task[_, _]],
-    private[portals] sources: Map[String, Task[T, _]],
-    private[portals] sinks: Map[String, Task[_, U]],
+    private[portals] source: String,
+    private[portals] sink: String,
     private[portals] connections: List[(String, String)]
 ) extends AST
 
@@ -52,7 +51,6 @@ case class ExtAtomicStreamRef[T](path: String) extends AtomicStreamRefKind[T]
 /** Atomic Sequencer. */
 case class AtomicSequencer[T](
     path: String,
-    // private[portals] ins: List[AtomicStreamRef[T]], // deprecated
     stream: AtomicStreamRef[T],
     private[portals] sequencer: Sequencer[T]
 ) extends AST
@@ -65,16 +63,16 @@ case class AtomicSequencerRef[T](path: String, stream: AtomicStreamRef[T]) exten
 /** External Atomic Sequencer Ref. */
 case class ExtAtomicSequencerRef[T](path: String, stream: ExtAtomicStreamRef[T]) extends AtomicSequencerRefKind[T]
 
-/** Atomic Splitter. */
-case class AtomicSplitter[T](
-    path: String,
-    private[portals] in: AtomicStreamRef[T],
-    streams: List[AtomicStreamRef[T]],
-    // splitter: Splitter[T], // TODO: implement
-) extends AST
+// /** Atomic Splitter. */
+// case class AtomicSplitter[T](
+//     path: String,
+//     private[portals] in: AtomicStreamRef[T],
+//     streams: List[AtomicStreamRef[T]],
+//     // splitter: Splitter[T], // TODO: implement
+// ) extends AST
 
-/** Atomic Splitter Ref. */
-case class AtomicSplitterRef[T](path: String, streams: List[AtomicStreamRef[T]]) extends AST
+// /** Atomic Splitter Ref. */
+// case class AtomicSplitterRef[T](path: String, streams: List[AtomicStreamRef[T]]) extends AST
 
 /** Atomic Generator. */
 case class AtomicGenerator[T](
@@ -129,9 +127,9 @@ object ExtAtomicSequencerRef:
     val stream = ExtAtomicStreamRef[T](_path)
     ExtAtomicSequencerRef(path, stream)
 
-object AtomicSplitterRef:
-  def apply[T](asplitter: AtomicSplitter[T]): AtomicSplitterRef[T] =
-    AtomicSplitterRef(asplitter.path, asplitter.streams)
+// object AtomicSplitterRef:
+//   def apply[T](asplitter: AtomicSplitter[T]): AtomicSplitterRef[T] =
+//     AtomicSplitterRef(asplitter.path, asplitter.streams)
 
 object AtomicGeneratorRef:
   def apply[T](agen: AtomicGenerator[T]): AtomicGeneratorRef[T] =

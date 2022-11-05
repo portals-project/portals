@@ -25,16 +25,16 @@ class MicroBatchingSystem extends AkkaLocalSystem:
 
     // batching diff
     val batcher = {
-      val sinkNames = workflow.sinks.map(_._1).toSet
+      val sinkNames = Set(workflow.sink)
       system.spawnAnonymous(MicroBatchingRunner.batcher("batcher", sinks = sinkNames))
     }
     // end batching diff
 
-    workflow.sinks.foreach { (name, _) =>
-      val deps = workflow.connections.filter(_._2 == name).map(x => x._1).toSet
+    {
+      val deps = workflow.connections.filter(_._2 == workflow.sink).map(x => x._1).toSet
       // batching diff
-      runtimeWorkflow = runtimeWorkflow + (name -> system.spawnAnonymous(
-        MicroBatchingRunner.batchingsink(batcher, name, Set(stream), deps)
+      runtimeWorkflow = runtimeWorkflow + (workflow.sink -> system.spawnAnonymous(
+        MicroBatchingRunner.batchingsink(batcher, workflow.sink, Set(stream), deps)
       ))
       // end batching diff
     }
@@ -56,23 +56,24 @@ class MicroBatchingSystem extends AkkaLocalSystem:
         // end batching diff
         runtimeWorkflow = runtimeWorkflow + (to -> aref)
     }
-    workflow.sources.foreach { (name, t) =>
-      val toto = workflow.connections.filter(_._1 == name).map(x => x._2)
+
+    {
+      val toto = workflow.connections.filter(_._1 == workflow.source).map(x => x._2)
       // batching diff
       val aref = system.spawnAnonymous(
         MicroBatchingRunner.batchingsource(
-          name,
+          workflow.source,
           runtimeWorkflow.filter(x => toto.contains(x._1)).map(_._2).toSet
         )
       )
       // end batching diff
       runner.connect(streams(workflow.consumes.path), aref)
-      runtimeWorkflow = runtimeWorkflow + (name -> aref)
+      runtimeWorkflow = runtimeWorkflow + (workflow.source -> aref)
     }
 
     // batching diff
     {
-      val sourcesNames = workflow.sources.map(_._1).toSet
+      val sourcesNames = Set(workflow.source)
       val sources = runtimeWorkflow.filter(x => sourcesNames.contains(x._1)).map(_._2).toSet
       sources.foreach { s =>
         val fut = batcher.ask(replyTo => MicroBatchingRunner.Events.AddSource(s.asInstanceOf, replyTo))

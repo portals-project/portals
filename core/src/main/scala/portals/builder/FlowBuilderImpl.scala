@@ -10,16 +10,7 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
   //////////////////////////////////////////////////////////////////////////////
   private def rename(oldName: String, newName: String): FlowBuilder[T, U, CT, CU] =
     // new behavior maps
-    if fbctx.wbctx.sources.contains(oldName) then
-      // get the behavior, remove old name, add new name
-      val behavior = fbctx.wbctx.sources(oldName)
-      fbctx.wbctx.sources -= oldName
-      fbctx.wbctx.sources += (newName -> behavior)
-    else if fbctx.wbctx.sinks.contains(oldName) then
-      val behavior = fbctx.wbctx.sinks(oldName)
-      fbctx.wbctx.sinks -= oldName
-      fbctx.wbctx.sinks += (newName -> behavior)
-    else if fbctx.wbctx.tasks.contains(oldName) then
+    if fbctx.wbctx.tasks.contains(oldName) then
       val behavior = fbctx.wbctx.tasks(oldName)
       fbctx.wbctx.tasks -= oldName
       fbctx.wbctx.tasks += (newName -> behavior)
@@ -87,24 +78,36 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     // set latest
     FlowBuilder(Some(name))
 
-  private def addSource(_name: String, behavior: Task[T, T]): FlowBuilder[T, U, T, T] =
-    // create name
-    val name = fbctx.wbctx.bctx.name_or_id(_name)
-    // add connection: no connections for new source :)
-    // add task
-    fbctx.wbctx.sources = fbctx.wbctx.sources + (name -> behavior)
-    // set latest
-    FlowBuilder(Some(name))
+  private def addSource(): FlowBuilder[T, U, T, T] =
+    fbctx.wbctx.source match
+      case Some(source) =>
+        // set latest
+        FlowBuilder(Some(source))
+      case None =>
+        // create name
+        val name = fbctx.wbctx.bctx.name_or_id()
+        // add connection: no connections for new source :)
+        // add source
+        fbctx.wbctx.source = Some(name)
+        // set latest
+        FlowBuilder(Some(name))
 
-  private def addSink(_name: String, behavior: Task[U, U]): FlowBuilder[T, U, U, U] =
-    // create name
-    val name = fbctx.wbctx.bctx.name_or_id(_name)
-    // add connection
-    addConnectionTo(name)
-    // add sink
-    fbctx.wbctx.sinks = fbctx.wbctx.sinks + (name -> behavior)
-    // set latest
-    FlowBuilder(Some(name))
+  private def addSink(): FlowBuilder[T, U, U, U] =
+    fbctx.wbctx.sink match
+      case Some(sink) =>
+        // add connection
+        addConnectionTo(sink)
+        // set latest
+        FlowBuilder(None)
+      case None =>
+        // create name
+        val name = fbctx.wbctx.bctx.name_or_id()
+        // add connection
+        addConnectionTo(name)
+        // add sink
+        fbctx.wbctx.sink = Some(name)
+        // set latest
+        FlowBuilder(None)
 
   //////////////////////////////////////////////////////////////////////////////
   // Builder methods
@@ -113,17 +116,12 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
   override def freeze(): Workflow[T, U] =
     fbctx.wbctx.freeze()
 
-  override private[portals] def source[CC >: T <: T](
-      ref: AtomicStreamRefKind[T],
-      name: String = null
-  ): FlowBuilder[T, U, CC, CC] =
-    val behavior = Tasks.identity[T]
+  override private[portals] def source[CC >: T <: T](ref: AtomicStreamRefKind[T]): FlowBuilder[T, U, CC, CC] =
     fbctx.wbctx.consumes = ref
-    addSource(name, behavior)
+    addSource()
 
-  override def sink[CC >: CU | U <: CU & U](name: String = null): FlowBuilder[T, U, U, U] =
-    val behavior = Tasks.identity[U]
-    addSink(name, behavior)
+  override def sink[CC >: CU | U <: CU & U](): FlowBuilder[T, U, U, U] =
+    addSink()
 
   // TODO: deprecated
   // override def union[CCT, CCU](other: FlowBuilder[T, U, CCT, CCU]): FlowBuilder[T, U, CCU | CU, CCU | CU] =
