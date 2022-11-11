@@ -5,16 +5,19 @@ import portals.*
 /** Internal API. Holds runtime information of the executed applications. */
 private[portals] class TestRuntimeContext():
   private var _streams: Map[String, TestStream] = Map.empty
+  private var _portals: Map[String, TestPortal] = Map.empty
   private var _workflows: Map[String, TestWorkflow] = Map.empty
   private var _sequencers: Map[String, TestSequencer] = Map.empty
   private var _generators: Map[String, TestGenerator] = Map.empty
   private var _connections: Map[String, TestConnection] = Map.empty
   def streams: Map[String, TestStream] = _streams
+  def portals: Map[String, TestPortal] = _portals
   def workflows: Map[String, TestWorkflow] = _workflows
   def sequencers: Map[String, TestSequencer] = _sequencers
   def generators: Map[String, TestGenerator] = _generators
   def connections: Map[String, TestConnection] = _connections
   def addStream(stream: AtomicStream[_]): Unit = _streams += stream.path -> TestStream(stream)(using this)
+  def addPortal(portal: AtomicPortal[_, _]): Unit = _portals += portal.path -> TestPortal(portal)(using this)
   def addWorkflow(wf: Workflow[_, _]): Unit = _workflows += wf.path -> TestWorkflow(wf)(using this)
   def addSequencer(seqr: AtomicSequencer[_]): Unit = _sequencers += seqr.path -> TestSequencer(seqr)(using this)
   def addGenerator(genr: AtomicGenerator[_]): Unit = _generators += genr.path -> TestGenerator(genr)(using this)
@@ -92,6 +95,12 @@ class TestRuntime:
       streamTracker.initStream(stream.path)
     }
 
+    // launch portals
+    application.portals.foreach { portal =>
+      rctx.addPortal(portal)
+      ???
+    }
+
     // launch workflows
     application.workflows.foreach { wf =>
       rctx.addWorkflow(wf)
@@ -138,9 +147,13 @@ class TestRuntime:
     rctx.generators.find((path, genr) => genr.generator.generator.hasNext())
 
   private def distributeAtoms(listOfAtoms: List[TestAtom]): Unit =
-    listOfAtoms.foreach { case ta @ TestAtomBatch(path, list) =>
-      rctx.streams(path).enqueue(ta)
-      streamTracker.incrementProgress(path)
+    listOfAtoms.foreach {
+      case ta @ TestAtomBatch(path, list) =>
+        rctx.streams(path).enqueue(ta)
+        streamTracker.incrementProgress(path)
+      case tpa @ TestPortalAskBatch(sendr, recvr, list) =>
+        println(tpa)
+      case tpr @ TestPortalRepBatch(sendr, recvr, list) => ???
     }
 
   private def stepWorkflow(path: String, wf: TestWorkflow): Unit =

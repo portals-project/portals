@@ -32,6 +32,7 @@ import portals.*
       .portal[Int, Int](portal)
       .asker[Int] { x =>
         val future = portal.ask(x)
+        ctx.log.info(future.toString())
         future.await {
           emit(future.value.get)
           Tasks.same

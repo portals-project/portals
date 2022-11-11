@@ -22,3 +22,4 @@ class TestSequencer(sequencer: AtomicSequencer[_])(using rctx: TestRuntimeContex
           else if output == List(Seal) then List.empty
           else List(TestAtomBatch(sequencer.stream.path, output))
         case None => ??? // might happen, but we will change things so this won't happen.
+    case _ => ???

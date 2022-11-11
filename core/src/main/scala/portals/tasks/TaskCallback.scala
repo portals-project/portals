@@ -1,9 +1,10 @@
 package portals
 
-// TODO: add information on how this is used
 trait TaskCallback[T, U]:
   def submit(key: Key[Int], event: U): Unit
-
-  // deprecated
-  // def fuse(): Unit
 end TaskCallback // trait
+
+trait PortalTaskCallback[T, U, Req, Rep] extends TaskCallback[T, U]:
+  def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req)(key: Key[Int], id: Int): Unit
+  def reply(portal: AtomicPortalRefKind[Req, Rep])(r: Rep)(key: Key[Int], id: Int): Unit
+end PortalTaskCallback // trait

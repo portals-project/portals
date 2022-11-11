@@ -16,10 +16,30 @@ private class CollectingTaskCallBack[T, U] extends TaskCallback[T, U]:
 
   def clear(): Unit = _output = List.empty
 
+private class CollectingPortalTaskCallBack[T, U, Req, Rep]
+    extends CollectingTaskCallBack[T, U]
+    with PortalTaskCallback[T, U, Req, Rep]:
+  private var _asks = List.empty[Ask[Req]]
+  private var _reps = List.empty[Reply[Rep]]
+
+  override def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req)(key: Key[Int], id: Int): Unit =
+    _asks = Ask(key, portal.path, id, req) :: _asks
+
+  override def reply(portal: AtomicPortalRefKind[Req, Rep])(r: Rep)(key: Key[Int], id: Int): Unit =
+    _reps = Reply(key, portal.path, id, r) :: _reps
+
+  def getAskOutput(): List[Ask[Req]] = _asks.reverse
+  def getRepOutput(): List[Reply[Rep]] = _reps.reverse
+  def clearAsks(): Unit =
+    _asks = List.empty
+  def clearReps(): Unit =
+    _reps = List.empty
+
 class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   private val tcb = CollectingTaskCallBack[Any, Any]()
   private val tctx = TaskContext[Any, Any]()
   tctx.cb = tcb
+  private val pcb = CollectingPortalTaskCallBack[Any, Any, Any, Any]() // for portals
 
   /** Gets the ordinal of a path with respect to the topology of the graph.
     *
@@ -31,6 +51,11 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
 
   // topographically sorted according to connections
   private val sortedTasks = wf.tasks.toList.sortWith((t1, t2) => getOrdinal(t1._1) < getOrdinal(t2._1))
+  // and initialized / prepared
+  private val initializedTasks = sortedTasks.map { (name, task) =>
+    (name, Tasks.prepareTask(task, tctx.asInstanceOf))
+  }
+  tcb.clear()
 
   /** Processes the atom, and produces a new list of atoms.
     *
@@ -40,6 +65,7 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   def process(atom: TestAtom): List[TestAtom] =
     atom match
       case a @ TestAtomBatch(path, list) => processAtom(a)
+      case _ => ???
 
   /** Internal API. Processes a TestAtomBatch. */
   private def processAtom(atom: TestAtomBatch[_]): List[TestAtom] =
@@ -62,9 +88,17 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
         atom.list.foreach { event =>
           event match
             case Event(key, e) =>
-              tctx.key = key
-              tctx.state.key = key
-              task.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
+              task match {
+                case _: AskerTask[_, _, _, _] =>
+                  tctx.key = key
+                  tctx.state.key = key
+                  val actx = AskerTaskContext.fromTaskContext(tctx)(pcb)
+                  task.onNext(using actx.asInstanceOf[TaskContext[task._T, task._U]])(e.asInstanceOf)
+                case _: Task[?, ?] =>
+                  tctx.key = key
+                  tctx.state.key = key
+                  task.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
+              }
             case Atom =>
               // Here we don't simply emit the atom, as a task may have multiple
               // inputs which would then send one atom-marker each.
@@ -75,6 +109,7 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
             case Error(t) =>
               errord = true
               task.onError(using tctx.asInstanceOf)(t)
+            case _ => ???
         }
       }
       if errord then ??? // TODO: how to handle errors?
@@ -106,6 +141,7 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
             case Atom => atomd = true
             case Seal => seald = true
             case Error(t) => errord = true
+            case _ => ???
         }
       }
 
@@ -116,4 +152,13 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
       outputs += wf.sink -> TestAtomBatch(wf.stream.path, _output.reverse)
     }
 
-    List(outputs(wf.sink))
+    // portal inputs/outputs
+    val portalOutputs = {
+      val askoutput = pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestPortalAskBatch(wf.path, k, v) }.toList
+      val repoutput = pcb.getRepOutput().groupBy(e => e.path).map { (k, v) => TestPortalRepBatch(wf.path, k, v) }.toList
+      pcb.clearAsks()
+      pcb.clearReps()
+      askoutput ::: repoutput
+    }
+
+    outputs(wf.sink) :: portalOutputs

@@ -1,28 +1,36 @@
 package portals
 
+private[portals] type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]
+
 trait AskerTaskContext[T, U, Req, Rep] extends TaskContext[T, U]:
   def ask(portal: AtomicPortalRefType[Req, Rep])(req: Req): Future[Rep]
   def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]): Task[T, U]
 
-// object AskerTaskContext:
-//   // this seems wrong :/
-//   def fromTaskContext[T, U, Req, Rep](
-//       ctx: TaskContext[T | portals.PortalsExtension.Reply[Rep], U | portals.PortalsExtension.Ask[Req]]
-//   ) =
-//     new AskerTaskContext[T, U, Req, Rep] {
-//       var id: Int = 0
+object AskerTaskContext:
+  def fromTaskContext[T, U, Req, Rep](
+      ctx: TaskContext[T, U]
+  )(portalcb: PortalTaskCallback[T, U, Req, Rep]): AskerTaskContext[T, U, Req, Rep] =
+    new AskerTaskContext[T, U, Req, Rep] {
+      private[portals] var _continuations = Map.empty[Int, Continuation[T, U, Req, Rep]]
 
-//       override def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req): Future[Rep] =
-//         id = (id % Int.MaxValue) + 1
-//         ctx.emit(Ask(id, req))
-//         ???
+      private var _id: Int = 0
+      def id: Int = { _id += 1; _id }
 
-//       override def await(future: Future[Rep])(f: => Task[T, U]): Task[T, U] = ???
-//       override def emit(event: U): Unit = ctx.emit(event)
-//       override def fuse(): Unit = ctx.fuse()
-//       var key: Key[Int] = ctx.key
-//       override def log: Logger = ctx.log
-//       var path: String = ctx.path
-//       override def state: TaskState[Any, Any] = ctx.state
-//       var system: SystemContext = ctx.system
-//     }
+      // AskerContext
+      override def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req): Future[Rep] =
+        val i = id
+        portalcb.ask(portal)(req)(ctx.key, i)
+        Future(i)
+      override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]): Task[T, U] =
+        println(future)
+        _continuations = _continuations + (future.asInstanceOf[FutureImpl[_]]._id -> f)
+        Tasks.same
+
+      // TaskContext
+      override def emit(event: U): Unit = ctx.emit(event)
+      var key: Key[Int] = ctx.key
+      override def log: Logger = ctx.log
+      var path: String = ctx.path
+      override def state: TaskState[Any, Any] = ctx.state
+      var system: PortalsSystem = ctx.system
+    }
