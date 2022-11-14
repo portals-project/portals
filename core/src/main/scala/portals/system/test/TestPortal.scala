@@ -1,25 +1,26 @@
 package portals.system.test
 
+import scala.collection.mutable.Queue
+import scala.util.Try
+
 import portals.*
 
 private[portals] class TestPortal(portal: AtomicPortal[_, _])(using TestRuntimeContext):
+  private var receiver: String = null
+  private val queue: Queue[TestAtom] = Queue.empty
 
-  private var tstreams: Map[String, TestStream] = Map.empty
-
-  /** Initialize portal for some name. */
-  def init(path: String): Unit = tstreams += path -> TestStream(null) // FIXME: null :(
+  def setReceiver(r: String): Unit = receiver = r
 
   /** Enqueue an atom to the receiver. */
-  def enqueue(tp: TestPortalAskBatch[_]) = tp match {
-    case TestPortalAskBatch(sendr, recvr, list) =>
-      tstreams(recvr).enqueue(tp)
+  def enqueue(tp: TestAtom) = tp match {
+    case TestPortalAskBatch(portal, sender, _, list) =>
+      queue.enqueue(TestPortalAskBatch(portal, sender, receiver, list))
+    case TestPortalRepBatch(portal, sender, recvr, list) =>
+      // TODO: consider renaming to asker and replyer, less ambiguous.
+      queue.enqueue(tp)
+    case _ => ??? // not allowed
   }
 
-  /** Read from an atomic stream for the provided output path, at the index idx. */
-  def read(path: String)(idx: Long): TestAtom = tstreams(path).read(idx)
+  def isEmpty: Boolean = queue.isEmpty
 
-  /** Returns the range of indexes that can be read for a path.
-    *
-    * The range is inclusive, i.e. [0, 0] means that the idx 0 can be read.
-    */
-  def getIdxRange(path: String): (Long, Long) = tstreams(path).getIdxRange()
+  def dequeue(): Option[TestAtom] = Try(queue.dequeue()).toOption

@@ -6,5 +6,5 @@ end TaskCallback // trait
 
 trait PortalTaskCallback[T, U, Req, Rep] extends TaskCallback[T, U]:
   def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req)(key: Key[Int], id: Int): Unit
-  def reply(portal: AtomicPortalRefKind[Req, Rep])(r: Rep)(key: Key[Int], id: Int): Unit
+  def reply(r: Rep)(key: Key[Int], id: Int): Unit
 end PortalTaskCallback // trait

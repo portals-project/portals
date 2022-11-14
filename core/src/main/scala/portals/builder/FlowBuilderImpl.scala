@@ -272,5 +272,5 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
       addTask(behavior)
 
   def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*): PortalFlowBuilder[Req, Rep] =
-    new PortalFlowBuilderImpl[Req, Rep]()
+    new PortalFlowBuilderImpl[Req, Rep](portals: _*)
 end FlowBuilderImpl //

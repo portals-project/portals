@@ -81,10 +81,32 @@ class TestStreamTracker:
 
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
+// portals don't need trackers :))
+// /** Internal API. Tracks all portals of all applications. */
+// class TestPortalTracker:
+//   /** Maps the Portal path to the corresponding stream tracker (one stream for each connected instance). */
+//   private var _strackers: Map[String, TestStreamTracker] = Map.empty
+
+//   def initPortal(portal: String): Unit =
+//     _strackers += portal -> TestStreamTracker()
+
+//   def initStream(portal: String)(from: String, to: String): Unit =
+//     _strackers(portal).initStream(from + to)
+
+//   def setProgress(portal: String)(from: String, to: String)(start: Long, until: Long): Unit =
+//     _strackers(portal).setProgress(from + to, start, until)
+
+//   def incrementProgress(portal: String)(from: String, to: String): Unit =
+//     _strackers(portal).incrementProgress(from + to)
+
+//   def getProgress(portal: String)(from: String, to: String): Option[(Long, Long)] =
+//     _strackers(portal).getProgress(from + to)
+
 class TestRuntime:
   private val rctx = new TestRuntimeContext()
   private val progressTracker = TestProgressTracker()
   private val streamTracker = TestStreamTracker()
+  // private val portalTracker = TestPortalTracker()
   private val graphTracker = TestGraphTracker()
 
   /** Launch an application. */
@@ -98,7 +120,6 @@ class TestRuntime:
     // launch portals
     application.portals.foreach { portal =>
       rctx.addPortal(portal)
-      ???
     }
 
     // launch workflows
@@ -107,6 +128,16 @@ class TestRuntime:
       graphTracker.addEdge(wf.consumes.path, wf.path)
       graphTracker.addEdge(wf.path, wf.stream.path)
       progressTracker.initProgress(wf.path, wf.consumes.path)
+
+      // add portal dependencies
+      val portalz = wf.tasks.flatMap((name, task) =>
+        task match
+          case atask @ AskerTask(_) => List.empty
+          case rtask @ ReplierTask(_, _) =>
+            rtask.portals.toList
+          case _ => List.empty
+      )
+      portalz.foreach { portal => rctx.portals(portal.path).setReceiver(wf.path) }
     }
 
     // launch sequencers
@@ -137,6 +168,9 @@ class TestRuntime:
     val inputs = graphTracker.getInputs(path).get
     inputs.exists(inpt => hasInput(path, inpt))
 
+  private def choosePortal(): Option[(String, TestPortal)] =
+    rctx.portals.find((path, portal) => !portal.isEmpty)
+
   private def chooseWorkflow(): Option[(String, TestWorkflow)] =
     rctx.workflows.find((path, wf) => hasInput(path))
 
@@ -151,10 +185,27 @@ class TestRuntime:
       case ta @ TestAtomBatch(path, list) =>
         rctx.streams(path).enqueue(ta)
         streamTracker.incrementProgress(path)
-      case tpa @ TestPortalAskBatch(sendr, recvr, list) =>
-        println(tpa)
-      case tpr @ TestPortalRepBatch(sendr, recvr, list) => ???
+      case tpa @ TestPortalAskBatch(portal, sendr, recvr, list) =>
+        rctx.portals(portal).enqueue(tpa)
+      case tpr @ TestPortalRepBatch(portal, sendr, recvr, list) =>
+        rctx.portals(portal).enqueue(tpr)
     }
+
+  private def distributeAtomsFromPortal(atom: TestAtom): Unit = 
+    atom match
+      case tpa @ TestPortalAskBatch(portal, sendr, recvr, list) =>
+        val wf = rctx.workflows(recvr)
+        val outputAtoms = wf.process(tpa)
+        distributeAtoms(outputAtoms)
+      case tpr @ TestPortalRepBatch(portal, sendr, recvr, list) =>
+        val wf = rctx.workflows(recvr)
+        val outputAtoms = wf.process(tpr)
+        distributeAtoms(outputAtoms)
+      case _ => ??? // not allowed
+
+  private def stepPortal(path: String, portal: TestPortal): Unit =
+    val inputAtom = portal.dequeue().get
+    distributeAtomsFromPortal(inputAtom)
 
   private def stepWorkflow(path: String, wf: TestWorkflow): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
@@ -180,16 +231,19 @@ class TestRuntime:
     * produce one (or more) atoms. Throws an exception if it cannot take a step.
     */
   def step(): Unit =
-    chooseWorkflow() match
-      case Some(path, wf) => stepWorkflow(path, wf)
+    choosePortal() match
+      case Some(path, portal) => stepPortal(path, portal)
       case None =>
-        chooseSequencer() match
-          case Some(path, seqr) => stepSequencer(path, seqr)
+        chooseWorkflow() match
+          case Some(path, wf) => stepWorkflow(path, wf)
           case None =>
-            chooseGenerator() match
-              case Some(path, genr) =>
-                stepGenerator(path, genr)
-              case None => ???
+            chooseSequencer() match
+              case Some(path, seqr) => stepSequencer(path, seqr)
+              case None =>
+                chooseGenerator() match
+                  case Some(path, genr) =>
+                    stepGenerator(path, genr)
+                  case None => ???
 
   /** Takes steps until it cannot take more steps. */
   def stepUntilComplete(): Unit =

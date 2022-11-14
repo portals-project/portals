@@ -21,9 +21,9 @@ import portals.*
       .replier { x =>
         emit(x)
       } { x =>
-        emit(x); reply(x - 1)
+        emit(x)
+        reply(x - 1)
       }
-      .logger()
       .sink()
       .freeze()
 
@@ -32,8 +32,9 @@ import portals.*
       .portal[Int, Int](portal)
       .asker[Int] { x =>
         val future = portal.ask(x)
-        ctx.log.info(future.toString())
+        ctx.log.info("Should be None :): " + future)
         future.await {
+          ctx.log.info("FUTUUURE: " + future)
           emit(future.value.get)
           Tasks.same
         }
