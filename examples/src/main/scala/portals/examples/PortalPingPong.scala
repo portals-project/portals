@@ -11,35 +11,36 @@ import portals.*
   import portals.DSL.ExperimentalDSL.*
 
   val app = PortalsApp("PortalPingPong") {
+    sealed trait PingPong
+    case class Ping(x: Int) extends PingPong
+    case class Pong(x: Int) extends PingPong
+
     val generator = Generators.fromList(List(128))
 
-    val portal = Portal[Int, Int]("portal")
+    val portal = Portal[Ping, Pong]("portal")
 
-    val replier = Workflows[Int, Int]("replier")
+    val replier = Workflows[Nothing, Nothing]("replier")
       .source(Generators.empty.stream)
-      .portal[Int, Int](portal)
-      .replier { x =>
-        emit(x)
-      } { x =>
-        emit(x)
-        reply(x - 1)
-      }
+      .portal(portal)
+      .replier[Nothing] { _ => () } { case Ping(x) => reply(Pong(x - 1)) }
       .sink()
       .freeze()
 
     // TODO: there should be a nice way to do recursive task definitions from the askertask.
-    def recursiveAskingBehavior(x: Int)(using AskerTaskContext[Int, Int, Int, Int]): Task[Int, Int] =
-      val future = portal.ask(x)
+    def recursiveAskingBehavior(x: Int)(portal: AtomicPortalRef[Ping, Pong])(using
+        AskerTaskContext[Int, Int, Ping, Pong]
+    ): Task[Int, Int] =
+      val future = portal.ask(Ping(x))
       future.await {
-        ctx.emit(future.value.get)
-        if future.value.get < 0 then Tasks.same
-        else recursiveAskingBehavior(x - 1)
+        ctx.emit(future.value.get.x)
+        if future.value.get.x < 0 then Tasks.same
+        else recursiveAskingBehavior(x - 1)(portal)
       }
 
     val asker = Workflows[Int, Int]("asker")
       .source(generator.stream)
-      .portal[Int, Int](portal)
-      .asker[Int] { x => recursiveAskingBehavior(x) }
+      .portal(portal)
+      .asker(x => recursiveAskingBehavior(x)(portal))
       .logger()
       .sink()
       .freeze()
