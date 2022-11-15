@@ -26,17 +26,6 @@ import portals.*
       .sink()
       .freeze()
 
-    // TODO: there should be a nice way to do recursive task definitions from the askertask.
-    def recursiveAskingBehavior(x: Int)(portal: AtomicPortalRef[Ping, Pong])(using
-        AskerTaskContext[Int, Int, Ping, Pong]
-    ): Task[Int, Int] =
-      val future = portal.ask(Ping(x))
-      future.await {
-        ctx.emit(future.value.get.x)
-        if future.value.get.x < 0 then Tasks.same
-        else recursiveAskingBehavior(x - 1)(portal)
-      }
-
     val asker = Workflows[Int, Int]("asker")
       .source(generator.stream)
       .portal(portal)
