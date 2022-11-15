@@ -191,7 +191,7 @@ class TestRuntime:
         rctx.portals(portal).enqueue(tpr)
     }
 
-  private def distributeAtomsFromPortal(atom: TestAtom): Unit = 
+  private def distributeAtomsFromPortal(atom: TestAtom): Unit =
     atom match
       case tpa @ TestPortalAskBatch(portal, sendr, recvr, list) =>
         val wf = rctx.workflows(recvr)
