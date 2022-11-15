@@ -66,6 +66,9 @@ class TestGraphTracker:
   /** Get all incoming edges to a graph node with the name 'path'. */
   def getInputs(path: String): Option[Set[String]] = Some(_edges.filter(_._2 == path).map(_._1))
 
+  /** Get all outgoing edges to a graph node with the name 'path'. */
+  def getOutputs(path: String): Option[Set[String]] = Some(_edges.filter(_._1 == path).map(_._2))
+
 /** Internal API. Tracks all streams of all applications. */
 class TestStreamTracker:
   /** Maps the progress of a path (String) to a pair [from, to], the range is inclusive and means that all indices
@@ -81,33 +84,19 @@ class TestStreamTracker:
 
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
-// portals don't need trackers :))
-// /** Internal API. Tracks all portals of all applications. */
-// class TestPortalTracker:
-//   /** Maps the Portal path to the corresponding stream tracker (one stream for each connected instance). */
-//   private var _strackers: Map[String, TestStreamTracker] = Map.empty
-
-//   def initPortal(portal: String): Unit =
-//     _strackers += portal -> TestStreamTracker()
-
-//   def initStream(portal: String)(from: String, to: String): Unit =
-//     _strackers(portal).initStream(from + to)
-
-//   def setProgress(portal: String)(from: String, to: String)(start: Long, until: Long): Unit =
-//     _strackers(portal).setProgress(from + to, start, until)
-
-//   def incrementProgress(portal: String)(from: String, to: String): Unit =
-//     _strackers(portal).incrementProgress(from + to)
-
-//   def getProgress(portal: String)(from: String, to: String): Option[(Long, Long)] =
-//     _strackers(portal).getProgress(from + to)
-
 class TestRuntime:
   private val rctx = new TestRuntimeContext()
   private val progressTracker = TestProgressTracker()
   private val streamTracker = TestStreamTracker()
   // private val portalTracker = TestPortalTracker()
   private val graphTracker = TestGraphTracker()
+
+  private var _stepN: Long = 0
+
+  /** The current step number of the execution. */
+  private def stepN: Long = { _stepN += 1; _stepN }
+
+  private inline val GC_INTERVAL = 128 // GC Step Interval
 
   /** Launch an application. */
   def launch(application: Application): Unit =
@@ -157,6 +146,21 @@ class TestRuntime:
     application.generators.foreach { genr =>
       rctx.addGenerator(genr)
       graphTracker.addEdge(genr.path, genr.stream.path)
+    }
+
+  /** Perform GC on the runtime objects. */
+  private def garbageCollection(): Unit =
+    // 1. Cleanup streams, compute min progress of stream dependents, and adjust accoringly
+    rctx.streams.foreach { (name, stream) =>
+      val sprogress = streamTracker.getProgress(name).get
+      val outputs = graphTracker.getOutputs(name).get
+      val minprogress = outputs
+        .map { outp =>
+          progressTracker.getProgress(outp, name).get
+        }
+        .foldLeft(-1L)(math.min)
+      // the value 128 here is very arbitrary, we should look to have some other way to adjust, perhaps based on size rather than length.
+      if minprogress + GC_INTERVAL < sprogress._1 then stream.prune(minprogress)
     }
 
   private def hasInput(path: String, dependency: String): Boolean =
@@ -244,6 +248,7 @@ class TestRuntime:
                   case Some(path, genr) =>
                     stepGenerator(path, genr)
                   case None => ???
+    if stepN % GC_INTERVAL == 0 then garbageCollection()
 
   /** Takes steps until it cannot take more steps. */
   def stepUntilComplete(): Unit =

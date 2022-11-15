@@ -15,7 +15,7 @@ import portals.*
     case class Ping(x: Int) extends PingPong
     case class Pong(x: Int) extends PingPong
 
-    val generator = Generators.fromList(List(128))
+    val generator = Generators.fromList(List(1024 * 1024))
 
     val portal = Portal[Ping, Pong]("portal")
 
@@ -29,13 +29,14 @@ import portals.*
     val asker = Workflows[Int, Int]("asker")
       .source(generator.stream)
       .portal(portal)
-      .askerz[Int] { self => x =>
+      .askerz[Int] { self => x => // TODO: rename askerz to something other without z...
         val future = ctx.ask(portal)(Ping(x))
         future.await {
           ctx.emit(future.value.get.x)
           if future.value.get.x > 0 then self(x - 1)
         }
       }
+      .filter(_ % 1024 == 0)
       .logger()
       .sink()
       .freeze()
