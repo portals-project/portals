@@ -189,20 +189,20 @@ class TestRuntime:
       case ta @ TestAtomBatch(path, list) =>
         rctx.streams(path).enqueue(ta)
         streamTracker.incrementProgress(path)
-      case tpa @ TestPortalAskBatch(portal, sendr, recvr, list) =>
+      case tpa @ TestAskBatch(portal, _, _, _) =>
         rctx.portals(portal).enqueue(tpa)
-      case tpr @ TestPortalRepBatch(portal, sendr, recvr, list) =>
+      case tpr @ TestRepBatch(portal, _, _, _) =>
         rctx.portals(portal).enqueue(tpr)
     }
 
   private def distributeAtomsFromPortal(atom: TestAtom): Unit =
     atom match
-      case tpa @ TestPortalAskBatch(portal, sendr, recvr, list) =>
-        val wf = rctx.workflows(recvr)
+      case tpa @ TestAskBatch(_, _, replier, _) =>
+        val wf = rctx.workflows(replier)
         val outputAtoms = wf.process(tpa)
         distributeAtoms(outputAtoms)
-      case tpr @ TestPortalRepBatch(portal, sendr, recvr, list) =>
-        val wf = rctx.workflows(recvr)
+      case tpr @ TestRepBatch(_, asker, _, _) =>
+        val wf = rctx.workflows(asker)
         val outputAtoms = wf.process(tpr)
         distributeAtoms(outputAtoms)
       case _ => ??? // not allowed

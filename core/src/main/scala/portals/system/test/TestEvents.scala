@@ -2,17 +2,16 @@ package portals.system.test
 
 import portals.*
 
+/** Internal API. Atom of events together with meta data. */
 private[portals] sealed trait TestAtom
+
+/** Atom of regular events. */
 private[portals] case class TestAtomBatch[T](path: String, list: List[WrappedEvent[T]]) extends TestAtom
-private[portals] case class TestPortalAskBatch[T](
-    portal: String,
-    sendr: String,
-    recvr: String,
-    list: List[WrappedEvent[T]]
-) extends TestAtom
-private[portals] case class TestPortalRepBatch[T](
-    portal: String,
-    sendr: String,
-    recvr: String,
-    list: List[WrappedEvent[T]]
-) extends TestAtom
+
+/** Atom of ask events. */
+private[portals] case class TestAskBatch[T](portal: String, asker: String, replier: String, list: List[WrappedEvent[T]])
+    extends TestAtom
+
+/** Atom of reply events. */
+private[portals] case class TestRepBatch[T](portal: String, asker: String, replier: String, list: List[WrappedEvent[T]])
+    extends TestAtom

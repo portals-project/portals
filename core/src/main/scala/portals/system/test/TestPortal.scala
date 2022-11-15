@@ -6,17 +6,16 @@ import scala.util.Try
 import portals.*
 
 private[portals] class TestPortal(portal: AtomicPortal[_, _])(using TestRuntimeContext):
-  private var receiver: String = null
+  private var replier: String = null
   private val queue: Queue[TestAtom] = Queue.empty
 
-  def setReceiver(r: String): Unit = receiver = r
+  def setReceiver(r: String): Unit = replier = r
 
-  /** Enqueue an atom to the receiver. */
+  /** Enqueue an atom. */
   def enqueue(tp: TestAtom) = tp match {
-    case TestPortalAskBatch(portal, sender, _, list) =>
-      queue.enqueue(TestPortalAskBatch(portal, sender, receiver, list))
-    case TestPortalRepBatch(portal, sender, recvr, list) =>
-      // TODO: consider renaming to asker and replyer, less ambiguous.
+    case TestAskBatch(portal, asker, _, list) =>
+      queue.enqueue(TestAskBatch(portal, asker, replier, list))
+    case TestRepBatch(_, _, _, _) =>
       queue.enqueue(tp)
     case _ => ??? // not allowed
   }

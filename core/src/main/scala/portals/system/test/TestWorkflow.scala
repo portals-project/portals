@@ -66,12 +66,12 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
     */
   def process(atom: TestAtom): List[TestAtom] =
     atom match
-      case a @ TestAtomBatch(path, list) => processAtom(a)
-      case ask @ TestPortalAskBatch(portal, sendr, recvr, list) => processAsk(ask)
-      case reply @ TestPortalRepBatch(portal, sendr, recvr, list) => processReply(reply)
+      case a @ TestAtomBatch(_, _) => processAtom(a)
+      case ask @ TestAskBatch(_, _, _, _) => processAsk(ask)
+      case reply @ TestRepBatch(_, _, _, _) => processReply(reply)
 
   /** Internal API. Process a TestAskBatch. */
-  private def processAsk(atom: TestPortalAskBatch[_]): List[TestAtom] =
+  private def processAsk(atom: TestAskBatch[_]): List[TestAtom] =
     // val taskName = wf.tasks
     //   .filter((name, task) =>
     //     task match
@@ -125,26 +125,15 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
     val outputs = processAtomHelper(Map(name -> TestAtomBatch(atom.portal, output)))
     val x = outputs.map(_atom =>
       _atom match
-        case TestAtomBatch(path, list) => _atom
-        case TestPortalAskBatch(portal, sendr, recvr, list) => _atom
-        case TestPortalRepBatch(portal, sendr, recvr, list) =>
-          TestPortalRepBatch(atom.portal, atom.recvr, atom.sendr, list)
+        case TestAtomBatch(_, _) => _atom
+        case TestAskBatch(_, _, _, _) => _atom
+        case TestRepBatch(_, _, _, list) =>
+          TestRepBatch(atom.portal, atom.asker, atom.replier, list)
     )
     x
-    // outputs
-    // if output.isEmpty then List.empty
-    // else
-    //   List(
-    //     TestPortalRepBatch(
-    //       atom.portal,
-    //       atom.recvr,
-    //       atom.sendr,
-    //       output.map(r => Reply(r.key, atom.portal, r.id, r.event)),
-    //     )
-    //   )
 
   /** Internal API. Process a TestReplyBatch. */
-  private def processReply(atom: TestPortalRepBatch[_]): List[TestAtom] =
+  private def processReply(atom: TestRepBatch[_]): List[TestAtom] =
     val taskName = wf.tasks
       .filter((name, task) =>
         task match
@@ -260,9 +249,9 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
     // portal inputs/outputs
     val portalOutputs = {
       val askoutput =
-        pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestPortalAskBatch(k, wf.path, k, v) }.toList
+        pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestAskBatch(k, wf.path, k, v) }.toList
       val repoutput =
-        pcb.getRepOutput().groupBy(e => e.path).map { (k, v) => TestPortalRepBatch(k, wf.path, k, v) }.toList
+        pcb.getRepOutput().groupBy(e => e.path).map { (k, v) => TestRepBatch(k, k, wf.path, v) }.toList
       pcb.clearAsks()
       pcb.clearReps()
       askoutput ::: repoutput
@@ -361,9 +350,9 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
     // portal inputs/outputs
     val portalOutputs = {
       val askoutput =
-        pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestPortalAskBatch(k, wf.path, k, v) }.toList
+        pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestAskBatch(k, wf.path, k, v) }.toList
       val repoutput =
-        pcb.getRepOutput().groupBy(e => e.path).map { (k, v) => TestPortalRepBatch(k, wf.path, k, v) }.toList
+        pcb.getRepOutput().groupBy(e => e.path).map { (k, v) => TestRepBatch(k, k, wf.path, v) }.toList
       pcb.clearAsks()
       pcb.clearReps()
       askoutput ::: repoutput
