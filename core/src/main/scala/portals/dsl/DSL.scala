@@ -34,7 +34,7 @@ object DSL:
 
   def await[T, U, Req, Rep](using
       ctx: AskerTaskContext[T, U, Req, Rep]
-  )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]): Task[T, U] = ctx.await(future)(f)
+  )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit = ctx.await(future)(f)
 
   extension [T, U, Req, Rep](portal: AtomicPortalRefType[Req, Rep]) {
     def ask(using
@@ -80,14 +80,14 @@ object DSL:
 
     extension [Rep](future: Future[Rep]) {
       def await[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
-          f: AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]
-      ): Task[T, U] =
+          f: AskerTaskContext[T, U, Req, Rep] ?=> Unit
+      ): Unit =
         ctx.await(future)(f)
     }
 
     def await[T, U, Req, Rep](using
         ctx: AskerTaskContext[T, U, Req, Rep]
-    )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]): Task[T, U] = ctx.await(future)(f)
+    )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit = ctx.await(future)(f)
 
     /** Used for fecursive functions from the Asker Task. Yes, here we do need to have the AskerTaskContext as an
       * implicit, otherwise it will crash.

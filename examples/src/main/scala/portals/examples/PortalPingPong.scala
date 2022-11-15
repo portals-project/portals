@@ -33,8 +33,7 @@ import portals.*
         val future = ctx.ask(portal)(Ping(x))
         future.await {
           ctx.emit(future.value.get.x)
-          if future.value.get.x < 0 then Tasks.same
-          else self(x - 1); Tasks.same
+          if future.value.get.x > 0 then self(x - 1)
         }
       }
       .logger()

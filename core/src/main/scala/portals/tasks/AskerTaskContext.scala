@@ -1,12 +1,12 @@
 package portals
 
-private[portals] type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]
+private[portals] type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Unit
 
 trait AskerTaskContext[T, U, Req, Rep] extends TaskContext[T, U]:
   private[portals] var _continuations: Map[Int, Continuation[T, U, Req, Rep]]
   private[portals] var _futures: Map[Int, FutureImpl[_]]
   def ask(portal: AtomicPortalRefType[Req, Rep])(req: Req): Future[Rep]
-  def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]): Task[T, U]
+  def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit
 
 object AskerTaskContext:
   def fromTaskContext[T, U, Req, Rep](
@@ -27,7 +27,7 @@ object AskerTaskContext:
         _futures += i -> f.asInstanceOf[FutureImpl[_]]
         f
 
-      override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Task[T, U]): Task[T, U] =
+      override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit =
         _continuations = _continuations + (future.asInstanceOf[FutureImpl[_]]._id -> f)
         Tasks.same
 
