@@ -40,7 +40,14 @@ import portals.*
     val asker = Workflows[Int, Int]("asker")
       .source(generator.stream)
       .portal(portal)
-      .asker(x => recursiveAskingBehavior(x)(portal))
+      .askerz[Int] { self => x =>
+        val future = ctx.ask(portal)(Ping(x))
+        future.await {
+          ctx.emit(future.value.get.x)
+          if future.value.get.x < 0 then Tasks.same
+          else self(x - 1); Tasks.same
+        }
+      }
       .logger()
       .sink()
       .freeze()
