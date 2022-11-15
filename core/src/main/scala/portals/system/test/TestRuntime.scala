@@ -126,7 +126,7 @@ class TestRuntime:
             rtask.portals.toList
           case _ => List.empty
       )
-      portalz.foreach { portal => rctx.portals(portal.path).setReceiver(wf.path) }
+      portalz.foreach { portal => rctx.portals(portal.path).replier = wf.path }
     }
 
     // launch sequencers

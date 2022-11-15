@@ -246,10 +246,10 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
       outputs += wf.sink -> TestAtomBatch(wf.stream.path, _output.reverse)
     }
 
-    // portal inputs/outputs
+    // portal inputs/outputsF
     val portalOutputs = {
       val askoutput =
-        pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestAskBatch(k, wf.path, k, v) }.toList
+        pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestAskBatch(k, wf.path, null, v) }.toList
       val repoutput =
         pcb.getRepOutput().groupBy(e => e.path).map { (k, v) => TestRepBatch(k, k, wf.path, v) }.toList
       pcb.clearAsks()
@@ -350,7 +350,7 @@ class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
     // portal inputs/outputs
     val portalOutputs = {
       val askoutput =
-        pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestAskBatch(k, wf.path, k, v) }.toList
+        pcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestAskBatch(k, wf.path, null, v) }.toList
       val repoutput =
         pcb.getRepOutput().groupBy(e => e.path).map { (k, v) => TestRepBatch(k, k, wf.path, v) }.toList
       pcb.clearAsks()

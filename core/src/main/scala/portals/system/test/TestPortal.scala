@@ -1,25 +1,28 @@
 package portals.system.test
 
-import scala.collection.mutable.Queue
+import scala.collection.mutable.ArrayDeque
 import scala.util.Try
 
 import portals.*
 
-private[portals] class TestPortal(portal: AtomicPortal[_, _])(using TestRuntimeContext):
-  private var replier: String = null
-  private val queue: Queue[TestAtom] = Queue.empty
-
-  def setReceiver(r: String): Unit = replier = r
+/** Internal API. The TestPortal connects the askers with the replier. The replier needs to be set dynamically by the
+  * replying workflow.
+  */
+private[portals] class TestPortal(portal: AtomicPortal[_, _], var replier: String = null)(using TestRuntimeContext):
+  // A single queue is used both for the TestAskBatch and TestRepBatch events.
+  // This is sufficient, as the events have information with respect to the asker and replier.
+  private val queue: ArrayDeque[TestAtom] = ArrayDeque.empty
 
   /** Enqueue an atom. */
   def enqueue(tp: TestAtom) = tp match {
     case TestAskBatch(portal, asker, _, list) =>
-      queue.enqueue(TestAskBatch(portal, asker, replier, list))
+      // Here we set the replier to the replier, as this information is not known to the asking workflow.
+      queue.append(TestAskBatch(portal, asker, replier, list))
     case TestRepBatch(_, _, _, _) =>
-      queue.enqueue(tp)
+      queue.append(tp)
     case _ => ??? // not allowed
   }
 
   def isEmpty: Boolean = queue.isEmpty
 
-  def dequeue(): Option[TestAtom] = Try(queue.dequeue()).toOption
+  def dequeue(): Option[TestAtom] = Some(queue.remove(0))
