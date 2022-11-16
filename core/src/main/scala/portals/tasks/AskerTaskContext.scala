@@ -8,11 +8,14 @@ trait AskerTaskContext[T, U, Req, Rep] extends TaskContext[T, U]:
   def ask(portal: AtomicPortalRefType[Req, Rep])(req: Req): Future[Rep]
   def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit
 
+// TODO: Cleanup, this is messy.
 object AskerTaskContext:
   def fromTaskContext[T, U, Req, Rep](
       ctx: TaskContext[T, U]
   )(portalcb: PortalTaskCallback[T, U, Req, Rep]): AskerTaskContext[T, U, Req, Rep] =
     new AskerTaskContext[T, U, Req, Rep] {
+      // TODO: Continuations and futures should be implemented in a better way which utilizes the persistent state. The current implementation feels wrong.
+      // TODO: We should probably handle continuations and futures instead with the TaskCallBack.
       private[portals] var _continuations = Map.empty[Int, Continuation[T, U, Req, Rep]]
       private[portals] var _futures = Map.empty[Int, FutureImpl[_]]
 

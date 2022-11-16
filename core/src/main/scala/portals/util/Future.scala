@@ -7,6 +7,7 @@ trait Future[+T]:
 
 private[portals] class FutureImpl[T](id: Int) extends Future[T]:
   private[portals] val _id: Int = id
+  // TODO: the future should really be using the task context to resolve the value
   private[portals] var _value: Option[T] = None
   def value: Option[T] = _value
 

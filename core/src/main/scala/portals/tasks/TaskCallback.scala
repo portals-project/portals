@@ -1,5 +1,6 @@
 package portals
 
+// TODO: consider merging both Callbacks into one.
 trait TaskCallback[T, U]:
   def submit(key: Key[Int], event: U): Unit
 end TaskCallback // trait

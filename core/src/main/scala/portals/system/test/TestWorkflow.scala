@@ -93,7 +93,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
                   tctx.key = key
                   tctx.state.key = key
                   val actx = AskerTaskContext.fromTaskContext(tctx)(tcb)
-                  task.onNext(using actx.asInstanceOf[TaskContext[task._T, task._U]])(e.asInstanceOf)
+                  task.onNext(using actx.asInstanceOf)(e.asInstanceOf)
                   continuations ++= actx._continuations
                   futures ++= actx._futures.asInstanceOf[Map[Int, FutureImpl[Any]]]
                 case _: Task[?, ?] =>

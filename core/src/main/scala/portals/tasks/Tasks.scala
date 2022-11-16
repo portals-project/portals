@@ -400,6 +400,7 @@ object PortalsExtension:
   )(val portals: AtomicPortalRefType[Req, Rep]*)
       extends BaseTask[T, U]:
 
+    // TODO: this is not used, AFAIK by the runtime, either use it or loose it :p.
     def requestingOnNext(using ctx: ReplierTaskContext[T, U, Req, Rep])(req: Req): Unit =
       f2(ctx)(req)
 

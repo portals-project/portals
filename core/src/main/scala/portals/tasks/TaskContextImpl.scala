@@ -5,11 +5,8 @@ private[portals] class TaskContextImpl[I, O] extends TaskContext[I, O]:
 
   override def emit(event: O): Unit = cb.submit(key, event)
 
-  // deprecated
-  // override private[portals] def fuse(): Unit = cb.fuse()
-
   private lazy val _log = Logger(path)
-  override def log: Logger = _log
+  override inline def log: Logger = _log
 
   private[portals] var path: String = "" // TODO: make this set by the runtime
 
