@@ -267,7 +267,8 @@ class TestRuntime:
     */
   def canStep(): Boolean =
     // use || so that we do not evaluate the other options unnecessarily
-    chooseWorkflow().isDefined
+    choosePortal().isDefined
+      || chooseWorkflow().isDefined
       || chooseSequencer().isDefined
       || chooseGenerator().isDefined
 
