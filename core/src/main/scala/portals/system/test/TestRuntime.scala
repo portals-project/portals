@@ -24,7 +24,7 @@ private[portals] class TestRuntimeContext():
   def addConnection(conn: AtomicConnection[_]): Unit = _connections += conn.path -> TestConnection(conn)(using this)
 
 /** Internal API. Tracks the progress for a path with respect to other streams. */
-class TestProgressTracker:
+private[portals] class TestProgressTracker:
   // progress tracker for each Path;
   // for a Path (String) this gives the progress w.r.t. all input dependencies (Map[String, Long])
   private var progress: Map[String, Map[String, Long]] = Map.empty
@@ -35,9 +35,7 @@ class TestProgressTracker:
       path ->
         (progress(path) + (dependency -> idx))
 
-  /** Increments the progress of path w.r.t. dependency by 1. If the dependency doesn't exist yet, then we set the new
-    * index to 0.
-    */
+  /** Increments the progress of path w.r.t. dependency by 1. */
   def incrementProgress(path: String, dependency: String): Unit =
     progress +=
       path ->
@@ -69,31 +67,39 @@ class TestGraphTracker:
   /** Get all outgoing edges to a graph node with the name 'path'. */
   def getOutputs(path: String): Option[Set[String]] = Some(_edges.filter(_._1 == path).map(_._2))
 
-/** Internal API. Tracks all streams of all applications. */
-class TestStreamTracker:
+/** Internal API. Tracks all streams of all applications.
+  *
+  * The stream tracker is used to track the progress of the streams, i.e. what range of indices of the stream that can
+  * be read. The smallest index may be incremented due to garbage collection over time.
+  */
+private[portals] class TestStreamTracker:
   /** Maps the progress of a path (String) to a pair [from, to], the range is inclusive and means that all indices
     * starting from 'from' until (including) 'to' can be read.
     */
   private var _progress: Map[String, (Long, Long)] = Map.empty
 
+  /** Initialize a new stream by settings its progress to <0, -1>, that is it is empty for now. */
   def initStream(stream: String): Unit = _progress += stream -> (0, -1)
 
+  /** Set the progress of a stream to <from, to>, for which the range is inclusive. Use this with care, use
+    * incrementProgress instead where possible.
+    */
   def setProgress(stream: String, from: Long, to: Long): Unit = _progress += stream -> (from, to)
 
+  /** Increments the progress of a stream by 1. */
   def incrementProgress(stream: String): Unit = _progress += stream -> (_progress(stream)._1, _progress(stream)._2 + 1)
 
+  /** Returns the progress of a stream as an optional range <From, To>, for which the range is inclusive. */
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
 class TestRuntime:
   private val rctx = new TestRuntimeContext()
   private val progressTracker = TestProgressTracker()
   private val streamTracker = TestStreamTracker()
-  // private val portalTracker = TestPortalTracker()
   private val graphTracker = TestGraphTracker()
 
-  private var _stepN: Long = 0
-
   /** The current step number of the execution. */
+  private var _stepN: Long = 0
   private def stepN: Long = { _stepN += 1; _stepN }
 
   private inline val GC_INTERVAL = 128 // GC Step Interval
@@ -126,6 +132,7 @@ class TestRuntime:
             rtask.portals.toList
           case _ => List.empty
       )
+      // we have to set the replier here, as this information is not known by the portal.
       portalz.foreach { portal => rctx.portals(portal.path).replier = wf.path }
     }
 
@@ -150,17 +157,19 @@ class TestRuntime:
 
   /** Perform GC on the runtime objects. */
   private def garbageCollection(): Unit =
+    ////////////////////////////////////////////////////////////////////////////
     // 1. Cleanup streams, compute min progress of stream dependents, and adjust accoringly
-    rctx.streams.foreach { (name, stream) =>
-      val sprogress = streamTracker.getProgress(name).get
-      val outputs = graphTracker.getOutputs(name).get
+    ////////////////////////////////////////////////////////////////////////////
+    rctx.streams.foreach { (streamName, stream) =>
+      val streamProgress = streamTracker.getProgress(streamName).get
+      val outputs = graphTracker.getOutputs(streamName).get
       val minprogress = outputs
-        .map { outp =>
-          progressTracker.getProgress(outp, name).get
-        }
-        .foldLeft(-1L)(math.min)
-      // the value 128 here is very arbitrary, we should look to have some other way to adjust, perhaps based on size rather than length.
-      if minprogress + GC_INTERVAL < sprogress._1 then stream.prune(minprogress)
+        .map { outpt => progressTracker.getProgress(outpt, streamName).get }
+        .minOption
+        .getOrElse(-1L) // TODO: this could be set to streamProgress._2 instead if no subscribers exist
+      if minprogress > streamProgress._1 + GC_INTERVAL then
+        stream.prune(minprogress)
+        streamTracker.setProgress(streamName, minprogress, streamProgress._2)
     }
 
   private def hasInput(path: String, dependency: String): Boolean =
@@ -195,21 +204,20 @@ class TestRuntime:
         rctx.portals(portal).enqueue(tpr)
     }
 
-  private def distributeAtomsFromPortal(atom: TestAtom): Unit =
-    atom match
+  private def stepPortal(path: String, portal: TestPortal): Unit =
+    // dequeue the head event of the Portal
+    portal.dequeue().get match
+      // 1) if it is a TestAskBatch, then execute the replying workflow
       case tpa @ TestAskBatch(_, _, replier, _) =>
         val wf = rctx.workflows(replier)
         val outputAtoms = wf.process(tpa)
         distributeAtoms(outputAtoms)
+      // 2) if it is a TestRepBatch, then execute the asking workflow
       case tpr @ TestRepBatch(_, asker, _, _) =>
         val wf = rctx.workflows(asker)
         val outputAtoms = wf.process(tpr)
         distributeAtoms(outputAtoms)
-      case _ => ??? // not allowed
-
-  private def stepPortal(path: String, portal: TestPortal): Unit =
-    val inputAtom = portal.dequeue().get
-    distributeAtomsFromPortal(inputAtom)
+      case _ => ??? // should not happen
 
   private def stepWorkflow(path: String, wf: TestWorkflow): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
@@ -258,6 +266,7 @@ class TestRuntime:
     * finished processing, i.e. all atomic streams have been read.
     */
   def canStep(): Boolean =
+    // use || so that we do not evaluate the other options unnecessarily
     chooseWorkflow().isDefined
       || chooseSequencer().isDefined
       || chooseGenerator().isDefined
