@@ -92,20 +92,35 @@ object DSL:
     /** Used for fecursive functions from the Asker Task. Yes, here we do need to have the AskerTaskContext as an
       * implicit, otherwise it will crash.
       */
-    trait RecZ[A, B]:
-      def apply[T, U, Req, Rep](
-          f: (AskerTaskContext[T, U, Req, Rep] ?=> A => B) => AskerTaskContext[T, U, Req, Rep] ?=> A => B
-      ): AskerTaskContext[T, U, Req, Rep] ?=> A => B = f(recz(f))
-      // def apply[Req, Rep](
-      //     f: (AskerTaskContext[_, _, Req, Rep] ?=> A => B) => AskerTaskContext[_, _, Req, Rep] ?=> A => B
-      // ): AskerTaskContext[_, _, Req, Rep] ?=> A => B = f(recz(f))
-    def recz[A, B] = new RecZ[A, B] {}
+    private object Rec:
+      def rec0[A, T, U, Req, Rep](
+          f: (AskerTaskContext[T, U, Req, Rep] ?=> A) => AskerTaskContext[T, U, Req, Rep] ?=> A
+      ): AskerTaskContext[T, U, Req, Rep] ?=> A = f(rec0(f))
+
+      def rec1[A, B, T, U, Req, Rep](
+          fRec: (AskerTaskContext[T, U, Req, Rep] ?=> A => B) => AskerTaskContext[T, U, Req, Rep] ?=> A => B
+      ): AskerTaskContext[T, U, Req, Rep] ?=> A => B = fRec(rec1(fRec))
 
     extension [T, U, CT, CU, Req, Rep](pfb: FlowBuilder[T, U, CT, CU]#PortalFlowBuilder[Req, Rep]) {
-      def askerz[CCU](
-          f: (AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+      def askerRec[CCU](
+          fRec: (
+              AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+          ) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
       ): FlowBuilder[T, U, CU, CCU] =
-        pfb.asker(f(recz(f)))
+        pfb.asker(fRec(Rec.rec1(fRec)))
+    }
+
+    def awaitRec[T, U, Req, Rep](using
+        ctx: AskerTaskContext[T, U, Req, Rep]
+    )(future: Future[Rep])(
+        fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit
+    ): Unit = ctx.await(future)(fRec(Rec.rec0(fRec)))
+
+    extension [Rep](future: Future[Rep]) {
+      def awaitRec[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
+          fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit
+      ): Unit =
+        ctx.await(future)(fRec(Rec.rec0(fRec)))
     }
 
   end ExperimentalDSL

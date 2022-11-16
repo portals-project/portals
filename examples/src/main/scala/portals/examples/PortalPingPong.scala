@@ -29,7 +29,7 @@ import portals.*
     val asker = Workflows[Int, Int]("asker")
       .source(generator.stream)
       .portal(portal)
-      .askerz[Int] { self => x => // TODO: rename askerz to something other without z...
+      .askerRec[Int] { self => x =>
         val future = ctx.ask(portal)(Ping(x))
         future.await {
           ctx.emit(future.value.get.x)
