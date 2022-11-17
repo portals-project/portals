@@ -82,6 +82,9 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     var errord = false
     var atomd = false
 
+    // TODO: this needs to be outside of the loop for now, as we need to keep th id counter.
+    val actx = AskerTaskContext.fromTaskContext(tctx)(tcb)
+
     inputs.foreach { input =>
       if outputs.contains(input) then
         val atom = outputs.get(input).get
@@ -92,10 +95,11 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
                 case _: AskerTask[_, _, _, _] =>
                   tctx.key = key
                   tctx.state.key = key
-                  val actx = AskerTaskContext.fromTaskContext(tctx)(tcb)
                   task.onNext(using actx.asInstanceOf)(e.asInstanceOf)
                   continuations ++= actx._continuations
                   futures ++= actx._futures.asInstanceOf[Map[Int, FutureImpl[Any]]]
+                  actx._continuations = Map.empty
+                  actx._futures = Map.empty
                 case _: Task[?, ?] =>
                   tctx.key = key
                   tctx.state.key = key
@@ -254,18 +258,20 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Internal API. Process a TestReplyBatch. Will process matched continuations. */
   private def processAskerTask(atom: TestRepBatch[_]): TestAtomBatch[_] = {
+    val actx = AskerTaskContext.fromTaskContext(tctx)(tcb)
     atom.list.foreach { event =>
       event match
         case Reply(key, path, id, e) =>
           tctx.key = key
           tctx.state.key = key
-          val actx = AskerTaskContext.fromTaskContext(tctx)(tcb)
           futures(id)._value = Some(e)
           continuations(id)(using actx)
           continuations -= id
           futures -= id
           continuations ++= actx._continuations
           futures ++= actx._futures.asInstanceOf[Map[Int, FutureImpl[Any]]]
+          actx._continuations = Map.empty
+          actx._futures = Map.empty
         case _ => ??? // NOPE
     }
 
