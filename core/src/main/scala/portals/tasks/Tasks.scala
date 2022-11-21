@@ -394,6 +394,19 @@ object PortalsExtension:
       f(ctx.asInstanceOf)(t)
       Tasks.same
 
+  private[portals] object AskerTask:
+    private[portals] def run_and_cleanup_reply[T, U, Req, Rep](id: Int, r: Rep)(using
+        actx: AskerTaskContext[T, U, Req, Rep]
+    ): Unit =
+      // set future
+      actx._futures.update(id, r)
+      // run continuation
+      actx._continuations.get(id).get(using actx)
+      // cleanup future
+      actx._futures.remove(id)
+      // cleanup continuation
+      actx._continuations.remove(id)
+
   private[portals] case class ReplierTask[T, U, Req, Rep](
       f1: TaskContext[T, U] => T => Unit,
       f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit

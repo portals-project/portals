@@ -1,40 +1,39 @@
 package portals
 
-private[portals] type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Unit
+import scala.annotation.experimental
+
+type Continuation[T, U, Req, Rep] = AskerTaskContext[T, U, Req, Rep] ?=> Unit
 
 trait AskerTaskContext[T, U, Req, Rep] extends TaskContext[T, U]:
-  private[portals] var _continuations: Map[Int, Continuation[T, U, Req, Rep]]
-  private[portals] var _futures: Map[Int, FutureImpl[_]]
+  private[portals] val _continuations: PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]]
+  private[portals] val _futures: PerTaskState[Map[Int, Rep]]
   def ask(portal: AtomicPortalRefType[Req, Rep])(req: Req): Future[Rep]
   def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit
 
-// TODO: Cleanup, this is messy.
 object AskerTaskContext:
   def fromTaskContext[T, U, Req, Rep](
       ctx: TaskContext[T, U]
   )(portalcb: PortalTaskCallback[T, U, Req, Rep]): AskerTaskContext[T, U, Req, Rep] =
     new AskerTaskContext[T, U, Req, Rep] {
-      // TODO: Continuations and futures should be implemented in a better way which utilizes the persistent state. The current implementation feels wrong.
-      // TODO: We should probably handle continuations and futures instead with the TaskCallBack.
-      private[portals] var _continuations = Map.empty[Int, Continuation[T, U, Req, Rep]]
-      private[portals] var _futures = Map.empty[Int, FutureImpl[_]]
-
-      private var _id: Int = 0
-      def id: Int = { _id += 1; _id }
-
+      //////////////////////////////////////////////////////////////////////////
       // AskerContext
+      //////////////////////////////////////////////////////////////////////////
+      override private[portals] val _continuations =
+        PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]]("continuations", Map.empty)(using ctx)
+      override private[portals] val _futures =
+        PerTaskState[Map[Int, Rep]]("futures", Map.empty)(using ctx)
+
       override def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req): Future[Rep] =
-        val i = id
-        portalcb.ask(portal)(req)(ctx.key, i)
-        val f = Future(i)
-        _futures += i -> f.asInstanceOf[FutureImpl[_]]
+        val f: Future[Rep] = Future()
+        portalcb.ask(portal)(req)(ctx.key, f.id)
         f
 
       override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit =
-        _continuations = _continuations + (future.asInstanceOf[FutureImpl[_]]._id -> f)
-        Tasks.same
+        _continuations.update(future.asInstanceOf[FutureImpl[_]].id, f)
 
+      //////////////////////////////////////////////////////////////////////////
       // TaskContext
+      //////////////////////////////////////////////////////////////////////////
       override def emit(event: U): Unit = ctx.emit(event)
       var key: Key[Int] = ctx.key
       override def log: Logger = ctx.log

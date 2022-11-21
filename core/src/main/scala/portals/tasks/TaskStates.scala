@@ -73,3 +73,19 @@ class PerTaskStateImpl[T](name: String, initValue: T)(using TaskContext[_, _]) e
     resetKey()
 
 end PerTaskStateImpl // class
+
+// TODO: implement more efficient Map interface
+// TODO: this is an experimental interface
+extension [K, V](state: PerTaskState[Map[K, V]]) {
+  def get(key: K): Option[V] = state.get().get(key)
+
+  def update(key: K, value: V): Unit =
+    state.set(
+      (state.get() + (key -> value))
+    )
+
+  def remove(key: K): Unit =
+    state.set(
+      (state.get() - key)
+    )
+}

@@ -1,15 +1,19 @@
 package portals
 
-trait Future[+T]:
-  def value: Option[T]
+trait Future[T]:
+  val id: Int
 
-  override def toString(): String = "Future(" + value.toString() + ")"
+  def value: AskerTaskContext[_, _, _, T] ?=> Option[T]
 
-private[portals] class FutureImpl[T](id: Int) extends Future[T]:
-  private[portals] val _id: Int = id
-  // TODO: the future should really be using the task context to resolve the value
-  private[portals] var _value: Option[T] = None
-  def value: Option[T] = _value
+  override def toString(): String = "Future(id=" + id + ")"
+
+private[portals] class FutureImpl[T](override val id: Int) extends Future[T]:
+
+  override def value: AskerTaskContext[_, _, _, T] ?=> Option[T] =
+    summon[AskerTaskContext[_, _, _, T]]._futures.get().get(id)
 
 private[portals] object Future:
-  def apply[T](id: Int): Future[T] = new FutureImpl[T](id)
+  private val _rand = new scala.util.Random
+  private def generate_id: Int = { _rand.nextInt() }
+
+  def apply[T](): Future[T] = new FutureImpl[T](generate_id)

@@ -36,8 +36,8 @@ end CollectingTaskCallBack // class
 
 /** Internal API. TestRuntime wrapper of a Workflow. */
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
-  private var continuations = Map.empty[Int, Continuation[Any, Any, Any, Any]]
-  private var futures = Map.empty[Int, FutureImpl[Any]]
+  // private var continuations = Map.empty[Int, Continuation[Any, Any, Any, Any]]
+  // private var futures = Map.empty[Int, FutureImpl[Any]]
   private val tcb = CollectingTaskCallBack[Any, Any, Any, Any]()
   private val tctx = TaskContext[Any, Any]()
   tctx.cb = tcb
@@ -96,10 +96,10 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
                   tctx.key = key
                   tctx.state.key = key
                   task.onNext(using actx.asInstanceOf)(e.asInstanceOf)
-                  continuations ++= actx._continuations
-                  futures ++= actx._futures.asInstanceOf[Map[Int, FutureImpl[Any]]]
-                  actx._continuations = Map.empty
-                  actx._futures = Map.empty
+                // continuations ++= actx._continuations
+                // futures ++= actx._futures.asInstanceOf[Map[Int, FutureImpl[Any]]]
+                // actx._continuations = Map.empty
+                // actx._futures = Map.empty
                 case _: Task[?, ?] =>
                   tctx.key = key
                   tctx.state.key = key
@@ -223,7 +223,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
         case Ask(key, path, id, e) =>
           tctx.key = key
           tctx.state.key = key
-          val rctx = ReplierTaskContext.fromTaskContext(tctx)(tcb, input.portal)
+          val rctx = ReplierTaskContext.fromTaskContext(tctx, tcb)
           rctx.id = id
           task.asInstanceOf[ReplierTask[_, _, _, _]].f2(rctx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
@@ -264,14 +264,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
         case Reply(key, path, id, e) =>
           tctx.key = key
           tctx.state.key = key
-          futures(id)._value = Some(e)
-          continuations(id)(using actx)
-          continuations -= id
-          futures -= id
-          continuations ++= actx._continuations
-          futures ++= actx._futures.asInstanceOf[Map[Int, FutureImpl[Any]]]
-          actx._continuations = Map.empty
-          actx._futures = Map.empty
+          AskerTask.run_and_cleanup_reply(id, e)(using actx)
         case _ => ??? // NOPE
     }
 
