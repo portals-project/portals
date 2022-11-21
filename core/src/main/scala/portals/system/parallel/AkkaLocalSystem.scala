@@ -7,10 +7,24 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.util.Timeout
 
+import com.typesafe.config.ConfigFactory
+
 import portals.*
 
 abstract class AkkaLocalSystem extends PortalsSystem:
   import AkkaRunner.Events.*
+
+  // see https://doc.akka.io/docs/akka/current/coordinated-shutdown.html
+  val cf = ConfigFactory
+    .parseString(
+      s"""
+      akka.coordinated-shutdown.terminate-actor-system = off
+      akka.coordinated-shutdown.run-by-actor-system-terminate = off
+      akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
+      akka.cluster.run-coordinated-shutdown-when-down = off
+      """
+    )
+    .withFallback(ConfigFactory.defaultApplication)
 
   given timeout: Timeout = Timeout(3.seconds)
   given system: akka.actor.ActorSystem = akka.actor.ActorSystem("Portals")
