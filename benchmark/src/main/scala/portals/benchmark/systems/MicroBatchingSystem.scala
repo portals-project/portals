@@ -274,9 +274,13 @@ object MicroBatchingRunner extends AkkaRunner:
 
         // create task context
         given tctx: TaskContextImpl[T, U] = TaskContext[T, U]()
-        tctx.cb = new TaskCallback[T, U] {
-          def submit(key: Key[Int], event: U): Unit =
-            subscribers.foreach { sub => sub ! Event(path, portals.Event(tctx.key, event)) }
+        tctx.cb = new TaskCallback[T, U, Any, Any] {
+          def submit(event: WrappedEvent[U]): Unit =
+            subscribers.foreach { sub => sub ! Event(path, event) }
+
+          def ask(portal: AtomicPortalRefKind[Any, Any], req: Any, key: Key[Int], id: Int): Unit = ???
+
+          def reply(r: Any, key: Key[Int], id: Int): Unit = ???
         }
 
         val preparedTask = Tasks.prepareTask(task, tctx)

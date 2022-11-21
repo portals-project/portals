@@ -16,7 +16,7 @@ import portals.*
     case class Ping(x: Int) extends PingPong
     case class Pong(x: Int) extends PingPong
 
-    val generator = Generators.fromList(List(1024 * 4))
+    val generator = Generators.fromList(List(1024 * 1024))
 
     val portal = Portal[Ping, Pong]("portal")
 
@@ -35,7 +35,6 @@ import portals.*
       .askerRec[Int] { self => x =>
         val future: Future[Pong] = portal.ask(Ping(x))
         future.await {
-          ctx.log.info(future.value.toString())
           ctx.emit(future.value.get.x)
           if future.value.get.x > 0 then self(future.value.get.x)
         }

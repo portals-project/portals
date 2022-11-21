@@ -1,20 +1,22 @@
 package portals
 
 trait ReplierTaskContext[T, U, Req, Rep] extends TaskContext[T, U]:
-  private[portals] var id: Int = -1
+  /** should be var so that it can be swapped out during runtime */
+  private[portals] var id: Int = _
+
   def reply(r: Rep): Unit
 
 object ReplierTaskContext:
   def fromTaskContext[T, U, Req, Rep](
       ctx: TaskContext[T, U],
-      portalcb: PortalTaskCallback[T, U, Req, Rep]
+      tcb: TaskCallback[T, U, Req, Rep]
   ): ReplierTaskContext[T, U, Req, Rep] =
     new ReplierTaskContext[T, U, Req, Rep] {
       //////////////////////////////////////////////////////////////////////////
       // ReplierContext
       //////////////////////////////////////////////////////////////////////////
       override def reply(r: Rep): Unit =
-        portalcb.reply(r)(ctx.key, id)
+        tcb.reply(r, ctx.key, id)
 
       //////////////////////////////////////////////////////////////////////////
       // TaskContext

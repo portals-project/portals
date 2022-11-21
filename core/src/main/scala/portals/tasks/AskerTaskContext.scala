@@ -12,8 +12,9 @@ trait AskerTaskContext[T, U, Req, Rep] extends TaskContext[T, U]:
 
 object AskerTaskContext:
   def fromTaskContext[T, U, Req, Rep](
-      ctx: TaskContext[T, U]
-  )(portalcb: PortalTaskCallback[T, U, Req, Rep]): AskerTaskContext[T, U, Req, Rep] =
+      ctx: TaskContext[T, U],
+      tcb: TaskCallback[T, U, Req, Rep]
+  ): AskerTaskContext[T, U, Req, Rep] =
     new AskerTaskContext[T, U, Req, Rep] {
       //////////////////////////////////////////////////////////////////////////
       // AskerContext
@@ -25,7 +26,7 @@ object AskerTaskContext:
 
       override def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req): Future[Rep] =
         val f: Future[Rep] = Future()
-        portalcb.ask(portal)(req)(ctx.key, f.id)
+        tcb.ask(portal, req, ctx.key, f.id)
         f
 
       override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit =

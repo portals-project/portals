@@ -5,43 +5,42 @@ import portals.*
 /** Internal API. TaskCallback to collect submitted events as side effects. Works both for regular tasks and for
   * AskerTasks and ReplierTasks.
   */
-private class CollectingTaskCallBack[T, U, Req, Rep] extends TaskCallback[T, U] with PortalTaskCallback[T, U, Req, Rep]:
+private class CollectingTaskCallBack[T, U, Req, Rep] extends TaskCallback[T, U, Req, Rep]:
   //////////////////////////////////////////////////////////////////////////////
-  // TaskCallback
+  // Task
   //////////////////////////////////////////////////////////////////////////////
   private var _output = List.empty[WrappedEvent[U]]
-
-  // TODO: we can probably get rid of either submit or putEvent here...
-  def submit(key: Key[Int], event: U): Unit = _output = Event(key, event) :: _output
-  def putEvent(event: WrappedEvent[U]): Unit = _output = event :: _output
+  def submit(event: WrappedEvent[U]): Unit = _output = event :: _output
   def getOutput(): List[WrappedEvent[U]] = _output.reverse
   def clear(): Unit = _output = List.empty
 
   //////////////////////////////////////////////////////////////////////////////
-  // PortalTaskCallback
+  // Asker Task
   //////////////////////////////////////////////////////////////////////////////
   private var _asks = List.empty[Ask[Req]]
-  private var _reps = List.empty[Reply[Rep]]
-
-  // TODO: look into this unwieldy function signature
-  override def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req)(key: Key[Int], id: Int): Unit =
+  override def ask(portal: AtomicPortalRefKind[Req, Rep], req: Req, key: Key[Int], id: Int): Unit =
     _asks = Ask(key, portal.path, id, req) :: _asks
-  override def reply(r: Rep)(key: Key[Int], id: Int): Unit =
-    _reps = Reply(key, null, id, r) :: _reps
   def getAskOutput(): List[Ask[Req]] = _asks.reverse
-  def getRepOutput(): List[Reply[Rep]] = _reps.reverse
   def clearAsks(): Unit = _asks = List.empty
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Replier Task
+  //////////////////////////////////////////////////////////////////////////////
+  private var _reps = List.empty[Reply[Rep]]
+  override def reply(r: Rep, key: Key[Int], id: Int): Unit = _reps = Reply(key, null, id, r) :: _reps
+  def getRepOutput(): List[Reply[Rep]] = _reps.reverse
   def clearReps(): Unit = _reps = List.empty
 end CollectingTaskCallBack // class
 
 /** Internal API. TestRuntime wrapper of a Workflow. */
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
-  // private var continuations = Map.empty[Int, Continuation[Any, Any, Any, Any]]
-  // private var futures = Map.empty[Int, FutureImpl[Any]]
   private val tcb = CollectingTaskCallBack[Any, Any, Any, Any]()
   private val tctx = TaskContext[Any, Any]()
   tctx.cb = tcb
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Initialize the workflow
+  /////////////////////////////////////////////////////////////////////////////
   // Gets the ordinal of a path with respect to the topology of the graph.
   // To be used to sort the graph in topological order.
   private def getOrdinal(path: String): Int =
@@ -55,9 +54,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     (name, Tasks.prepareTask(task, tctx.asInstanceOf))
   }
   // clear any strange side-effects that happened during initialization
-  tcb.clear()
-  tcb.clearAsks()
-  tcb.clearReps()
+  tcb.clear(); tcb.clearAsks(); tcb.clearReps()
 
   /** Processes the atom, and produces a new list of atoms.
     *
@@ -66,9 +63,9 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     */
   def process(atom: TestAtom): List[TestAtom] =
     atom match
-      case a @ TestAtomBatch(_, _) => processAtomBatch(a)
-      case ask @ TestAskBatch(_, _, _, _) => processAskBatch(ask)
-      case reply @ TestRepBatch(_, _, _, _) => processReplyBatch(reply)
+      case x @ TestAtomBatch(_, _) => processAtomBatch(x)
+      case x @ TestAskBatch(_, _, _, _) => processAskBatch(x)
+      case x @ TestRepBatch(_, _, _, _) => processReplyBatch(x)
 
   /** Internal API. Process a task with inputs on the previous outputs. */
   private def processTask(
@@ -83,7 +80,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     var atomd = false
 
     // TODO: this needs to be outside of the loop for now, as we need to keep th id counter.
-    val actx = AskerTaskContext.fromTaskContext(tctx)(tcb)
+    val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
 
     inputs.foreach { input =>
       if outputs.contains(input) then
@@ -121,10 +118,10 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     if errord then ??? // TODO: how to handle errors?
     else if seald then
       task.onComplete(using tctx.asInstanceOf)
-      tcb.putEvent(Seal)
+      tcb.submit(Seal)
     else if atomd then
       task.onAtomComplete(using tctx.asInstanceOf)
-      tcb.putEvent(Atom)
+      tcb.submit(Atom)
 
     val output = tcb.getOutput()
     tcb.clear()
@@ -258,7 +255,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Internal API. Process a TestReplyBatch. Will process matched continuations. */
   private def processAskerTask(atom: TestRepBatch[_]): TestAtomBatch[_] = {
-    val actx = AskerTaskContext.fromTaskContext(tctx)(tcb)
+    val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
     atom.list.foreach { event =>
       event match
         case Reply(key, path, id, e) =>

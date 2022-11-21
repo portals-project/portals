@@ -1,11 +1,13 @@
 package portals
 
 // TODO: consider merging both Callbacks into one.
-trait TaskCallback[T, U]:
-  def submit(key: Key[Int], event: U): Unit
-end TaskCallback // trait
+trait TaskCallback[T, U, Req, Rep]:
+  // Task
+  def submit(event: WrappedEvent[U]): Unit
 
-trait PortalTaskCallback[T, U, Req, Rep] extends TaskCallback[T, U]:
-  def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req)(key: Key[Int], id: Int): Unit
-  def reply(r: Rep)(key: Key[Int], id: Int): Unit
-end PortalTaskCallback // trait
+  // Asker Task
+  def ask(portal: AtomicPortalRefKind[Req, Rep], req: Req, key: Key[Int], id: Int): Unit
+
+  // Replier Task
+  def reply(r: Rep, key: Key[Int], id: Int): Unit
+end TaskCallback // trait

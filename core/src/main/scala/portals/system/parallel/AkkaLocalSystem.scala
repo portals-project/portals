@@ -27,7 +27,7 @@ abstract class AkkaLocalSystem extends PortalsSystem:
     .withFallback(ConfigFactory.defaultApplication)
 
   given timeout: Timeout = Timeout(3.seconds)
-  given system: akka.actor.ActorSystem = akka.actor.ActorSystem("Portals")
+  given system: akka.actor.ActorSystem = akka.actor.ActorSystem("Portals", cf)
   given scheduler: akka.actor.typed.Scheduler = system.toTyped.scheduler
 
   var streams: Map[String, ActorRef[PubSubRequest]] = Map.empty
