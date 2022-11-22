@@ -266,15 +266,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
       }
       .toMap
 
-    // // process the AskBatch
-    // val output = processReplierTask(task, atom)
-    // process any generated events from this AskBatch
     val outputs2 = processAtomHelper(outputs1)
-    // set the correct asker and replier for any generated replies
-    // outputs2.map {
-    //   case TestRepBatch(portal, asker, replier, list) => TestRepBatch(portal, asker, replier, list)
-    //   case atom @ _ => atom
-    // }
     outputs2
   }
 
