@@ -213,10 +213,26 @@ object AkkaRunnerImpl extends AkkaRunner:
               subscribers.foreach { sub => sub ! Event(path, event) }
 
             // Asker Task
-            def ask(portal: AtomicPortalRefKind[Any, Any], req: Any, key: Key[Int], id: Int): Unit = ???
+            def ask(
+                portal: String,
+                portalAsker: String,
+                replier: String,
+                asker: String,
+                req: Any,
+                key: Key[Int],
+                id: Int
+            ): Unit = ???
 
             // Replier Task
-            def reply(r: Any, key: Key[Int], id: Int): Unit = ???
+            def reply(
+                r: Any,
+                portal: String,
+                portalAsker: String,
+                replier: String,
+                asker: String,
+                key: Key[Int],
+                id: Int
+            ): Unit = ???
           }
 
           // prepare task

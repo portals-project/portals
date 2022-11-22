@@ -8,7 +8,11 @@ import portals.*
 /** Internal API. The TestPortal connects the askers with the replier. The replier needs to be set dynamically by the
   * replying workflow.
   */
-private[portals] class TestPortal(portal: AtomicPortal[_, _], var replier: String = null)(using TestRuntimeContext):
+private[portals] class TestPortal(
+    portal: AtomicPortal[_, _],
+    var replier: String = null,
+    var replierTask: String = null
+)(using TestRuntimeContext):
   // A single queue is used both for the TestAskBatch and TestRepBatch events.
   // This is sufficient, as the events have information with respect to the asker and replier.
   private val queue: ArrayDeque[TestAtom] = ArrayDeque.empty
@@ -17,7 +21,16 @@ private[portals] class TestPortal(portal: AtomicPortal[_, _], var replier: Strin
   def enqueue(tp: TestAtom) = tp match {
     case TestAskBatch(portal, asker, _, list) =>
       // Here we set the replier to the replier, as this information is not known to the asking workflow.
-      queue.append(TestAskBatch(portal, asker, replier, list))
+      queue.append(
+        TestAskBatch(
+          portal,
+          asker,
+          replier,
+          list.map(x => {
+            val y = x.asInstanceOf[Ask[_]]; Ask(y.key, portal, asker, replierTask, y.asker, y.id, y.event)
+          })
+        )
+      )
     case TestRepBatch(_, _, _, _) =>
       queue.append(tp)
     case _ => ??? // not allowed

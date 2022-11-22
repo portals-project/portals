@@ -6,8 +6,8 @@ trait TaskCallback[T, U, Req, Rep]:
   def submit(event: WrappedEvent[U]): Unit
 
   // Asker Task
-  def ask(portal: AtomicPortalRefKind[Req, Rep], req: Req, key: Key[Int], id: Int): Unit
+  def ask(portal: String, portalAsker: String, replier: String, asker: String, req: Req, key: Key[Int], id: Int): Unit
 
   // Replier Task
-  def reply(r: Rep, key: Key[Int], id: Int): Unit
+  def reply(r: Rep, portal: String, portalAsker: String, replier: String, asker: String, key: Key[Int], id: Int): Unit
 end TaskCallback // trait

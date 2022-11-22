@@ -125,15 +125,15 @@ class TestRuntime:
       progressTracker.initProgress(wf.path, wf.consumes.path)
 
       // add portal dependencies
-      val portalz = wf.tasks.flatMap((name, task) =>
+      wf.tasks.foreach((name, task) =>
         task match
           case atask @ AskerTask(_) => List.empty
           case rtask @ ReplierTask(_, _) =>
             rtask.portals.toList
+            rctx.portals(rtask.portals.head.path).replier = wf.path
+            rctx.portals(rtask.portals.head.path).replierTask = name
           case _ => List.empty
       )
-      // we have to set the replier here, as this information is not known by the portal.
-      portalz.foreach { portal => rctx.portals(portal.path).replier = wf.path }
     }
 
     // launch sequencers

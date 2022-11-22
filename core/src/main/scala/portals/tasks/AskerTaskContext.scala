@@ -26,7 +26,7 @@ object AskerTaskContext:
 
       override def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req): Future[Rep] =
         val f: Future[Rep] = Future()
-        tcb.ask(portal, req, ctx.key, f.id)
+        tcb.ask(portal.path, null, null, this.path, req, ctx.key, f.id)
         f
 
       override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit =

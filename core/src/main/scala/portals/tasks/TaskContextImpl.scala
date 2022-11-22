@@ -12,6 +12,6 @@ private[portals] class TaskContextImpl[I, O] extends TaskContext[I, O]:
 
   private[portals] var key: Key[Int] = Key(-1) // TODO: make this set by the runtime
 
-  private[portals] var system: PortalsSystem = null
+  private[portals] var system: PortalsSystem = _
 
-  private[portals] var cb: TaskCallback[I, O, Any, Any] = null
+  private[portals] var cb: TaskCallback[I, O, Any, Any] = _

@@ -7,7 +7,9 @@ case object Atom extends WrappedEvent[Nothing]
 case object Seal extends WrappedEvent[Nothing]
 
 /** internal API */
-private[portals] case class Ask[T](key: Key[Int], path: String, id: Int, event: T) extends WrappedEvent[T]
+private[portals] case class Ask[T](key: Key[Int], portal: String, portalAsker: String, replier: String, asker: String, id: Int, event: T)
+    extends WrappedEvent[T]
 
 /** internal API */
-private[portals] case class Reply[T](key: Key[Int], path: String, id: Int, event: T) extends WrappedEvent[T]
+private[portals] case class Reply[T](key: Key[Int], portal: String, portalAsker: String, replier: String, asker: String, id: Int, event: T)
+    extends WrappedEvent[T]

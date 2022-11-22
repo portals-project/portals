@@ -18,6 +18,7 @@ abstract class AkkaLocalSystem extends PortalsSystem:
   val cf = ConfigFactory
     .parseString(
       s"""
+      akka.log-dead-letters-during-shutdown = off
       akka.coordinated-shutdown.terminate-actor-system = off
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
       akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off

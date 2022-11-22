@@ -18,8 +18,16 @@ private class CollectingTaskCallBack[T, U, Req, Rep] extends TaskCallback[T, U, 
   // Asker Task
   //////////////////////////////////////////////////////////////////////////////
   private var _asks = List.empty[Ask[Req]]
-  override def ask(portal: AtomicPortalRefKind[Req, Rep], req: Req, key: Key[Int], id: Int): Unit =
-    _asks = Ask(key, portal.path, id, req) :: _asks
+  override def ask(
+      portal: String,
+      portalAsker: String,
+      replier: String,
+      asker: String,
+      req: Req,
+      key: Key[Int],
+      id: Int
+  ): Unit =
+    _asks = Ask(key, portal, portalAsker, replier, asker, id, req) :: _asks
   def getAskOutput(): List[Ask[Req]] = _asks.reverse
   def clearAsks(): Unit = _asks = List.empty
 
@@ -27,7 +35,15 @@ private class CollectingTaskCallBack[T, U, Req, Rep] extends TaskCallback[T, U, 
   // Replier Task
   //////////////////////////////////////////////////////////////////////////////
   private var _reps = List.empty[Reply[Rep]]
-  override def reply(r: Rep, key: Key[Int], id: Int): Unit = _reps = Reply(key, null, id, r) :: _reps
+  override def reply(
+      r: Rep,
+      portal: String,
+      portalAsker: String,
+      replier: String,
+      asker: String,
+      key: Key[Int],
+      id: Int
+  ): Unit = _reps = Reply(key, portal, portalAsker, replier, asker, id, r) :: _reps
   def getRepOutput(): List[Reply[Rep]] = _reps.reverse
   def clearReps(): Unit = _reps = List.empty
 end CollectingTaskCallBack // class
@@ -36,6 +52,8 @@ end CollectingTaskCallBack // class
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   private val tcb = CollectingTaskCallBack[Any, Any, Any, Any]()
   private val tctx = TaskContext[Any, Any]()
+  val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
+  val rectx = ReplierTaskContext.fromTaskContext(tctx, tcb)
   tctx.cb = tcb
 
   //////////////////////////////////////////////////////////////////////////////
@@ -75,12 +93,10 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
       outputs: Map[String, TestAtomBatch[_]],
   ): TestAtomBatch[_] = {
 
+    // if the task has sealed, errored, or processed a full atom.
     var seald = false
     var errord = false
     var atomd = false
-
-    // TODO: this needs to be outside of the loop for now, as we need to keep th id counter.
-    val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
 
     inputs.foreach { input =>
       if outputs.contains(input) then
@@ -90,16 +106,14 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
             case Event(key, e) =>
               task match {
                 case _: AskerTask[_, _, _, _] =>
-                  tctx.key = key
-                  tctx.state.key = key
+                  actx.key = key
+                  actx.state.key = key
+                  actx.path = path
                   task.onNext(using actx.asInstanceOf)(e.asInstanceOf)
-                // continuations ++= actx._continuations
-                // futures ++= actx._futures.asInstanceOf[Map[Int, FutureImpl[Any]]]
-                // actx._continuations = Map.empty
-                // actx._futures = Map.empty
                 case _: Task[?, ?] =>
                   tctx.key = key
                   tctx.state.key = key
+                  tctx.path = path
                   task.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
               }
             case Atom =>
@@ -125,7 +139,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
     val output = tcb.getOutput()
     tcb.clear()
-    TestAtomBatch("ASDF", output)
+    TestAtomBatch(null, output)
   }
 
   /** Internal API. Process a sink with inputs on the previous outputs. */
@@ -198,9 +212,17 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     ////////////////////////////////////////////////////////////////////////////
     val askAndReplyOutputs = {
       val askoutputs =
-        tcb.getAskOutput().groupBy(e => e.path).map { (k, v) => TestAskBatch(k, wf.path, null, v) }.toList
+        tcb
+          .getAskOutput()
+          .groupBy(e => (e.portal, e.replier))
+          .map { (k, v) => TestAskBatch(k._1, wf.path, k._2, v) }
+          .toList
       val repoutputs =
-        tcb.getRepOutput().groupBy(e => e.path).map { (k, v) => TestRepBatch(k, k, wf.path, v) }.toList
+        tcb
+          .getRepOutput()
+          .groupBy(e => (e.portal, e.portalAsker))
+          .map { (k, v) => TestRepBatch(k._1, k._2, wf.path, v) }
+          .toList
       askoutputs ::: repoutputs
     }
 
@@ -217,12 +239,15 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   private def processReplierTask(task: Task[_, _], input: TestAskBatch[_]): TestAtomBatch[_] = {
     input.list.foreach { event =>
       event match
-        case Ask(key, path, id, e) =>
-          tctx.key = key
-          tctx.state.key = key
-          val rctx = ReplierTaskContext.fromTaskContext(tctx, tcb)
-          rctx.id = id
-          task.asInstanceOf[ReplierTask[_, _, _, _]].f2(rctx.asInstanceOf)(e.asInstanceOf)
+        case Ask(key, portal, portalAsker, replier, asker, id, e) =>
+          rectx.key = key
+          rectx.state.key = key
+          rectx.path = replier
+          rectx.id = id
+          rectx.asker = asker
+          rectx.portal = portal
+          rectx.portalAsker = portalAsker
+          task.asInstanceOf[ReplierTask[_, _, _, _]].f2(rectx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
     }
     val output = tcb.getOutput()
@@ -232,35 +257,35 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Internal API. Process a TestAskBatch. */
   private def processAskBatch(atom: TestAskBatch[_]): List[TestAtom] = {
-    // TODO: we need a better way of finding the corresponding asking / replying task, this should be in the batch metadata.
-    val (name, task) = initializedTasks
-      .filter((name, task) =>
-        task match
-          case ReplierTask(f1, f2) => true
-          case AskerTask(f) => false
-          case _ => false
-      )
-      .head
-
     // process the AskBatch
-    val output = processReplierTask(task, atom)
+    val outputs1 = atom.list
+      .groupBy(_.asInstanceOf[Ask[_]].replier)
+      .map { (replier, batch) =>
+        val task = initializedTasks.toMap.get(replier).get // TODO: optimize :))))
+        (replier, processReplierTask(task, TestAskBatch(replier, atom.asker, replier, batch)))
+      }
+      .toMap
+
+    // // process the AskBatch
+    // val output = processReplierTask(task, atom)
     // process any generated events from this AskBatch
-    val outputs = processAtomHelper(Map(name -> output))
+    val outputs2 = processAtomHelper(outputs1)
     // set the correct asker and replier for any generated replies
-    outputs.map {
-      case TestRepBatch(_, _, _, list) => TestRepBatch(atom.portal, atom.asker, atom.replier, list)
-      case atom @ _ => atom
-    }
+    // outputs2.map {
+    //   case TestRepBatch(portal, asker, replier, list) => TestRepBatch(portal, asker, replier, list)
+    //   case atom @ _ => atom
+    // }
+    outputs2
   }
 
   /** Internal API. Process a TestReplyBatch. Will process matched continuations. */
-  private def processAskerTask(atom: TestRepBatch[_]): TestAtomBatch[_] = {
-    val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
+  private def processAskerTask(path: String, atom: TestRepBatch[_]): TestAtomBatch[_] = {
     atom.list.foreach { event =>
       event match
-        case Reply(key, path, id, e) =>
-          tctx.key = key
-          tctx.state.key = key
+        case Reply(key, portal, portalAsker, replier, asker, id, e) =>
+          actx.key = key
+          actx.state.key = key
+          actx.path = path
           AskerTask.run_and_cleanup_reply(id, e)(using actx)
         case _ => ??? // NOPE
     }
@@ -272,16 +297,13 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Internal API. Process a TestReplyBatch. */
   private def processReplyBatch(atom: TestRepBatch[_]): List[TestAtom] = {
-    val (taskName, _) = wf.tasks
-      .filter((name, task) =>
-        task match
-          case AskerTask(_) => true
-          case _ => false
-      )
-      .head
-
-    val output = processAskerTask(atom)
-    processAtomHelper(Map(taskName -> output))
+    val outputs = atom.list
+      .groupBy(_.asInstanceOf[Reply[_]].asker)
+      .map { (asker, batch) =>
+        (asker, processAskerTask(asker, TestRepBatch(atom.portal, atom.asker, atom.replier, batch)))
+      }
+      .toMap
+    processAtomHelper(outputs)
   }
 
   /** Internal API. Processes a TestAtomBatch on the workflow. */
