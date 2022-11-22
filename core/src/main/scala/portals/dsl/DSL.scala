@@ -78,6 +78,10 @@ object DSL:
       def empty[T]: AtomicGeneratorRef[T] = gb.fromList(List.empty)
     }
 
+    extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
+      def empty[NU](): FlowBuilder[T, U, CU, NU] = fb.flatMap(_ => List.empty[NU])
+    }
+
     extension [Rep](future: Future[Rep]) {
       def await[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
           f: AskerTaskContext[T, U, Req, Rep] ?=> Unit
