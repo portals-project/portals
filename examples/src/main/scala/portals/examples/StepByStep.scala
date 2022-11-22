@@ -31,6 +31,7 @@ import portals.*
     val generator =
       Generators.fromIteratorOfIterators[Unit](Iterator.continually(Iterator.single(())))
 
+    // The workflow takes steps over atoms, and for every new atom it will output the next line in the lyric to the log
     Workflows[Unit, Nothing]("stepper")
       .source(generator.stream)
       .task(Tasks.processor { _ => log.info(lyrics(0)) })
