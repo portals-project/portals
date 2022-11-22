@@ -277,8 +277,10 @@ object MicroBatchingRunner extends AkkaRunner:
         tctx.cb = new TaskCallback[T, U, Any, Any] {
           def submit(event: WrappedEvent[U]): Unit =
             subscribers.foreach { sub => sub ! Event(path, event) }
-          def ask(portal: String, replier: String, asker: String, req: Any, key: Key[Int], id: Int): Unit = ???
-          def reply(r: Any, portal: String, replier: String, asker: String, key: Key[Int], id: Int): Unit = ???
+          def ask(portal: String, portalAsker: String, replier: String, asker: String, req: Any, key: Key[Int], id: Int)
+              : Unit = ???
+          def reply(r: Any, portal: String, portalAsker: String, replier: String, asker: String, key: Key[Int], id: Int)
+              : Unit = ???
         }
 
         val preparedTask = Tasks.prepareTask(task, tctx)
