@@ -210,7 +210,7 @@ class PortalTest:
         .portal(portal2)
         .replier[Nothing] { _ => () } { case Ping(x) =>
           testerReplier2.enqueueEvent(x)
-          reply(Pong(x - 1))
+          reply(Pong(x - 2))
         }
         .sink()
 
@@ -246,10 +246,14 @@ class PortalTest:
 
     Range(1024, 0, -1).foreach { x =>
       testerReplier1.receiveAssert(x)
-      testerReplier2.receiveAssert(x)
       testerAsker1.receiveAssert(x - 1)
-      testerAsker2.receiveAssert(x - 1)
     }
+
+    Range(1024, 0, -2).foreach { x =>
+      testerReplier2.receiveAssert(x)
+      testerAsker2.receiveAssert(x - 2)
+    }
+
     testerReplier1.isEmptyAssert()
     testerReplier2.isEmptyAssert()
     testerAsker1.isEmptyAssert()
