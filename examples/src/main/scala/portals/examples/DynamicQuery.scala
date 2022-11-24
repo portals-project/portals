@@ -44,10 +44,12 @@ import portals.*
       .source(queryTrigger.stream)
       .portal(portal)
       .asker[Nothing] { x =>
+        // query the aggregate
         val future: Future[QueryReply] = portal.ask(Query())
         future.await {
           future.value.get match
             case QueryReply(x) =>
+              // print the aggregate to log
               ctx.log.info(x.toString())
         }
       }
