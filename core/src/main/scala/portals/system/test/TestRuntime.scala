@@ -1,5 +1,7 @@
 package portals.system.test
 
+import scala.util.Random
+
 import portals.*
 
 /** Internal API. Holds runtime information of the executed applications. */
@@ -97,6 +99,7 @@ class TestRuntime:
   private val progressTracker = TestProgressTracker()
   private val streamTracker = TestStreamTracker()
   private val graphTracker = TestGraphTracker()
+  private val rnd = new Random()
 
   /** The current step number of the execution. */
   private var _stepN: Long = 0
@@ -191,7 +194,14 @@ class TestRuntime:
     rctx.sequencers.find((path, seqr) => hasInput(path))
 
   private def chooseGenerator(): Option[(String, TestGenerator)] =
-    rctx.generators.find((path, genr) => genr.generator.generator.hasNext())
+    // random generator selection
+    val nxt = rnd.nextInt(rctx.generators.size)
+    rctx.generators.toIndexedSeq.drop(nxt).find((path, genr) => genr.generator.generator.hasNext()) match
+      case Some(v) => Some(v)
+      case None =>
+        rctx.generators.toIndexedSeq.take(nxt).find((path, genr) => genr.generator.generator.hasNext()) match
+          case Some(v) => Some(v)
+          case None => None
 
   private def distributeAtoms(listOfAtoms: List[TestAtom]): Unit =
     listOfAtoms.foreach {
