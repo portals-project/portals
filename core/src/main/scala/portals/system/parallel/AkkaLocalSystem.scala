@@ -14,7 +14,6 @@ import portals.*
 abstract class AkkaLocalSystem extends PortalsSystem:
   import AkkaRunner.Events.*
 
-  // see https://doc.akka.io/docs/akka/current/coordinated-shutdown.html
   val cf = ConfigFactory
     .parseString(
       s"""
@@ -26,6 +25,11 @@ abstract class AkkaLocalSystem extends PortalsSystem:
       """
     )
     .withFallback(ConfigFactory.defaultApplication)
+
+  // options for setting parallelism for Akka.
+  // actor.default-dispatcher.fork-join-executor.parallelism-min = ${parallelism}
+  // actor.default-dispatcher.fork-join-executor.parallelism-max = ${parallelism}
+  // actor.default-dispatcher.fork-join-executor.parallelism-factor = 1.0
 
   given timeout: Timeout = Timeout(3.seconds)
   given system: akka.actor.ActorSystem = akka.actor.ActorSystem("Portals", cf)

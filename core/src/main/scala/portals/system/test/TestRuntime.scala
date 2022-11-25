@@ -94,12 +94,12 @@ private[portals] class TestStreamTracker:
   /** Returns the progress of a stream as an optional range <From, To>, for which the range is inclusive. */
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
-class TestRuntime:
+class TestRuntime(val seed: Option[Int] = None):
   private val rctx = new TestRuntimeContext()
   private val progressTracker = TestProgressTracker()
   private val streamTracker = TestStreamTracker()
   private val graphTracker = TestGraphTracker()
-  private val rnd = new Random()
+  private val rnd = seed.map(new Random(_)).getOrElse(new Random())
 
   /** The current step number of the execution. */
   private var _stepN: Long = 0
@@ -184,24 +184,28 @@ class TestRuntime:
     val inputs = graphTracker.getInputs(path).get
     inputs.exists(inpt => hasInput(path, inpt))
 
+  private inline def randomSelection[T](from: Map[String, T], predicate: (String, T) => Boolean): Option[(String, T)] =
+    if from.size == 0 then None
+    else
+      val nxt = rnd.nextInt(from.size)
+      from.drop(nxt).find((s, t) => predicate(s, t)) match
+        case x @ Some(v) => x
+        case None =>
+          from.take(nxt).find((s, t) => predicate(s, t)) match
+            case x @ Some(v) => x
+            case None => None
+
   private def choosePortal(): Option[(String, TestPortal)] =
-    rctx.portals.find((path, portal) => !portal.isEmpty)
+    randomSelection(rctx.portals, (path, portal) => !portal.isEmpty)
 
   private def chooseWorkflow(): Option[(String, TestWorkflow)] =
-    rctx.workflows.find((path, wf) => hasInput(path))
+    randomSelection(rctx.workflows, (path, wf) => hasInput(path))
 
   private def chooseSequencer(): Option[(String, TestSequencer)] =
-    rctx.sequencers.find((path, seqr) => hasInput(path))
+    randomSelection(rctx.sequencers, (path, seqr) => hasInput(path))
 
   private def chooseGenerator(): Option[(String, TestGenerator)] =
-    // random generator selection
-    val nxt = rnd.nextInt(rctx.generators.size)
-    rctx.generators.toIndexedSeq.drop(nxt).find((path, genr) => genr.generator.generator.hasNext()) match
-      case Some(v) => Some(v)
-      case None =>
-        rctx.generators.toIndexedSeq.take(nxt).find((path, genr) => genr.generator.generator.hasNext()) match
-          case Some(v) => Some(v)
-          case None => None
+    randomSelection(rctx.generators, (path, genr) => genr.generator.generator.hasNext())
 
   private def distributeAtoms(listOfAtoms: List[TestAtom]): Unit =
     listOfAtoms.foreach {

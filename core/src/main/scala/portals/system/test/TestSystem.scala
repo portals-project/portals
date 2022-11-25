@@ -6,8 +6,8 @@ import portals.*
   * computation by taking steps over atoms. Alternatively, the computation can be carried out until the end by stepping
   * until it has completed.
   */
-class TestSystem() extends PortalsSystem:
-  private val runtime = TestRuntime()
+class TestSystem(seed: Option[Int] = None) extends PortalsSystem:
+  private val runtime = TestRuntime(seed)
 
   /** Launch a Portals application. */
   def launch(application: Application): Unit = runtime.launch(application)

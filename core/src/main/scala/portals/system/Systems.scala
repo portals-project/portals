@@ -10,6 +10,9 @@ object Systems extends Systems:
 
   def test(): TestSystem = new TestSystem()
 
+  def test(seed: Int): TestSystem = new TestSystem(Some(seed))
+
+  // TODO: create test utilities to test both runtimes at the same time.
   // def test(): TestSystem =
   //   val _x = new ParallelSystem
   //   new TestSystem {
