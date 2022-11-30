@@ -19,7 +19,7 @@ object ReplierTaskContext:
       // ReplierContext
       //////////////////////////////////////////////////////////////////////////
       override def reply(r: Rep): Unit =
-        tcb.reply(r, this.portal, this.portalAsker, this.path, this.asker, ctx.key, id)
+        tcb.reply(r, this.portal, this.asker, ctx.key, id)
 
       //////////////////////////////////////////////////////////////////////////
       // TaskContext

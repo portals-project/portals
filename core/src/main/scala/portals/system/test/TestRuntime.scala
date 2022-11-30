@@ -100,6 +100,7 @@ class TestRuntime(val seed: Option[Int] = None):
   private val streamTracker = TestStreamTracker()
   private val graphTracker = TestGraphTracker()
   private val rnd = seed.map(new Random(_)).getOrElse(new Random())
+  private var portalTracker: Map[String, String] = Map.empty // from portal to wf
 
   /** The current step number of the execution. */
   private var _stepN: Long = 0
@@ -212,23 +213,23 @@ class TestRuntime(val seed: Option[Int] = None):
       case ta @ TestAtomBatch(path, list) =>
         rctx.streams(path).enqueue(ta)
         streamTracker.incrementProgress(path)
-      case tpa @ TestAskBatch(portal, _, _, _) =>
-        rctx.portals(portal).enqueue(tpa)
-      case tpr @ TestRepBatch(portal, _, _, _) =>
-        rctx.portals(portal).enqueue(tpr)
+      case tpa @ TestAskBatch(meta, _) =>
+        rctx.portals(meta.portal).enqueue(tpa)
+      case tpr @ TestRepBatch(meta, _) =>
+        rctx.portals(meta.portal).enqueue(tpr)
     }
 
   private def stepPortal(path: String, portal: TestPortal): Unit =
     // dequeue the head event of the Portal
     portal.dequeue().get match
       // 1) if it is a TestAskBatch, then execute the replying workflow
-      case tpa @ TestAskBatch(_, _, replier, _) =>
-        val wf = rctx.workflows(replier)
+      case tpa @ TestAskBatch(meta, _) =>
+        val wf = rctx.workflows(portal.replier)
         val outputAtoms = wf.process(tpa)
         distributeAtoms(outputAtoms)
       // 2) if it is a TestRepBatch, then execute the asking workflow
-      case tpr @ TestRepBatch(_, asker, _, _) =>
-        val wf = rctx.workflows(asker)
+      case tpr @ TestRepBatch(meta, _) =>
+        val wf = rctx.workflows(meta.askingWF)
         val outputAtoms = wf.process(tpr)
         distributeAtoms(outputAtoms)
       case _ => ??? // should not happen

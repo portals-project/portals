@@ -19,19 +19,20 @@ private[portals] class TestPortal(
 
   /** Enqueue an atom. */
   def enqueue(tp: TestAtom) = tp match {
-    case TestAskBatch(portal, asker, _, list) =>
-      // Here we set the replier to the replier, as this information is not known to the asking workflow.
-      queue.append(
-        TestAskBatch(
-          portal,
-          asker,
-          replier,
-          list.map(x => {
-            val y = x.asInstanceOf[Ask[_]]; Ask(y.key, portal, asker, replierTask, y.asker, y.id, y.event)
-          })
-        )
-      )
-    case TestRepBatch(_, _, _, _) =>
+    case TestAskBatch(meta, list) =>
+      queue.append(tp)
+    // Here we set the replier to the replier, as this information is not known to the asking workflow.
+    // queue.append(
+    //   TestAskBatch(
+    //     portal,
+    //     asker,
+    //     replier,
+    //     list.map(x => {
+    //       val y = x.asInstanceOf[Ask[_]]; Ask(y.key, portal, asker, replierTask, y.asker, y.id, y.event)
+    //     })
+    //   )
+    // )
+    case TestRepBatch(_, _) =>
       queue.append(tp)
     case _ => ??? // not allowed
   }
