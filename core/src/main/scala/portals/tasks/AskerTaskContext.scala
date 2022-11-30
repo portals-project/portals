@@ -26,7 +26,6 @@ object AskerTaskContext:
 
       override def ask(portal: AtomicPortalRefKind[Req, Rep])(req: Req): Future[Rep] =
         val f: Future[Rep] = Future()
-        println("MYPATH:   " + ctx.path)
         tcb.ask(portal.path, ctx.path, req, ctx.key, f.id)
         f
 

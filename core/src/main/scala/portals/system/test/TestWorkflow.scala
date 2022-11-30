@@ -133,7 +133,6 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
                   actx.key = key
                   actx.state.key = key
                   actx.path = path
-                  println ("PROCESSING ASKER TASK WITH: " + tctx.path + actx.path)
                   task.onNext(using actx.asInstanceOf)(e.asInstanceOf)
                 case _: Task[?, ?] =>
                   tctx.key = key
@@ -255,8 +254,6 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
       askoutputs ::: repoutputs
     }
 
-    println("askAndReplyOutputs: " + askAndReplyOutputs)
-
     ////////////////////////////////////////////////////////////////////////////
     // 4. Cleanup and Return
     ////////////////////////////////////////////////////////////////////////////
@@ -279,7 +276,6 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           rectx.id = meta.id
           rectx.asker = meta.askingTask
           rectx.portal = meta.portal
-          println("ASKER    L    :" + rectx.asker)
           // rectx.portalAsker = portalAsker
           task.asInstanceOf[ReplierTask[_, _, _, _]].f2(rectx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
@@ -291,8 +287,6 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Internal API. Process a TestAskBatch. */
   private def processAskBatch(atom: TestAskBatch[_]): List[TestAtom] = {
-    // println(atom)
-    // println(wctx.portalMap)
     wctx.info = atom.meta
     // process the AskBatch
     val taskName = wctx.portalMap(atom.meta.portal)
@@ -315,7 +309,6 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           actx.key = key
           actx.state.key = key
           actx.path = path
-          println("PROCESSING ASKER TASK FROM REPLY: " + tctx.path + actx.path)
           AskerTask.run_and_cleanup_reply(meta.id, e)(using actx)
         case _ => ??? // NOPE
     }
@@ -333,8 +326,6 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
         (asker, processAskerTask(asker, TestRepBatch(atom.meta, batch)))
       }
       .toMap
-    println("atom " + atom)
-    println("outputs " + outputs)
     processAtomHelper(outputs)
   }
 
