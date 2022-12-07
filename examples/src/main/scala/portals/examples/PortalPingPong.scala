@@ -16,7 +16,7 @@ import portals.*
     case class Ping(x: Int) extends PingPong
     case class Pong(x: Int) extends PingPong
 
-    val generator = Generators.fromList(List(1024*1024))
+    val generator = Generators.fromList(List(1024 * 1024))
 
     val portal = Portal[Ping, Pong]("portal")
 
