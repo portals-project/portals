@@ -100,7 +100,6 @@ class TestRuntime(val seed: Option[Int] = None):
   private val streamTracker = TestStreamTracker()
   private val graphTracker = TestGraphTracker()
   private val rnd = seed.map(new Random(_)).getOrElse(new Random())
-  private var portalTracker: Map[String, String] = Map.empty // from portal to wf
 
   /** The current step number of the execution. */
   private var _stepN: Long = 0

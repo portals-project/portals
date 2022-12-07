@@ -75,7 +75,6 @@ class PerTaskStateImpl[T](name: String, initValue: T)(using TaskContext[_, _]) e
 end PerTaskStateImpl // class
 
 // TODO: implement more efficient Map interface
-// TODO: this is an experimental interface
 extension [K, V](state: PerTaskState[Map[K, V]]) {
   def get(key: K): Option[V] = state.get().get(key)
 

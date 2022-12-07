@@ -1,6 +1,5 @@
 package portals
 
-// TODO: consider merging both Callbacks into one.
 trait TaskCallback[T, U, Req, Rep]:
   // Task
   def submit(event: WrappedEvent[U]): Unit
