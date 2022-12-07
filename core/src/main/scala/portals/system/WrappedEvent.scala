@@ -36,6 +36,6 @@ private[portals] case class Reply[T](
     // replier: String,
     // asker: String,
     // id: Int,
-    
+
     event: T
 ) extends WrappedEvent[T]
