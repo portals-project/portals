@@ -1,6 +1,7 @@
 package portals
 
 private[portals] trait Task[T, U]:
+
   def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U]
 
   def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U]

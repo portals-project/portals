@@ -218,6 +218,7 @@ object MicroBatchingRunner extends AkkaRunner:
                 throw t
                 // Behaviors.stopped
                 Behaviors.same // we don't stop here as otherwise we might not finish the previous batch
+              case _ => ???
         }
       }
 
@@ -256,6 +257,7 @@ object MicroBatchingRunner extends AkkaRunner:
               subscribers.foreach(_ ! Event(path, event))
               throw t
               Behaviors.stopped
+            case _ => ???
         }
       }
 
@@ -272,10 +274,11 @@ object MicroBatchingRunner extends AkkaRunner:
 
         // create task context
         given tctx: TaskContextImpl[T, U] = TaskContext[T, U]()
-        tctx.cb = new TaskCallback[T, U] {
-          def submit(key: Key[Int], event: U): Unit =
-            subscribers.foreach { sub => sub ! Event(path, portals.Event(tctx.key, event)) }
-          def fuse(): Unit = () // do nothing, for now, but deprecated, remove it.
+        tctx.cb = new TaskCallback[T, U, Any, Any] {
+          def submit(event: WrappedEvent[U]): Unit =
+            subscribers.foreach { sub => sub ! Event(path, event) }
+          def ask(portal: String, asker: String, req: Any, key: Key[Int], id: Int): Unit = ???
+          def reply(r: Any, portal: String, asker: String, key: Key[Int], id: Int): Unit = ???
         }
 
         val preparedTask = Tasks.prepareTask(task, tctx)
@@ -305,6 +308,7 @@ object MicroBatchingRunner extends AkkaRunner:
               preparedTask.onError(t)
               subscribers.foreach { sub => sub ! Event(path, portals.Error(t)) }
               Behaviors.stopped
+            case _ => ???
         }
       }
   end AtomicTaskExecutor

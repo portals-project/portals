@@ -240,7 +240,6 @@ class FlowBuilderTest:
       }
         .withOnAtomComplete { ctx ?=>
           ctx.emit(PerTaskState("counter", 0).get())
-          ctx.fuse()
           Tasks.same
         }
     }
@@ -273,7 +272,6 @@ class FlowBuilderTest:
         .map { _ + 3 }
         .allWithOnAtomComplete { ctx ?=>
           ctx.emit(0)
-          ctx.fuse()
           Tasks.same
         }
     }

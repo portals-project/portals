@@ -100,10 +100,7 @@ object Tasks extends Tasks:
     override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] = Tasks.same
     override def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U] = Tasks.same
     override def onComplete(using ctx: TaskContext[T, U]): Task[T, U] = Tasks.same
-    override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] =
-      // TODO: we should remove ctx.fuse() from here, but this currently breaks the tests
-      ctx.fuse()
-      Tasks.same
+    override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] = Tasks.same
 
   //////////////////////////////////////////////////////////////////////////////
   // Checks and Preparations
@@ -305,7 +302,6 @@ object WithAndThenExtension:
       override def state: TaskState[Any, Any] = _ctx.state
       override def emit(event: U) = emitted = emitted :+ event
       override def log: Logger = _ctx.log
-      override private[portals] def fuse(): Unit = ???
       private[portals] var key: portals.Key[Int] = ctx.key
       private[portals] var path: String = ctx.path
       private[portals] var system: portals.PortalsSystem = ctx.system
@@ -372,25 +368,58 @@ export WithWrapperExtension.*
 ////////////////////////////////////////////////////////////////////////////////
 /** Portals Extension. */
 object PortalsExtension:
-  class PortalsTasks[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])]():
-    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep, Portals] ?=> T => Task[T, U]): Task[T, U] =
-      Tasks.same // TODO: implement
+  import Tasks.*
 
-    def replier[T, U](f1: TaskContext[T, U] ?=> T => Task[T, U])(
-        f2: ReplierTaskContext[T, U, Req, Rep, Portals] ?=> Req => Task[T, U]
-    ): Task[T, U] =
-      Tasks.same // TODO: implement
+  class PortalsTasks[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*):
+    def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => Unit): AskerTask[T, U, Req, Rep] =
+      new AskerTask[T, U, Req, Rep](ctx => f(using ctx))(portals: _*)
+
+    def replier[T, U](f1: TaskContext[T, U] ?=> T => Unit)(
+        f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => Unit
+    ): ReplierTask[T, U, Req, Rep] =
+      new ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))(portals: _*)
 
   extension (t: Tasks) {
-    // Note: I prefer the name `portals` here, but there is a name conflict with the package `portals` if we import this method here.
-    // Note: here we have added this extra step via `portal`, the reason is that we don't want the user
-    // to have to specify the types for the portals here (as they are singleton types),
-    // yet we want to enable the user to specify the processing types T U, which they can
-    // do in the next step. The types for the portals Req, Rep, are inferred from the passed
-    // portals that are created using these types. For now the Req and Rep types have to match,
-    // but we can make it so that they can be different in the future.
-    def portal[Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](portals: Portals*) =
-      new PortalsTasks[Req, Rep, Portals]()
+    /* Note: the reason we have this extra step via `portal` is to avoid the user having to specify the Req and Rep types. */
+    def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) =
+      new PortalsTasks[Req, Rep](portals: _*)
   }
+
+  private[portals] case class AskerTask[T, U, Req, Rep](
+      f: AskerTaskContext[T, U, Req, Rep] => T => Unit
+  )(val portals: AtomicPortalRefType[Req, Rep]*)
+      extends BaseTask[T, U]:
+
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
+      f(ctx.asInstanceOf)(t)
+      Tasks.same
+
+  private[portals] object AskerTask:
+    private[portals] def run_and_cleanup_reply[T, U, Req, Rep](id: Int, r: Rep)(using
+        actx: AskerTaskContext[T, U, Req, Rep]
+    ): Unit =
+      // set future
+      actx._futures.update(id, r)
+      // run continuation
+      actx._continuations.get(id).get(using actx)
+      // cleanup future
+      actx._futures.remove(id)
+      // cleanup continuation
+      actx._continuations.remove(id)
+
+  private[portals] case class ReplierTask[T, U, Req, Rep](
+      f1: TaskContext[T, U] => T => Unit,
+      f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit
+  )(val portals: AtomicPortalRefType[Req, Rep]*)
+      extends BaseTask[T, U]:
+
+    // TODO: this is not used, AFAIK by the runtime, either use it or loose it :p.
+    def requestingOnNext(using ctx: ReplierTaskContext[T, U, Req, Rep])(req: Req): Unit =
+      f2(ctx)(req)
+
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
+      f1(ctx)(t)
+      Tasks.same
+
 end PortalsExtension
 export PortalsExtension.*

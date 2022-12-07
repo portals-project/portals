@@ -1,7 +1,8 @@
 package portals
 
-object DSL:
+import scala.annotation.experimental
 
+object DSL:
   //////////////////////////////////////////////////////////////////////////////
   // Tasks DSL
   //////////////////////////////////////////////////////////////////////////////
@@ -23,22 +24,108 @@ object DSL:
   // Portals DSL
   //////////////////////////////////////////////////////////////////////////////
 
-  def ask[T, U, Req, Rep, Portals <: AtomicPortalRefType[Req, Rep]](using
-      ctx: AskerTaskContext[T, U, Req, Rep, Portals]
-  )(portal: Portals)(req: Req): Unit = ctx.ask(portal)(req)
+  def ask[T, U, Req, Rep](using
+      ctx: AskerTaskContext[T, U, Req, Rep]
+  )(portal: AtomicPortalRefType[Req, Rep])(req: Req): Unit = ctx.ask(portal)(req)
 
-  def reply[T, U, Req, Rep, Portals <: AtomicPortalRefType[Req, Rep]](using
-      ctx: ReplierTaskContext[T, U, Req, Rep, Portals]
+  def reply[T, U, Req, Rep](using
+      ctx: ReplierTaskContext[T, U, Req, Rep]
   )(rep: Rep): Unit = ctx.reply(rep)
 
-  def await[T, U, Req, Rep, Portals <: AtomicPortalRefType[Req, Rep]](using
-      ctx: AskerTaskContext[T, U, Req, Rep, Portals]
-  )(future: Future[Rep])(f: Option[Rep] => Task[T, U]): Task[T, U] = ctx.await(future)(f)
+  def await[T, U, Req, Rep](using
+      ctx: AskerTaskContext[T, U, Req, Rep]
+  )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit = ctx.await(future)(f)
 
-  extension [T, U, Req, Rep, Portals <: (Singleton & AtomicPortalRefType[Req, Rep])](using
-      AskerTaskContext[T, U, Req, Rep, Portals]
-  )(portal: Portals) {
-    def ask(req: Req): Future[Rep] = ctx.ask(portal)(req)
+  extension [T, U, Req, Rep](portal: AtomicPortalRefType[Req, Rep]) {
+    def ask(using
+        AskerTaskContext[T, U, Req, Rep]
+    )(req: Req): Future[Rep] = ctx.ask(portal)(req)
   }
 
-end DSL // object
+  //////////////////////////////////////////////////////////////////////////////
+  // Builder DSL
+  //////////////////////////////////////////////////////////////////////////////
+
+  /** Experimental API. More convenient interface for using the Builder. */
+  @experimental
+  object BuilderDSL:
+    def Registry(using ab: ApplicationBuilder): RegistryBuilder = ab.registry
+
+    def Workflows[T, U](name: String)(using ab: ApplicationBuilder): WorkflowBuilder[T, U] = ab.workflows[T, U](name)
+
+    def Generators(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators
+
+    def Sequencers(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers
+
+    def Connections(using ab: ApplicationBuilder): ConnectionBuilder = ab.connections
+
+    def Portal[T, R](name: String)(using ab: ApplicationBuilder): AtomicPortalRef[T, R] = ab.portals.portal(name)
+
+    def PortalsApp(name: String)(app: ApplicationBuilder ?=> Unit): Application =
+      val builder = ApplicationBuilders.application(name)
+      app(using builder)
+      builder.build()
+  end BuilderDSL
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Experimental DSL
+  //////////////////////////////////////////////////////////////////////////////
+
+  /** Experimental API. Various mix of experimental API extensions. */
+  @experimental
+  object ExperimentalDSL:
+    extension (gb: GeneratorBuilder) {
+      def empty[T]: AtomicGeneratorRef[T] = gb.fromList(List.empty)
+    }
+
+    extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
+      def empty[NU](): FlowBuilder[T, U, CU, NU] = fb.flatMap(_ => List.empty[NU])
+    }
+
+    extension [Rep](future: Future[Rep]) {
+      def await[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
+          f: AskerTaskContext[T, U, Req, Rep] ?=> Unit
+      ): Unit =
+        ctx.await(future)(f)
+    }
+
+    def await[T, U, Req, Rep](using
+        ctx: AskerTaskContext[T, U, Req, Rep]
+    )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit = ctx.await(future)(f)
+
+    /** Used for fecursive functions from the Asker Task. Yes, here we do need to have the AskerTaskContext as an
+      * implicit, otherwise it will crash.
+      */
+    private object Rec:
+      def rec0[A, T, U, Req, Rep](
+          f: (AskerTaskContext[T, U, Req, Rep] ?=> A) => AskerTaskContext[T, U, Req, Rep] ?=> A
+      ): AskerTaskContext[T, U, Req, Rep] ?=> A = f(rec0(f))
+
+      def rec1[A, B, T, U, Req, Rep](
+          fRec: (AskerTaskContext[T, U, Req, Rep] ?=> A => B) => AskerTaskContext[T, U, Req, Rep] ?=> A => B
+      ): AskerTaskContext[T, U, Req, Rep] ?=> A => B = fRec(rec1(fRec))
+
+    extension [T, U, CT, CU, Req, Rep](pfb: FlowBuilder[T, U, CT, CU]#PortalFlowBuilder[Req, Rep]) {
+      def askerRec[CCU](
+          fRec: (
+              AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+          ) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+      ): FlowBuilder[T, U, CU, CCU] =
+        pfb.asker(fRec(Rec.rec1(fRec)))
+    }
+
+    def awaitRec[T, U, Req, Rep](using
+        ctx: AskerTaskContext[T, U, Req, Rep]
+    )(future: Future[Rep])(
+        fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit
+    ): Unit = ctx.await(future)(fRec(Rec.rec0(fRec)))
+
+    extension [Rep](future: Future[Rep]) {
+      def awaitRec[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
+          fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit
+      ): Unit =
+        ctx.await(future)(fRec(Rec.rec0(fRec)))
+    }
+
+  end ExperimentalDSL
+end DSL

@@ -82,6 +82,11 @@ object TestUtils:
 
     private val queue: Queue[WrappedEvent[T]] = Queue[WrappedEvent[T]]()
 
+    def enqueueEvent(event: T): Unit = queue.enqueue(Event(event))
+    def enqueueAtom(): Unit = queue.enqueue(Atom)
+    def enqueueSeal(): Unit = queue.enqueue(Seal)
+    def enqueueError(t: Throwable): Unit = queue.enqueue(Error(t))
+
     val task = new Task[T, T] {
       override def onNext(using ctx: TaskContext[T, T])(t: T): Task[T, T] =
         queue.enqueue(Event(t))
@@ -95,7 +100,6 @@ object TestUtils:
         Tasks.same
       override def onAtomComplete(using ctx: TaskContext[T, T]): Task[T, T] =
         queue.enqueue(Atom)
-        ctx.fuse()
         Tasks.same
     }
 
@@ -141,6 +145,12 @@ object TestUtils:
     def receiveAssert(event: T): this.type =
       assertEquals(Some(event), receive())
       this
+
+    def receiveSealAssert(): this.type =
+      assertEquals(Some(Seal), Try(queue.dequeue()).toOption)
+      this
+
+    def isEmptyAssert(): this.type = { assertEquals(true, isEmpty()); this }
 
     // receive the remaining events of the atom
     def receiveAtom(): Option[Seq[T]] =

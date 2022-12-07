@@ -2,6 +2,7 @@ package portals.system.test
 
 import portals.*
 
+/** Internal API. TestGenerator. */
 private[portals] class TestGenerator(val generator: AtomicGenerator[_])(using rctx: TestRuntimeContext):
   def process(): List[TestAtom] =
     var atom = List.empty[WrappedEvent[_]]

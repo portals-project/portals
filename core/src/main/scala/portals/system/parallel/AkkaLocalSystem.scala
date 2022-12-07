@@ -7,13 +7,32 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.util.Timeout
 
+import com.typesafe.config.ConfigFactory
+
 import portals.*
 
 abstract class AkkaLocalSystem extends PortalsSystem:
   import AkkaRunner.Events.*
 
+  val cf = ConfigFactory
+    .parseString(
+      s"""
+      akka.log-dead-letters-during-shutdown = off
+      akka.coordinated-shutdown.terminate-actor-system = off
+      akka.coordinated-shutdown.run-by-actor-system-terminate = off
+      akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
+      akka.cluster.run-coordinated-shutdown-when-down = off
+      """
+    )
+    .withFallback(ConfigFactory.defaultApplication)
+
+  // options for setting parallelism for Akka.
+  // actor.default-dispatcher.fork-join-executor.parallelism-min = ${parallelism}
+  // actor.default-dispatcher.fork-join-executor.parallelism-max = ${parallelism}
+  // actor.default-dispatcher.fork-join-executor.parallelism-factor = 1.0
+
   given timeout: Timeout = Timeout(3.seconds)
-  given system: akka.actor.ActorSystem = akka.actor.ActorSystem("Portals")
+  given system: akka.actor.ActorSystem = akka.actor.ActorSystem("Portals", cf)
   given scheduler: akka.actor.typed.Scheduler = system.toTyped.scheduler
 
   var streams: Map[String, ActorRef[PubSubRequest]] = Map.empty
