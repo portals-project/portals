@@ -2,9 +2,31 @@ package portals.system.test
 
 import portals.*
 
+object TestWorkflow:
+  enum ExecutionMode:
+    case EventMode, AskMode, ReplyMode
+
+  sealed trait ExecutionInfo
+  case class AskInfo(portal: String, askingWF: String) extends ExecutionInfo
+  case class ReplyInfo(portal: String, askingWF: String) extends ExecutionInfo
+  case object EventInfo extends ExecutionInfo
+
 private class TestWorkflowContext:
-  var info: PortalBatchMeta = _
-  var portalMap: Map[String, String] = Map.empty // maps a portal name to the task which handles the portal
+  import TestWorkflow.*
+  var mode: ExecutionMode = _
+  var info: ExecutionInfo = _
+
+  def getAskingWF(): String = info match
+    case AskInfo(_, x) => x
+    case ReplyInfo(_, x) => x
+    case _ => ???
+
+  def getPortal(): String = info match
+    case AskInfo(x, _) => x
+    case ReplyInfo(x, _) => x
+    case _ => ???
+
+  // var portalMap: Map[String, String] = Map.empty // maps a portal name to the task which handles the portal
 
 /** Internal API. TaskCallback to collect submitted events as side effects. Works both for regular tasks and for
   * AskerTasks and ReplierTasks.
@@ -54,6 +76,8 @@ end CollectingTaskCallBack // class
 
 /** Internal API. TestRuntime wrapper of a Workflow. */
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
+  import TestWorkflow.*
+
   private val wctx = new TestWorkflowContext()
   private val tcb = CollectingTaskCallBack[Any, Any, Any, Any]()
   private val tctx = TaskContext[Any, Any]()
@@ -79,21 +103,21 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   // clear any strange side-effects that happened during initialization
   tcb.clear(); tcb.clearAsks(); tcb.clearReps()
 
-  // collect portals
-  sortedTasks.foreach { (name, task) =>
-    task match
-      case t @ ReplierTask(f1, f2) =>
-        wctx.portalMap += (name -> t.portals.head.path)
-      case _ => ()
-  }
+  // // collect portals
+  // sortedTasks.foreach { (name, task) =>
+  //   task match
+  //     case t @ ReplierTask(f1, f2) =>
+  //       wctx.portalMap += (name -> t.portals.head.path)
+  //     case _ => ()
+  // }
 
-  // collect portals
-  sortedTasks.foreach { (name, task) =>
-    task match
-      case t @ ReplierTask(f1, f2) =>
-        wctx.portalMap += (t.portals.head.path -> name)
-      case _ => ()
-  }
+  // // collect portals
+  // sortedTasks.foreach { (name, task) =>
+  //   task match
+  //     case t @ ReplierTask(f1, f2) =>
+  //       wctx.portalMap += (t.portals.head.path -> name)
+  //     case _ => ()
+  // }
 
   /** Processes the atom, and produces a new list of atoms.
     *
@@ -249,7 +273,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
         tcb
           .getRepOutput()
           .groupBy { case Reply(_, portalMeta, _) => (portalMeta.portal) }
-          .map { (k, v) => TestRepBatch(PortalBatchMeta(k, wctx.info.askingWF), v) }
+          .map { (k, v) => TestRepBatch(PortalBatchMeta(k, wctx.getAskingWF()), v) }
           .toList
       askoutputs ::: repoutputs
     }
@@ -287,9 +311,8 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Internal API. Process a TestAskBatch. */
   private def processAskBatch(atom: TestAskBatch[_]): List[TestAtom] = {
-    wctx.info = atom.meta
-    // process the AskBatch
-    val taskName = wctx.portalMap(atom.meta.portal)
+    wctx.info = AskInfo(atom.meta.portal, atom.meta.askingWF)
+    val taskName = rctx.portals(atom.meta.portal).replierTask
     val task = initializedTasks.toMap.get(taskName).get
     val outputs1 = processReplierTask(task, atom)
     val outputs2 = processAtomHelper(Map(taskName -> outputs1))
