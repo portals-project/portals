@@ -26,8 +26,6 @@ private class TestWorkflowContext:
     case ReplyInfo(x, _) => x
     case _ => ???
 
-  // var portalMap: Map[String, String] = Map.empty // maps a portal name to the task which handles the portal
-
 /** Internal API. TaskCallback to collect submitted events as side effects. Works both for regular tasks and for
   * AskerTasks and ReplierTasks.
   */
@@ -64,8 +62,6 @@ private class CollectingTaskCallBack[T, U, Req, Rep] extends TaskCallback[T, U, 
   override def reply(
       r: Rep,
       portal: String,
-      // portalAsker: String,
-      // replier: String,
       askingTask: String,
       key: Key[Int],
       id: Int
@@ -77,7 +73,6 @@ end CollectingTaskCallBack // class
 /** Internal API. TestRuntime wrapper of a Workflow. */
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   import TestWorkflow.*
-
   private val wctx = new TestWorkflowContext()
   private val tcb = CollectingTaskCallBack[Any, Any, Any, Any]()
   private val tctx = TaskContext[Any, Any]()
@@ -102,22 +97,6 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   }
   // clear any strange side-effects that happened during initialization
   tcb.clear(); tcb.clearAsks(); tcb.clearReps()
-
-  // // collect portals
-  // sortedTasks.foreach { (name, task) =>
-  //   task match
-  //     case t @ ReplierTask(f1, f2) =>
-  //       wctx.portalMap += (name -> t.portals.head.path)
-  //     case _ => ()
-  // }
-
-  // // collect portals
-  // sortedTasks.foreach { (name, task) =>
-  //   task match
-  //     case t @ ReplierTask(f1, f2) =>
-  //       wctx.portalMap += (t.portals.head.path -> name)
-  //     case _ => ()
-  // }
 
   /** Processes the atom, and produces a new list of atoms.
     *
@@ -151,20 +130,17 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
             case Event(key, e) =>
               task match {
                 case _: AskerTask[_, _, _, _] =>
-                  tctx.key = key
                   tctx.state.key = key
+                  tctx.key = key
                   tctx.path = path
-                  actx.key = key
                   actx.state.key = key
+                  actx.key = key
                   actx.path = path
                   task.onNext(using actx.asInstanceOf)(e.asInstanceOf)
                 case _: Task[?, ?] =>
-                  tctx.key = key
                   tctx.state.key = key
+                  tctx.key = key
                   tctx.path = path
-                  actx.key = key
-                  actx.state.key = key
-                  actx.path = path
                   task.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
               }
             case Atom =>
@@ -180,7 +156,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
             case _ => ???
         }
     }
-    if errord then ??? // TODO: how to handle errors?
+    if errord then ???
     else if seald then
       task.onComplete(using tctx.asInstanceOf)
       tcb.submit(Seal)
@@ -292,15 +268,13 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     input.list.foreach { event =>
       event match
         case Ask(key, meta, e) =>
-          tctx.key = key
           tctx.state.key = key
-          rectx.key = key
+          tctx.key = key
           rectx.state.key = key
-          // rectx.path = replier
+          rectx.key = key
           rectx.id = meta.id
           rectx.asker = meta.askingTask
           rectx.portal = meta.portal
-          // rectx.portalAsker = portalAsker
           task.asInstanceOf[ReplierTask[_, _, _, _]].f2(rectx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
     }
@@ -327,10 +301,9 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
         case Reply(key, meta, e) =>
           tctx.state.key = key
           tctx.key = key
-          tctx.state.key = key
           tctx.path = path
-          actx.key = key
           actx.state.key = key
+          actx.key = key
           actx.path = path
           AskerTask.run_and_cleanup_reply(meta.id, e)(using actx)
         case _ => ??? // NOPE
@@ -343,12 +316,14 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Internal API. Process a TestReplyBatch. */
   private def processReplyBatch(atom: TestRepBatch[_]): List[TestAtom] = {
+    wctx.info = ReplyInfo(atom.meta.portal, atom.meta.askingWF)
     val outputs = atom.list
       .groupBy(_.asInstanceOf[Reply[_]].meta.askingTask)
       .map { (asker, batch) =>
         (asker, processAskerTask(asker, TestRepBatch(atom.meta, batch)))
       }
       .toMap
+    wctx.info = null
     processAtomHelper(outputs)
   }
 
