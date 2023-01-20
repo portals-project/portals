@@ -10,19 +10,19 @@ import portals.examples.distributed.actor.Actors.ActorBehaviors.ReceiveActorBeha
 
 object Actors:
   trait ActorState:
-    def get[U](key: String): Option[U]
-    def set[U](key: String, value: U): Unit
-    def del(key: String): Unit
+    def get(key: Any): Any
+    def set(key: Any, value: Any): Unit
+    def del(key: Any): Unit
 
   object ActorStates:
     def apply(state: TaskState[Any, Any]): ActorState =
       new ActorState {
-        override def get[U](key: String): Option[U] = state.get(key).asInstanceOf[Option[U]]
-        override def set[U](key: String, value: U): Unit = state.set(key, value)
-        override def del(key: String): Unit = state.del(key)
+        override def get(key: Any): Any = state.get(key).get
+        override def set(key: Any, value: Any): Unit = state.set(key, value)
+        override def del(key: Any): Unit = state.del(key)
       }
 
-  trait ActorRef[T]:
+  trait ActorRef[-T]:
     val key: String
 
   object ActorRefs:
@@ -107,15 +107,36 @@ object Actors:
   import Actors.*
 
   object MyActors:
-    val hello: ActorBehavior[String] = ActorBehaviors.receive[String] { ctx ?=> msg =>
-      ctx.log(msg)
-      ctx.log("from hello")
+    sealed trait FibCommand
+    case class Fib(replyTo: ActorRef[FibReply], i: Int) extends FibCommand
+    case class FibReply(i: Int) extends FibCommand
+    val fib: ActorBehavior[FibCommand] = ActorBehaviors.init[FibCommand] { ctx ?=>
+      ActorBehaviors.receive { msg =>
+        msg match
+          case Fib(replyTo, i) =>
+            i match
+              case 0 => ctx.send(replyTo)(FibReply(0))
+              case 1 => ctx.send(replyTo)(FibReply(1))
+              case n =>
+                ctx.send(ctx.create(fib))(Fib(ctx.self, n - 1))
+                ctx.send(ctx.create(fib))(Fib(ctx.self, n - 2))
+                ctx.state.set(0, 0)
+                ctx.state.set(1, replyTo)
+                ctx.state.set(2, 0)
+          case FibReply(i) =>
+            ctx.state.set(0, ctx.state.get(0).asInstanceOf[Int] + 1)
+            ctx.state.set(2, ctx.state.get(2).asInstanceOf[Int] + i)
+            if ctx.state.get(0).asInstanceOf[Int] == 2 then
+              val x = ctx.state.get(2).asInstanceOf[Int]
+              ctx.send(ctx.state.get(1).asInstanceOf[ActorRef[FibCommand]])(FibReply(ctx.state.get(2).asInstanceOf))
+      }
     }
 
-    val init: ActorBehavior[Unit] = ActorBehaviors.init[Unit] { ctx ?=>
-      val aref = ctx.create[String](hello)
-      ctx.send(aref)("hello world")
-      ActorBehaviors.same
+    val fibInit: ActorBehavior[FibReply] = ActorBehaviors.init[FibReply] { ctx ?=>
+      ctx.send(ctx.create[FibCommand](fib))(Fib(ctx.self, 14))
+      ActorBehaviors.receive { msg =>
+        ctx.log(msg)
+      }
     }
 
   import MyActors.*
@@ -124,17 +145,14 @@ object Actors:
 
     // val generator = Generators.signal[ActorMessage]()
 
-    val generator = Generators.fromList[ActorMessage](
-      List(
-        ActorCreate[Unit](ActorRefs.fresh(), init),
-      )
-    )
+    val generator = Generators.signal[ActorMessage](ActorCreate(ActorRefs.fresh(), fibInit))
 
     val sequencer = Sequencers.random[ActorMessage]()
 
     val workflow = Workflows[ActorMessage, ActorMessage]("workflow")
       .source(sequencer.stream)
       .key(_.aref.key.hashCode())
+      .logger()
       .task(ActorRuntimes.basic())
       .sink()
       .freeze()
