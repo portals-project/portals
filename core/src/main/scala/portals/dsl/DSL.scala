@@ -76,10 +76,17 @@ object DSL:
   object ExperimentalDSL:
     extension (gb: GeneratorBuilder) {
       def empty[T]: AtomicGeneratorRef[T] = gb.fromList(List.empty)
+
+      def signal[T](sig: T): AtomicGeneratorRef[T] = gb.fromList(List[T](sig))
     }
 
     extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
       def empty[NU](): FlowBuilder[T, U, CU, NU] = fb.flatMap(_ => List.empty[NU])
+    }
+
+    // same as empty :)
+    extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
+      def consume(): FlowBuilder[T, U, CU, CU] = fb.flatMap(_ => List.empty[CU])
     }
 
     extension [Rep](future: Future[Rep]) {
