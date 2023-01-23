@@ -1,5 +1,7 @@
 package portals
 
+import scala.annotation.experimental
+
 private sealed trait Tasks
 
 /** Core Task Factories. */
@@ -427,22 +429,38 @@ export PortalsExtension.*
 ////////////////////////////////////////////////////////////////////////////////
 // Stash Extension
 ////////////////////////////////////////////////////////////////////////////////
+@experimental
 object StashExtension:
   extension (t: Tasks) {
-    def stash[T, U](f: TaskStash[T, U] => Task[T, U]): Task[T, U] =
-      var t: Task[T, U] = null
-      t = f(TaskStash[T, U](t))
-      t
+    def stash[T, U](f: TaskStash[T, U] => Task[T, U]): Task[T, U] = Tasks.init {
+      f(TaskStash[T, U]())
+    }
   }
 
   /** FIXME: this won't work for nested stashes. */
   /** FIXME: we should really provide a more efficient state interface for lists or similar. */
-  class TaskStash[T, U](private val task: Task[T, U]):
+  /** FIXME: currently not working :( */
+  class TaskStash[T, U]():
     private lazy val _stash: TaskContext[T, U] ?=> PerKeyState[List[T]] = PerKeyState[List[T]]("_stash", List.empty)
     def stash(msg: T): TaskContext[T, U] ?=> Unit = _stash.set(msg :: _stash.get())
-    def unstashAll(): TaskContext[T, U] ?=> Unit =
-      _stash.get().reverse.foreach { msg => task.onNext(msg) }
-      _stash.del()
+    def unstashAll(): TaskContext[T, U] ?=> Unit = ???
+    // _stash
+    //   .get()
+    //   .reverse
+    //   .foreach { msg => summon[TaskContext[T, U]].task.onNext(msg) }
+    // _stash.del()
     def size(): TaskContext[T, U] ?=> Int = _stash.get().size
 end StashExtension
-export StashExtension.*
+
+////////////////////////////////////////////////////////////////////////////////
+// Recursive Extension
+////////////////////////////////////////////////////////////////////////////////
+@experimental
+object RecursiveExtension:
+  extension (t: Tasks) {
+    def recursive[T, U](
+        f: (TaskContext[T, U] ?=> Task[T, U]) => TaskContext[T, U] ?=> Task[T, U]
+    ): TaskContext[T, U] ?=> Task[T, U] =
+      f(recursive(f))
+  }
+end RecursiveExtension

@@ -132,40 +132,47 @@ private[portals] object ActorEvents:
 private[portals] object ActorRuntime:
   import ActorBehaviors.*
   import ActorEvents.*
+  import StashExtension.*
 
   def apply(): Task[ActorMessage, ActorMessage] =
     Tasks.init { ctx ?=>
       val behavior = PerKeyState[ActorBehavior[Any]]("behavior", null)
       val actx = ActorContext[Any](ctx)
 
-      /** TODO: there is a potential race condition here, if A creates actor B and sends the reference to C, then C may
-        * send a message to B before B has been created. Thus, we need to buffer any events that come in to a behavior
-        * that doesn't yet exist.
-        */
-      Tasks.processor {
-        case ActorSend(aref, msg) => {
-          actx.self = aref.asInstanceOf[ActorRef[Any]]
-          behavior.get().receive(using actx)(msg) match
-            case InitBehavior(f) => ???
-            case newBehavior @ ReceiveActorBehavior(f) => behavior.set(newBehavior)
-            case SameBehavior => ()
-            case StoppedBehavior => behavior.del()
-        }
-        case ActorCreate(aref, newBehavior) => {
-          actx.self = aref.asInstanceOf[ActorRef[Any]]
-          newBehavior match
-            case InitBehavior(f) =>
-              val initializedBehavior = f(actx.asInstanceOf)
-              behavior.set(initializedBehavior.asInstanceOf)
-            case ReceiveActorBehavior(_) => ()
-            case SameBehavior => ???
-            case StoppedBehavior => behavior.del()
+      // FIXME: stash not working yet; make sure stash logic works here 
+      Tasks.stash { stash => // stash messages if behavior not yet created
+        Tasks.processor {
+          case ActorSend(aref, msg) => {
+            actx.self = aref.asInstanceOf[ActorRef[Any]]
+            behavior.get() match
+              case null =>
+                stash.stash(ActorSend(aref, msg))
+              case b =>
+                b.receive(using actx)(msg) match
+                  case InitBehavior(f) => ???
+                  case newBehavior @ ReceiveActorBehavior(f) => behavior.set(newBehavior)
+                  case SameBehavior => ()
+                  case StoppedBehavior => behavior.del()
+          }
+          case ActorCreate(aref, newBehavior) => {
+            actx.self = aref.asInstanceOf[ActorRef[Any]]
+            newBehavior match
+              case InitBehavior(f) =>
+                val initializedBehavior = f(actx.asInstanceOf)
+                behavior.set(initializedBehavior.asInstanceOf)
+              case ReceiveActorBehavior(_) => ()
+              case SameBehavior => ???
+              case StoppedBehavior => behavior.del()
+            if stash.size() > 0 then stash.unstashAll()
+          }
         }
       }
     }
 
 @experimental
 object ActorWorkflow:
+  import scala.util.hashing.MurmurHash3
+
   import portals.DSL.*
   import portals.DSL.BuilderDSL.*
   import portals.DSL.ExperimentalDSL.*
@@ -177,7 +184,12 @@ object ActorWorkflow:
 
     val workflow = Workflows[ActorMessage, ActorMessage]("workflow")
       .source(sequencer.stream)
-      .key(_.aref.key.hashCode()) // TODO: make the key Long, not Int :))
+      .key(x =>
+        val h1 = MurmurHash3.stringHash(x.aref.key)
+        val h2 = MurmurHash3.stringHash(x.aref.key, h1)
+        val h3 = (h1.longValue() << 32) | (h2 & 0xffffffffL)
+        h3
+      )
       .task(ActorRuntime())
       .sink()
       .freeze()

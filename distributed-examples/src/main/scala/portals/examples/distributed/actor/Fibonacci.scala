@@ -6,7 +6,7 @@ import portals.*
 
 @experimental
 object Fibonacci:
-  inline val FIB_N = 20
+  inline val FIB_N = 21
 
   sealed trait FibCommand
   @experimental case class Fib(replyTo: ActorRef[FibReply], i: Int) extends FibCommand
