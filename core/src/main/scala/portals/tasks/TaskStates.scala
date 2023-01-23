@@ -16,6 +16,7 @@ end TaskStates // object
 trait TypedState[T]:
   def get(): T
   def set(value: T): Unit
+  def del(): Unit
 end TypedState // trait
 
 trait PerKeyState[T] extends TypedState[T]
@@ -40,6 +41,8 @@ class PerKeyStateImpl[T](name: String, initValue: T)(using TaskContext[_, _]) ex
     case None => initValue
 
   override def set(value: T): Unit = _state.set(name, value)
+
+  override def del(): Unit = _state.del(name)
 
 end PerKeyStateImpl // class
 
@@ -70,6 +73,11 @@ class PerTaskStateImpl[T](name: String, initValue: T)(using TaskContext[_, _]) e
   override def set(value: T): Unit =
     setKey()
     _state.set(name, value)
+    resetKey()
+
+  override def del(): Unit =
+    setKey()
+    _state.del(name)
     resetKey()
 
 end PerTaskStateImpl // class
