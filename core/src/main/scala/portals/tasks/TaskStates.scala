@@ -49,8 +49,8 @@ end PerKeyStateImpl // class
 class PerTaskStateImpl[T](name: String, initValue: T)(using TaskContext[_, _]) extends PerTaskState[T]:
   private val _state: TaskState[Any, Any] = summon[TaskContext[_, _]].state
 
-  private var _key: Key[Int] = _
-  private val _reservedKey: Key[Int] = Key(-2) // reserved to TaskState for now :)
+  private var _key: Key[Long] = _
+  private val _reservedKey: Key[Long] = Key(-2) // reserved to TaskState for now :)
 
   private def setKey(): Unit =
     // TODO: consider having perTaskState and perKeyState be disjoint states so we don't have to manipulate the key here

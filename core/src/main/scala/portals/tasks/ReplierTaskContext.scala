@@ -25,7 +25,7 @@ object ReplierTaskContext:
       // TaskContext
       //////////////////////////////////////////////////////////////////////////
       override def emit(event: U): Unit = ctx.emit(event)
-      var key: Key[Int] = ctx.key
+      var key: Key[Long] = ctx.key
       override def log: Logger = ctx.log
       var path: String = ctx.path
       override def state: TaskState[Any, Any] = ctx.state

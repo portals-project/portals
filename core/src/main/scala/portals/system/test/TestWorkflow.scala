@@ -48,7 +48,7 @@ private class CollectingTaskCallBack[T, U, Req, Rep] extends TaskCallback[T, U, 
       // replier: String,
       askingTask: String,
       req: Req,
-      key: Key[Int],
+      key: Key[Long],
       id: Int
   ): Unit =
     _asks = Ask(key, PortalMeta(portal, askingTask, id), req) :: _asks
@@ -63,7 +63,7 @@ private class CollectingTaskCallBack[T, U, Req, Rep] extends TaskCallback[T, U, 
       r: Rep,
       portal: String,
       askingTask: String,
-      key: Key[Int],
+      key: Key[Long],
       id: Int
   ): Unit = _reps = Reply(key, PortalMeta(portal, askingTask, id), r) :: _reps
   def getRepOutput(): List[Reply[Rep]] = _reps.reverse

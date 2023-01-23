@@ -10,7 +10,7 @@ private[portals] class TaskContextImpl[I, O] extends TaskContext[I, O]:
 
   private[portals] var path: String = "" // TODO: make this set by the runtime
 
-  private[portals] var key: Key[Int] = Key(-1) // TODO: make this set by the runtime
+  private[portals] var key: Key[Long] = Key(-1) // TODO: make this set by the runtime
 
   private[portals] var system: PortalsSystem = _
 

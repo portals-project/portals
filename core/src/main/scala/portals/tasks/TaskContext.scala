@@ -29,7 +29,7 @@ private[portals] trait TaskContext[T, U]
 
   /** Contextual key for per-key execution */
   // has to be var so that it can be swapped at runtime
-  private[portals] var key: Key[Int]
+  private[portals] var key: Key[Long]
 
   /** The `SystemContext` that this task belongs to */
   // has to be var so that it can be swapped at runtime

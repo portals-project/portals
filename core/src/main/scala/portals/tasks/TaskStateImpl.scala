@@ -15,7 +15,7 @@ private[portals] class TaskStateImpl[K, V] extends TaskState[K, V]:
 
   private[portals] var path: String = "" // TODO: make this set by the runtime
 
-  private[portals] var key: Key[Int] = Key(-1) // TODO: make this set by the runtime
+  private[portals] var key: Key[Long] = Key(-1) // TODO: make this set by the runtime
 
   // this seems inefficient
   // TODO: more reliable way of building a key, simplify it, this seems error prone here

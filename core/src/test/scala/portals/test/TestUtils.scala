@@ -12,7 +12,7 @@ object TestUtils:
   def executeTask[T, U](
       task: Task[T, U],
       testData: List[List[T]],
-      testDataKeys: List[List[Key[Int]]] = List.empty,
+      testDataKeys: List[List[Key[Long]]] = List.empty,
   ): Tester[U] =
     val tester = Tester[U]()
     val builder = ApplicationBuilders.application("app")
@@ -36,7 +36,7 @@ object TestUtils:
   def executeWorkflow[T, U](
       flows: FlowBuilder[T, U, T, T] => FlowBuilder[T, U, U, U],
       testData: List[List[T]],
-      testDataKeys: List[List[Key[Int]]] = List.empty,
+      testDataKeys: List[List[Key[Long]]] = List.empty,
   ): Tester[U] =
     val tester = Tester[U]()
     val builder = ApplicationBuilders.application("app")

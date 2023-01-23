@@ -159,7 +159,7 @@ object TaskExtensions:
       }
 
     /** behavior factory for modifying the key context */
-    private[portals] def key[T](f: T => Int): Task[T, T] =
+    private[portals] def key[T](f: T => Long): Task[T, T] =
       Tasks.Processor[T, T] { ctx => x =>
         ctx.key = Key(f(x))
         ctx.emit(x)
@@ -302,7 +302,7 @@ object WithAndThenExtension:
       override def state: TaskState[Any, Any] = _ctx.state
       override def emit(event: U) = emitted = emitted :+ event
       override def log: Logger = _ctx.log
-      private[portals] var key: portals.Key[Int] = ctx.key
+      private[portals] var key: portals.Key[Long] = ctx.key
       private[portals] var path: String = ctx.path
       private[portals] var system: portals.PortalsSystem = ctx.system
       private[portals] var _ctx: TaskContext[T, U] = ctx
@@ -423,3 +423,26 @@ object PortalsExtension:
 
 end PortalsExtension
 export PortalsExtension.*
+
+////////////////////////////////////////////////////////////////////////////////
+// Stash Extension
+////////////////////////////////////////////////////////////////////////////////
+object StashExtension:
+  extension (t: Tasks) {
+    def stash[T, U](f: TaskStash[T, U] => Task[T, U]): Task[T, U] =
+      var t: Task[T, U] = null
+      t = f(TaskStash[T, U](t))
+      t
+  }
+
+  /** FIXME: this won't work for nested stashes. */
+  /** FIXME: we should really provide a more efficient state interface for lists or similar. */
+  class TaskStash[T, U](private val task: Task[T, U]):
+    private lazy val _stash: TaskContext[T, U] ?=> PerKeyState[List[T]] = PerKeyState[List[T]]("_stash", List.empty)
+    def stash(msg: T): TaskContext[T, U] ?=> Unit = _stash.set(msg :: _stash.get())
+    def unstashAll(): TaskContext[T, U] ?=> Unit =
+      _stash.get().reverse.foreach { msg => task.onNext(msg) }
+      _stash.del()
+    def size(): TaskContext[T, U] ?=> Int = _stash.get().size
+end StashExtension
+export StashExtension.*

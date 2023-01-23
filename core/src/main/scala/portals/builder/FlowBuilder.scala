@@ -48,7 +48,7 @@ trait FlowBuilder[T, U, CT, CU]:
   def map[CCU](f: MapTaskContext[CU, CCU] ?=> CU => CCU): FlowBuilder[T, U, CU, CCU]
 
   // TODO: it should be possible to have generic keys
-  def key(f: CU => Int): FlowBuilder[T, U, CU, CU]
+  def key(f: CU => Long): FlowBuilder[T, U, CU, CU]
 
   def task[CCU](taskBehavior: Task[CU, CCU]): FlowBuilder[T, U, CU, CCU]
 
