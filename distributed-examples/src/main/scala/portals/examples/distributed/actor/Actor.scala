@@ -52,6 +52,7 @@ object MapTypedActorState:
 @experimental
 sealed trait ActorRef[-T]:
   val key: String
+  override def toString(): String = "ActorRef(" + key + ")"
 
 @experimental
 object ActorRef:
@@ -139,7 +140,7 @@ private[portals] object ActorRuntime:
       val behavior = PerKeyState[ActorBehavior[Any]]("behavior", null)
       val actx = ActorContext[Any](ctx)
 
-      // FIXME: stash not working yet; make sure stash logic works here 
+      // FIXME: stash not working yet; make sure stash logic works here
       Tasks.stash { stash => // stash messages if behavior not yet created
         Tasks.processor {
           case ActorSend(aref, msg) => {
@@ -160,7 +161,8 @@ private[portals] object ActorRuntime:
               case InitBehavior(f) =>
                 val initializedBehavior = f(actx.asInstanceOf)
                 behavior.set(initializedBehavior.asInstanceOf)
-              case ReceiveActorBehavior(_) => ()
+              case ReceiveActorBehavior(_) =>
+                behavior.set(newBehavior.asInstanceOf)
               case SameBehavior => ???
               case StoppedBehavior => behavior.del()
             if stash.size() > 0 then stash.unstashAll()
