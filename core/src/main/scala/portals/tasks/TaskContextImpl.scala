@@ -15,3 +15,5 @@ private[portals] class TaskContextImpl[I, O] extends TaskContext[I, O]:
   private[portals] var system: PortalsSystem = _
 
   private[portals] var cb: TaskCallback[I, O, Any, Any] = _
+
+  private[portals] var task: Task[I, O] = _

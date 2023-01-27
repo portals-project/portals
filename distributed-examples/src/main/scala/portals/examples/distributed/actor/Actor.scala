@@ -187,7 +187,7 @@ private[portals] object ActorRuntime:
               case ReceiveActorBehavior(f) =>
                 f(actx)(msg) match
                   case b @ ReceiveActorBehavior(f) => behavior.set(b)
-                  case StoppedBehavior => behavior.del()
+                  case b @ StoppedBehavior => behavior.set(b) // receiving message on stopped behavior should error
                   case SameBehavior => ()
                   case InitBehavior(_) => ???
                   case NoBehavior => ???
@@ -199,7 +199,7 @@ private[portals] object ActorRuntime:
             actx.self = aref.asInstanceOf[ActorRef[Any]]
             prepareBehavior(newBehavior.asInstanceOf[ActorBehavior[Any]], actx) match
               case b @ ReceiveActorBehavior(_) => behavior.set(b)
-              case StoppedBehavior => behavior.del()
+              case b @ StoppedBehavior => behavior.set(b) // receiving message on stopped behavior should error
               case InitBehavior(_) => ???
               case SameBehavior => ???
               case NoBehavior => ???

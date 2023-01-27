@@ -133,14 +133,17 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
                   tctx.state.key = key
                   tctx.key = key
                   tctx.path = path
+                  tctx.task = task.asInstanceOf[Task[Any, Any]]
                   actx.state.key = key
                   actx.key = key
                   actx.path = path
+                  actx.task = task.asInstanceOf[Task[Any, Any]]
                   task.onNext(using actx.asInstanceOf)(e.asInstanceOf)
                 case _: Task[?, ?] =>
                   tctx.state.key = key
                   tctx.key = key
                   tctx.path = path
+                  tctx.task = task.asInstanceOf[Task[Any, Any]]
                   task.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
               }
             case Atom =>
@@ -270,11 +273,13 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
         case Ask(key, meta, e) =>
           tctx.state.key = key
           tctx.key = key
+          tctx.task = task.asInstanceOf[Task[Any, Any]]
           rectx.state.key = key
           rectx.key = key
           rectx.id = meta.id
           rectx.asker = meta.askingTask
           rectx.portal = meta.portal
+          rectx.task = task.asInstanceOf[Task[Any, Any]]
           task.asInstanceOf[ReplierTask[_, _, _, _]].f2(rectx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
     }
@@ -302,9 +307,11 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           tctx.state.key = key
           tctx.key = key
           tctx.path = path
+          tctx.task = null
           actx.state.key = key
           actx.key = key
           actx.path = path
+          actx.task = null
           AskerTask.run_and_cleanup_reply(meta.id, e)(using actx)
         case _ => ??? // NOPE
     }

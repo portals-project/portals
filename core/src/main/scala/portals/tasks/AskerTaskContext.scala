@@ -41,4 +41,5 @@ object AskerTaskContext:
       var path: String = ctx.path
       override def state: TaskState[Any, Any] = ctx.state
       var system: PortalsSystem = ctx.system
+      private[portals] var task: Task[T, U] = ctx.task
     }
