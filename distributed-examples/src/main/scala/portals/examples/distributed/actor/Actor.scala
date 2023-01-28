@@ -176,7 +176,6 @@ private[portals] object ActorRuntime:
       val behavior = PerKeyState[ActorBehavior[Any]]("behavior", NoBehavior)
       val actx = ActorContext[Any](ctx)
 
-      // FIXME: stash not working yet; make sure stash logic works here
       Tasks.stash { stash => // stash messages if behavior not yet created
         Tasks.processor {
           case ActorSend(aref, msg) => {
