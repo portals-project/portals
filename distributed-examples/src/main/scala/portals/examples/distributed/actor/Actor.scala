@@ -73,11 +73,6 @@ object ActorRef:
     val uuid = randomUUID()
     val key = uuid.getLeastSignificantBits() ^ uuid.getMostSignificantBits()
     ActorRef[T](key)
-
-  /** depcrecated for now import scala.util.hashing.MurmurHash3 private def hashFromString(s: String): Long = val h1 =
-    * MurmurHash3.stringHash(s) val h2 = MurmurHash3.stringHash(s, h1) val h3 = (h1.longValue() << 32) | (h2 &
-    * 0xffffffffL) h3
-    */
 end ActorRef // object
 
 @experimental
@@ -186,7 +181,7 @@ private[portals] object ActorRuntime:
               case ReceiveActorBehavior(f) =>
                 f(actx)(msg) match
                   case b @ ReceiveActorBehavior(f) => behavior.set(b)
-                  case b @ StoppedBehavior => behavior.set(b) // receiving message on stopped behavior should error
+                  case b @ StoppedBehavior => behavior.set(b)
                   case SameBehavior => ()
                   case InitBehavior(_) => ???
                   case NoBehavior => ???
@@ -198,7 +193,7 @@ private[portals] object ActorRuntime:
             actx.self = aref.asInstanceOf[ActorRef[Any]]
             prepareBehavior(newBehavior.asInstanceOf[ActorBehavior[Any]], actx) match
               case b @ ReceiveActorBehavior(_) => behavior.set(b)
-              case b @ StoppedBehavior => behavior.set(b) // receiving message on stopped behavior should error
+              case b @ StoppedBehavior => behavior.set(b)
               case InitBehavior(_) => ???
               case SameBehavior => ???
               case NoBehavior => ???
