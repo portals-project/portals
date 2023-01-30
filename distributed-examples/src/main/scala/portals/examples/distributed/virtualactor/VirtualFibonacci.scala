@@ -5,7 +5,7 @@ import scala.annotation.experimental
 import portals.*
 
 @experimental
-object Fibonacci:
+object VirtualFibonacci:
   inline val FIB_N = 100
 
   sealed trait FibCommand
@@ -78,9 +78,9 @@ object FibonacciMain extends App:
   import portals.DSL.BuilderDSL.*
   import portals.DSL.ExperimentalDSL.*
 
-  import Fibonacci.*
-  import Fibonacci.FibVirtualActors.*
   import VirtualActorEvents.*
+  import VirtualFibonacci.*
+  import VirtualFibonacci.FibVirtualActors.*
 
   val app = PortalsApp("Fibonacci") {
     val generator =

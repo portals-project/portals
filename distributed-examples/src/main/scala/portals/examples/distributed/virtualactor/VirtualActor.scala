@@ -4,7 +4,7 @@ import scala.annotation.experimental
 
 import portals.*
 
-// TODO: merge VirtualActor with Actor runtime.
+// TODO: merge VirtualActor with Actor runtime once we have broadcast operations.
 
 @experimental
 sealed trait VirtualActorState:
