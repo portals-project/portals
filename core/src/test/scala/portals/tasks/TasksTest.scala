@@ -81,19 +81,19 @@ class TasksTest:
     val testDataKeys = List.fill(3)(0).map(Key(_)).grouped(1).toList
 
     object VSM:
-      def init: Task[Int, Int] = Tasks.task {
+      def init: VSMTask[Int, Int] = VSMTasks.processor {
         case 0 =>
           ctx.emit(0)
-          Tasks.same // stay in init
+          VSMTasks.same // stay in init
         case _ =>
           ctx.emit(1)
           started // go to started
       }
 
-      def started: Task[Int, Int] = Tasks.task {
+      def started: VSMTask[Int, Int] = VSMTasks.processor {
         case 1 =>
           ctx.emit(1)
-          Tasks.same // stay in started
+          VSMTasks.same // stay in started
         case _ =>
           ctx.emit(0)
           init // go to init

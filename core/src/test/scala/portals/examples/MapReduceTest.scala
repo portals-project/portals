@@ -70,7 +70,6 @@ class WordCountTest:
         val counts = PerTaskState[Map[String, Int]]("counts", Map.empty)
         counts.get().iterator.foreach { case (k, v) => ctx.emit(k, v) }
         ctx.state.clear()
-        Tasks.same
       }
       // .logger()
       // check that the current output type is (String, Int), otherwise something went wrong

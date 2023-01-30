@@ -58,7 +58,7 @@ trait FlowBuilder[T, U, CT, CU]:
 
   def filter(p: CU => Boolean): FlowBuilder[T, U, CU, CU]
 
-  def vsm[CCU](defaultTask: Task[CU, CCU]): FlowBuilder[T, U, CU, CCU]
+  def vsm[CCU](defaultTask: VSMTask[CU, CCU]): FlowBuilder[T, U, CU, CCU]
 
   def init[CCU](initFactory: TaskContext[CU, CCU] ?=> Task[CU, CCU]): FlowBuilder[T, U, CU, CCU]
 
@@ -82,16 +82,16 @@ trait FlowBuilder[T, U, CT, CU]:
 
   def withName(name: String): FlowBuilder[T, U, CT, CU]
 
-  def withOnNext(onNext: TaskContext[CT, CU] ?=> CT => Task[CT, CU]): FlowBuilder[T, U, CT, CU]
+  def withOnNext(onNext: TaskContext[CT, CU] ?=> CT => Unit): FlowBuilder[T, U, CT, CU]
 
-  def withOnError(onError: TaskContext[CT, CU] ?=> Throwable => Task[CT, CU]): FlowBuilder[T, U, CT, CU]
+  def withOnError(onError: TaskContext[CT, CU] ?=> Throwable => Unit): FlowBuilder[T, U, CT, CU]
 
-  def withOnComplete(onComplete: TaskContext[CT, CU] ?=> Task[CT, CU]): FlowBuilder[T, U, CT, CU]
+  def withOnComplete(onComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
-  def withOnAtomComplete(onAtomComplete: TaskContext[CT, CU] ?=> Task[CT, CU]): FlowBuilder[T, U, CT, CU]
+  def withOnAtomComplete(onAtomComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
   def withWrapper(
-      onNext: TaskContext[CT, CU] ?=> (TaskContext[CT, CU] ?=> CT => Task[CT, CU]) => CT => Unit
+      onNext: TaskContext[CT, CU] ?=> (TaskContext[CT, CU] ?=> CT => Unit) => CT => Unit
   ): FlowBuilder[T, U, CT, CU]
 
   def withStep(task: Task[CT, CU]): FlowBuilder[T, U, CT, CU]
@@ -104,10 +104,10 @@ trait FlowBuilder[T, U, CT, CU]:
   // All* Combinators
   //////////////////////////////////////////////////////////////////////////////
 
-  def allWithOnAtomComplete[WT, WU](onAtomComplete: TaskContext[WT, WU] ?=> Task[WT, WU]): FlowBuilder[T, U, CT, CU]
+  def allWithOnAtomComplete[WT, WU](onAtomComplete: TaskContext[WT, WU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
   def allWithWrapper[WT, WU](
-      _onNext: TaskContext[WT, WU] ?=> (TaskContext[WT, WU] ?=> WT => Task[WT, WU]) => WT => Unit
+      _onNext: TaskContext[WT, WU] ?=> (TaskContext[WT, WU] ?=> WT => Unit) => WT => Unit
   ): FlowBuilder[T | WT, U | WU, CT, CU]
 
   //////////////////////////////////////////////////////////////////////////////

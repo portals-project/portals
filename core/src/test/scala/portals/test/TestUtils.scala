@@ -88,19 +88,15 @@ object TestUtils:
     def enqueueError(t: Throwable): Unit = queue.enqueue(Error(t))
 
     val task = new Task[T, T] {
-      override def onNext(using ctx: TaskContext[T, T])(t: T): Task[T, T] =
+      override def onNext(using ctx: TaskContext[T, T])(t: T): Unit =
         queue.enqueue(Event(t))
         ctx.emit(t)
-        Tasks.same
-      override def onError(using ctx: TaskContext[T, T])(t: Throwable): Task[T, T] =
+      override def onError(using ctx: TaskContext[T, T])(t: Throwable): Unit =
         queue.enqueue(Error(t))
-        Tasks.same
-      override def onComplete(using ctx: TaskContext[T, T]): Task[T, T] =
+      override def onComplete(using ctx: TaskContext[T, T]): Unit =
         queue.enqueue(Seal)
-        Tasks.same
-      override def onAtomComplete(using ctx: TaskContext[T, T]): Task[T, T] =
+      override def onAtomComplete(using ctx: TaskContext[T, T]): Unit =
         queue.enqueue(Atom)
-        Tasks.same
     }
 
     def workflow(stream: AtomicStreamRef[T], builder: ApplicationBuilder): Workflow[T, T] =

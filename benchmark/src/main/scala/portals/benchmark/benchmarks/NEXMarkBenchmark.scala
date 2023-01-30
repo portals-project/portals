@@ -49,7 +49,7 @@ object NEXMarkBenchmarkUtil:
           bid.price = doltoeur(bid.price)
           TimestampedValue.of(bid, x.getTimestamp())
         }
-        .withOnAtomComplete { completer.complete(); Tasks.same }
+        .withOnAtomComplete { completer.complete() }
         .sink()
         .freeze()
 
@@ -69,7 +69,7 @@ object NEXMarkBenchmarkUtil:
         .source(stream)
         .filter { case x if x.getValue().bid != null => true; case _ => false }
         .filter { _.getValue().bid.auction % skipFactor == 0 }
-        .withOnAtomComplete { completer.complete(); Tasks.same }
+        .withOnAtomComplete { completer.complete() }
         .map { _.asInstanceOf[TimestampedValue[Bid]] }
         .sink()
         .freeze()
@@ -131,7 +131,7 @@ object NEXMarkBenchmarkUtil:
               }
           }
         }
-        .withOnAtomComplete { completer.complete(); Tasks.same }
+        .withOnAtomComplete { completer.complete() }
         .sink()
         .freeze()
 
@@ -193,7 +193,6 @@ object NEXMarkBenchmarkUtil:
               }
               auctionIdToAuction.set(auctionIdToAuction.get() -- highestBidsAuctions.keys)
               auctionIdToBid.set(auctionIdToBid.get() -- highestBids.keys)
-              Tasks.same
             }
         }
         // average winning bids over auction category
@@ -214,7 +213,7 @@ object NEXMarkBenchmarkUtil:
             ctx.emit(ResultType(cid, newTotal.toDouble / newNum.toDouble))
           }
         }
-        .withOnAtomComplete { completer.complete(); Tasks.same }
+        .withOnAtomComplete { completer.complete() }
         .sink()
         .freeze()
 

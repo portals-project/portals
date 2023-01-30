@@ -9,7 +9,7 @@ object Tasks extends Tasks:
   //////////////////////////////////////////////////////////////////////////////
 
   /** Behavior factory for generic task, returning a new task behavior. */
-  def task[T, U](onNext: TaskContext[T, U] ?=> T => Task[T, U]): Task[T, U] =
+  def task[T, U](onNext: TaskContext[T, U] ?=> T => Unit): Task[T, U] =
     new BaseTask[T, U] {}._copy(_onNext = onNext)
 
   /** Behavior factory for handling incoming event and context. */
@@ -27,11 +27,6 @@ object Tasks extends Tasks:
   def init[T, U](initFactory: TaskContext[T, U] ?=> Task[T, U]): Task[T, U] =
     Init[T, U](ctx => initFactory(using ctx))
 
-  /** Behavior factory for using the same behavior as previous behavior. */
-  def same[T, S]: Task[T, S] =
-    // same behavior is compatible with previous behavior
-    Same.asInstanceOf[Task[T, S]]
-
   //////////////////////////////////////////////////////////////////////////////
   // Task Implementations
   //////////////////////////////////////////////////////////////////////////////
@@ -39,20 +34,14 @@ object Tasks extends Tasks:
   private[portals] case class Processor[T, U](
       _onNext: TaskContext[T, U] => T => Unit
   ) extends BaseTask[T, U]:
-    override def onNext(using ctx: TaskContext[T, U])(event: T): Task[T, U] =
-      _onNext(ctx)(event)
-      Tasks.same
+    override def onNext(using ctx: TaskContext[T, U])(event: T): Unit = _onNext(ctx)(event)
   end Processor // case class
 
   private[portals] case class Identity[T]() extends BaseTask[T, T]:
-    override def onNext(using ctx: TaskContext[T, T])(event: T): Task[T, T] =
-      ctx.emit(event)
-      Tasks.same
+    override def onNext(using ctx: TaskContext[T, T])(event: T): Unit = ctx.emit(event)
   end Identity // case class
 
-  private[portals] case class Init[T, U](
-      initFactory: TaskContext[T, U] => Task[T, U]
-  ) extends Task[T, U]:
+  private[portals] case class Init[T, U](initFactory: TaskContext[T, U] => Task[T, U]) extends Task[T, U]:
     // wrapped initialized task
     var _task: Option[Task[T, U]] = None
 
@@ -64,25 +53,11 @@ object Tasks extends Tasks:
           _task = Some(prepareTask(this, ctx))
           _task.get
 
-    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
-      this.prepOrGet.onNext(t)
-      Tasks.same
-
-    override def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U] =
-      this.prepOrGet.onError(t)
-      Tasks.same
-
-    override def onComplete(using ctx: TaskContext[T, U]): Task[T, U] =
-      this.prepOrGet.onComplete
-      Tasks.same
-
-    override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] =
-      this.prepOrGet.onAtomComplete
-      Tasks.same
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Unit = this.prepOrGet.onNext(t)
+    override def onError(using ctx: TaskContext[T, U])(t: Throwable): Unit = this.prepOrGet.onError(t)
+    override def onComplete(using ctx: TaskContext[T, U]): Unit = this.prepOrGet.onComplete
+    override def onAtomComplete(using ctx: TaskContext[T, U]): Unit = this.prepOrGet.onAtomComplete
   end Init // case class
-
-  // this is fine, the methods are ignored as we reuse the previous behavior
-  private[portals] case object Same extends TaskUnimpl[Nothing, Nothing]
 
   //////////////////////////////////////////////////////////////////////////////
   // Base Tasks
@@ -90,17 +65,17 @@ object Tasks extends Tasks:
 
   /** Unimplemented Task */
   private[portals] class TaskUnimpl[T, U] extends Task[T, U]:
-    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] = ???
-    override def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U] = ???
-    override def onComplete(using ctx: TaskContext[T, U]): Task[T, U] = ???
-    override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] = ???
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Unit = ???
+    override def onError(using ctx: TaskContext[T, U])(t: Throwable): Unit = ???
+    override def onComplete(using ctx: TaskContext[T, U]): Unit = ???
+    override def onAtomComplete(using ctx: TaskContext[T, U]): Unit = ???
 
   /** Base Task */
   private[portals] class BaseTask[T, U] extends Task[T, U]:
-    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] = Tasks.same
-    override def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U] = Tasks.same
-    override def onComplete(using ctx: TaskContext[T, U]): Task[T, U] = Tasks.same
-    override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] = Tasks.same
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Unit = ()
+    override def onError(using ctx: TaskContext[T, U])(t: Throwable): Unit = ()
+    override def onComplete(using ctx: TaskContext[T, U]): Unit = ()
+    override def onAtomComplete(using ctx: TaskContext[T, U]): Unit = ()
 
   //////////////////////////////////////////////////////////////////////////////
   // Checks and Preparations
@@ -120,9 +95,7 @@ object Tasks extends Tasks:
         case _ => task
 
     /** prepare the task, recursively performing initialization */
-    task match
-      case Same => throw new Exception("Same is not a valid initial task behavior")
-      case _ => prepareTaskRec(task, ctx)
+    prepareTaskRec(task, ctx)
   end prepareTask // def
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -174,16 +147,16 @@ export TaskExtensions.*
 /** Task Behavior Combinators. */
 object TaskBehaviorCombinators:
   extension [T, U](task: Task[T, U]) {
-    def withOnNext(f: TaskContext[T, U] ?=> T => Task[T, U]): Task[T, U] =
+    def withOnNext(f: TaskContext[T, U] ?=> T => Unit): Task[T, U] =
       task._copy(_onNext = f)
 
-    def withOnError(f: TaskContext[T, U] ?=> Throwable => Task[T, U]): Task[T, U] =
+    def withOnError(f: TaskContext[T, U] ?=> Throwable => Unit): Task[T, U] =
       task._copy(_onError = f)
 
-    def withOnComplete(f: TaskContext[T, U] ?=> Task[T, U]): Task[T, U] =
+    def withOnComplete(f: TaskContext[T, U] ?=> Unit): Task[T, U] =
       task._copy(_onComplete = f)
 
-    def withOnAtomComplete(f: TaskContext[T, U] ?=> Task[T, U]): Task[T, U] =
+    def withOnAtomComplete(f: TaskContext[T, U] ?=> Unit): Task[T, U] =
       task._copy(_onAtomComplete = f)
   }
 end TaskBehaviorCombinators
@@ -194,27 +167,60 @@ export TaskBehaviorCombinators.*
 ////////////////////////////////////////////////////////////////////////////////
 /** VSM Extension. */
 object VSMExtension:
+  private[portals] trait VSMTask[T, U]:
+    def onNext(using ctx: TaskContext[T, U])(t: T): VSMTask[T, U]
+    def onError(using ctx: TaskContext[T, U])(t: Throwable): VSMTask[T, U]
+    def onComplete(using ctx: TaskContext[T, U]): VSMTask[T, U]
+    def onAtomComplete(using ctx: TaskContext[T, U]): VSMTask[T, U]
+
+  object VSMTasks:
+    /** Behavior factory for using the same behavior as previous behavior.
+      */
+    def same[T, S]: VSMTask[T, S] = Same.asInstanceOf[VSMTask[T, S]]
+
+    def processor[T, U](f: TaskContext[T, U] ?=> T => VSMTask[T, U]): VSMTask[T, U] = Processor(ctx => f(using ctx))
+
+    private[portals] class BaseVSMTask[T, U]() extends VSMTask[T, U]:
+      override def onNext(using ctx: TaskContext[T, U])(t: T): VSMTask[T, U] = VSMTasks.same
+      override def onError(using ctx: TaskContext[T, U])(t: Throwable): VSMTask[T, U] = VSMTasks.same
+      override def onComplete(using ctx: TaskContext[T, U]): VSMTask[T, U] = VSMTasks.same
+      override def onAtomComplete(using ctx: TaskContext[T, U]): VSMTask[T, U] = VSMTasks.same
+
+    private[portals] class VSMTaskUnimpl[T, U]() extends VSMTask[T, U]:
+      override def onNext(using ctx: TaskContext[T, U])(t: T): VSMTask[T, U] = ???
+      override def onError(using ctx: TaskContext[T, U])(t: Throwable): VSMTask[T, U] = ???
+      override def onComplete(using ctx: TaskContext[T, U]): VSMTask[T, U] = ???
+      override def onAtomComplete(using ctx: TaskContext[T, U]): VSMTask[T, U] = ???
+
+    private[portals] case class Processor[T, U](_onNext: TaskContext[T, U] => T => VSMTask[T, U])
+        extends BaseVSMTask[T, U]:
+      override def onNext(using ctx: TaskContext[T, U])(event: T): VSMTask[T, U] = _onNext(ctx)(event)
+    end Processor // case class
+
+    // this is fine, the methods are ignored as we reuse the previous behavior
+    private[portals] case object Same extends VSMTaskUnimpl[Nothing, Nothing]
+
   extension (t: Tasks) {
 
     /** Vsm behavior factory
       *
-      * The inner behavior should return the next state, for this we recommend the use of `Tasks.task`, note that the
-      * use of `Tasks.processor` will not work, as it returns `Unit` and not the next behavior. Do not use vsm for the
-      * inner behavior, this will lead to an infinite loop and crash.
+      * The inner behavior should return the next state, for this we recommend the use of [VSMExtension.processor], note
+      * that the use of `Tasks.processor` will not work, as it returns `Unit` and not the next behavior. Warning: do not
+      * use vsm for the inner behavior, this will lead to an infinite loop and crash.
       *
       * Example:
       *
       * {{{
-      * val init = Tasks.task { event => started }
-      * val started = Tasks.task { event => init }
-      * val vsm = Tasks.vsm[Int, Int] { init }
+      * val init = VSMExtension.processor { event => started }
+      * val started = VSMExtension.processor { event => init }
+      * val vsm = VSMExtension.vsm[Int, Int] { init }
       * }}}
       */
-    def vsm[T, U](defaultTask: Task[T, U]): Task[T, U] = Tasks.init[T, U] { ctx ?=>
-      val _vsm_state = PerKeyState[Task[T, U]]("$_vsm_state", defaultTask)
+    def vsm[T, U](defaultTask: VSMTask[T, U]): Task[T, U] = Tasks.init[T, U] { ctx ?=>
+      val _vsm_state = PerKeyState[VSMTask[T, U]]("$_vsm_state", defaultTask)
       Tasks.processor[T, U] { ctx ?=> event =>
         _vsm_state.get().onNext(event) match
-          case Tasks.Same => () // do nothing, keep same behavior
+          case VSMTasks.Same => () // do nothing, keep same behavior
           case t @ _ => _vsm_state.set(t)
       }
     }
@@ -236,16 +242,16 @@ object StepExtension:
     // init to first stepper
     private var _curr: Task[T, U] = steppers.head.task
 
-    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Unit =
       _curr.onNext(t)
 
-    override def onError(using ctx: TaskContext[T, U])(t: Throwable): Task[T, U] =
+    override def onError(using ctx: TaskContext[T, U])(t: Throwable): Unit =
       _curr.onError(t)
 
-    override def onComplete(using ctx: TaskContext[T, U]): Task[T, U] =
+    override def onComplete(using ctx: TaskContext[T, U]): Unit =
       _curr.onComplete
 
-    override def onAtomComplete(using ctx: TaskContext[T, U]): Task[T, U] =
+    override def onAtomComplete(using ctx: TaskContext[T, U]): Unit =
       _curr.onAtomComplete
 
       // update `_curr` to next stepper
@@ -261,7 +267,6 @@ object StepExtension:
             index.set(index.get() + 1)
             _curr = steppers(index.get() % size).task
 
-      Tasks.same // return same behavior :)
     end onAtomComplete
   end Stepper // case class
 
@@ -352,7 +357,7 @@ object WithWrapperExtension:
       *   }
       * }}}
       */
-    def withWrapper(f: TaskContext[T, U] ?=> (TaskContext[T, U] ?=> T => Task[T, U]) => T => Unit): Task[T, U] =
+    def withWrapper(f: TaskContext[T, U] ?=> (TaskContext[T, U] ?=> T => Unit) => T => Unit): Task[T, U] =
       Tasks.processor[T, U] { ctx ?=> event => f(task.onNext)(event) }
 
     // Optionally, wrapping around a full task.
@@ -390,9 +395,7 @@ object PortalsExtension:
   )(val portals: AtomicPortalRefType[Req, Rep]*)
       extends BaseTask[T, U]:
 
-    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
-      f(ctx.asInstanceOf)(t)
-      Tasks.same
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Unit = f(ctx.asInstanceOf)(t)
 
   private[portals] object AskerTask:
     private[portals] def run_and_cleanup_reply[T, U, Req, Rep](id: Int, r: Rep)(using
@@ -413,13 +416,10 @@ object PortalsExtension:
   )(val portals: AtomicPortalRefType[Req, Rep]*)
       extends BaseTask[T, U]:
 
-    // TODO: this is not used, AFAIK by the runtime, either use it or loose it :p.
-    def requestingOnNext(using ctx: ReplierTaskContext[T, U, Req, Rep])(req: Req): Unit =
-      f2(ctx)(req)
+    // // TODO: this is not used, AFAIK by the runtime, either use it or loose it :p.
+    // def requestingOnNext(using ctx: ReplierTaskContext[T, U, Req, Rep])(req: Req): Unit = f2(ctx)(req)
 
-    override def onNext(using ctx: TaskContext[T, U])(t: T): Task[T, U] =
-      f1(ctx)(t)
-      Tasks.same
+    override def onNext(using ctx: TaskContext[T, U])(t: T): Unit = f1(ctx)(t)
 
 end PortalsExtension
 export PortalsExtension.*
