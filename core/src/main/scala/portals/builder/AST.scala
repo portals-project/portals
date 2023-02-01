@@ -32,7 +32,7 @@ case class Workflow[T, U](
     path: String,
     private[portals] consumes: AtomicStreamRefKind[T],
     stream: AtomicStreamRef[U],
-    private[portals] tasks: Map[String, Task[_, _]],
+    private[portals] tasks: Map[String, GenericTask[_, _, _, _]],
     private[portals] source: String,
     private[portals] sink: String,
     private[portals] connections: List[(String, String)]

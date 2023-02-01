@@ -1,6 +1,6 @@
 package portals
 
-trait TaskCallback[T, U, Req, Rep]:
+trait OutputCollector[T, U, Req, Rep]:
   // Task
   def submit(event: WrappedEvent[U]): Unit
 
@@ -9,4 +9,4 @@ trait TaskCallback[T, U, Req, Rep]:
 
   // Replier Task
   def reply(r: Rep, portal: String, asker: String, key: Key[Int], id: Int): Unit
-end TaskCallback // trait
+end OutputCollector // trait

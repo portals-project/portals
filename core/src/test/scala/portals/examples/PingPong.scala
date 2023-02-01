@@ -38,6 +38,9 @@ class PingPongTest:
         .workflows[Pong, Ping]("workflow")
         .source[Pong](sequencer.stream)
         .map { case Pong(i) => Ping(i) }
+        .map { x =>
+          ctx.log.info(x.toString()); x
+        }
         .sink[Ping]()
         .freeze()
 

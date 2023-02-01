@@ -12,8 +12,9 @@ object DSL:
   // the dependent contextual generic task context to obtain a more specific
   // task context type. This can return both a MapTaskContext or the regular
   // TaskContext, e.g.
-  def ctx[T, U](using gctx: GenericTaskContext[T, U]): gctx.type =
-    gctx
+  /** def ctx[T, U, Req, Rep](using gctx: GenericTaskContext[T, U, Req, Rep]): gctx.type = gctx
+    */
+  def ctx(using gctx: GenericGenericTaskContext): gctx.type = gctx
 
   // shorthands for the TaskContext methods
   def emit[T, U](event: U)(using EmittingTaskContext[T, U]) = summon[EmittingTaskContext[T, U]].emit(event)

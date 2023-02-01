@@ -29,7 +29,7 @@ private class TestWorkflowContext:
 /** Internal API. TaskCallback to collect submitted events as side effects. Works both for regular tasks and for
   * AskerTasks and ReplierTasks.
   */
-private class CollectingTaskCallBack[T, U, Req, Rep] extends TaskCallback[T, U, Req, Rep]:
+private class CollectingTaskCallBack[T, U, Req, Rep] extends OutputCollector[T, U, Req, Rep]:
   //////////////////////////////////////////////////////////////////////////////
   // Task
   //////////////////////////////////////////////////////////////////////////////
@@ -75,10 +75,10 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   import TestWorkflow.*
   private val wctx = new TestWorkflowContext()
   private val tcb = CollectingTaskCallBack[Any, Any, Any, Any]()
-  private val tctx = TaskContext[Any, Any]()
-  val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
-  val rectx = ReplierTaskContext.fromTaskContext(tctx, tcb)
-  tctx.cb = tcb
+  private val tctx = TaskContextImpl[Any, Any, Any, Any]()
+  // val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
+  // val rectx = ReplierTaskContext.fromTaskContext(tctx, tcb)
+  tctx.outputCollector = tcb
 
   //////////////////////////////////////////////////////////////////////////////
   // Initialize the workflow
@@ -93,7 +93,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   private val sortedTasks = wf.tasks.toList.sortWith((t1, t2) => getOrdinal(t1._1) < getOrdinal(t2._1))
   // and initialized / prepared
   private val initializedTasks = sortedTasks.map { (name, task) =>
-    (name, Tasks.prepareTask(task, tctx.asInstanceOf))
+    (name, TaskXX.prepareTask(task, tctx.asInstanceOf))
   }
   // clear any strange side-effects that happened during initialization
   tcb.clear(); tcb.clearAsks(); tcb.clearReps()
@@ -112,7 +112,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   /** Internal API. Process a task with inputs on the previous outputs. */
   private def processTask(
       path: String,
-      task: Task[_, _],
+      task: GenericTask[_, _, _, _],
       inputs: List[String],
       outputs: Map[String, TestAtomBatch[_]],
   ): TestAtomBatch[_] = {
@@ -133,11 +133,8 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
                   tctx.state.key = key
                   tctx.key = key
                   tctx.path = path
-                  actx.state.key = key
-                  actx.key = key
-                  actx.path = path
-                  task.onNext(using actx.asInstanceOf)(e.asInstanceOf)
-                case _: Task[?, ?] =>
+                  task.asInstanceOf[GenericTask[Any, Any, Any, Any]].onNext(using tctx)(e)
+                case _: GenericTask[_, _, _, _] =>
                   tctx.state.key = key
                   tctx.key = key
                   tctx.path = path
@@ -264,18 +261,16 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   end processAtomHelper
 
   /** Internal API. Process the ReplierTask on a batch of asks. */
-  private def processReplierTask(task: Task[_, _], input: TestAskBatch[_]): TestAtomBatch[_] = {
+  private def processReplierTask(task: ReplierTask[_, _, _, _], input: TestAskBatch[_]): TestAtomBatch[_] = {
     input.list.foreach { event =>
       event match
         case Ask(key, meta, e) =>
           tctx.state.key = key
           tctx.key = key
-          rectx.state.key = key
-          rectx.key = key
-          rectx.id = meta.id
-          rectx.asker = meta.askingTask
-          rectx.portal = meta.portal
-          task.asInstanceOf[ReplierTask[_, _, _, _]].f2(rectx.asInstanceOf)(e.asInstanceOf)
+          tctx.id = meta.id
+          tctx.asker = meta.askingTask
+          tctx.portal = meta.portal
+          task.f2(tctx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
     }
     val output = tcb.getOutput()
@@ -288,7 +283,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     wctx.info = AskInfo(atom.meta.portal, atom.meta.askingWF)
     val taskName = rctx.portals(atom.meta.portal).replierTask
     val task = initializedTasks.toMap.get(taskName).get
-    val outputs1 = processReplierTask(task, atom)
+    val outputs1 = processReplierTask(task.asInstanceOf, atom)
     val outputs2 = processAtomHelper(Map(taskName -> outputs1))
     wctx.info = null
     outputs2
@@ -302,10 +297,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           tctx.state.key = key
           tctx.key = key
           tctx.path = path
-          actx.state.key = key
-          actx.key = key
-          actx.path = path
-          AskerTask.run_and_cleanup_reply(meta.id, e)(using actx)
+          TaskXX.run_and_cleanup_reply(meta.id, e)(using tctx)
         case _ => ??? // NOPE
     }
 

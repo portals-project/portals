@@ -39,11 +39,11 @@ object AkkaRunnerImpl extends AkkaRunner:
 
   override def task[T, U](
       path: String,
-      task: Task[T, U],
+      task: GenericTask[T, U, _, _],
       subscribers: Set[ActorRef[Event[U]]] = Set.empty,
       deps: Set[String] = Set.empty
   ): Behavior[Event[T]] =
-    AtomicWorkflowExecutor.Task(path, task, subscribers, deps)
+    AtomicWorkflowExecutor.Task(path, task.asInstanceOf, subscribers, deps)
 
   private object AtomicStreamExecutor:
     def apply[T](path: String, subscribers: Set[ActorRef[Event[T]]] = Set.empty): Behavior[PubSubRequest] =
@@ -185,13 +185,13 @@ object AkkaRunnerImpl extends AkkaRunner:
           subscribers: Set[ActorRef[Event[T]]] = Set.empty,
           deps: Set[String] = Set.empty
       ): Behavior[Event[T]] =
-        Task[T, T](path, Tasks.identity, subscribers, deps)
+        Task[T, T](path, Tasks.identity.asInstanceOf, subscribers, deps)
 
     // Task
     object Task:
       def apply[T, U](
           path: String,
-          task: Task[T, U],
+          task: GenericTask[T, U, Nothing, Nothing],
           subscribers: Set[ActorRef[Event[U]]] = Set.empty,
           deps: Set[String] = Set.empty,
       ): Behavior[Event[T]] =
@@ -207,8 +207,8 @@ object AkkaRunnerImpl extends AkkaRunner:
           var nonSeald = Set.empty[String]
 
           // create task context
-          given tctx: TaskContextImpl[T, U] = TaskContext[T, U]()
-          tctx.cb = new TaskCallback[T, U, Any, Any] {
+          given tctx: TaskContextImpl[T, U, Nothing, Nothing] = TaskContextImpl[T, U, Nothing, Nothing]()
+          tctx.outputCollector = new OutputCollector[T, U, Any, Any] {
             def submit(event: WrappedEvent[U]): Unit =
               subscribers.foreach { sub => sub ! Event(path, event) }
 
@@ -232,7 +232,7 @@ object AkkaRunnerImpl extends AkkaRunner:
           }
 
           // prepare task
-          val preparedTask = Tasks.prepareTask(task, tctx)
+          val preparedTask = TaskXX.prepareTask(task, tctx)
 
           // used to execute a wrapped event on the task
           def execute(event: WrappedEvent[T]): Unit =

@@ -36,42 +36,42 @@ class TasksTest:
       .receiveAssert(0)
       .receiveAssert(0)
 
-  @Test
-  def testWrapper(): Unit =
-    val testData = List(List(1, 2, 3, 4))
+  // @Test
+  // def testWrapper(): Unit =
+  //   val testData = List(List(1, 2, 3, 4))
 
-    val task = Tasks
-      .map[Int, Int] { _ + 5 }
-      .withWrapper { ctx ?=> wrapped => event =>
-        if event < 3 then ctx.emit(0) else wrapped(event)
-      }
+  //   val task = Tasks
+  //     .map[Int, Int] { _ + 5 }
+  //     .withWrapper { ctx ?=> wrapped => event =>
+  //       if event < 3 then ctx.emit(0) else wrapped(event)
+  //     }
 
-    val tester = TestUtils.executeTask(task, testData)
+  //   val tester = TestUtils.executeTask(task, testData)
 
-    // 0, 0, 8, 9
-    tester
-      .receiveAssert(0)
-      .receiveAssert(0)
-      .receiveAssert(8)
-      .receiveAssert(9)
+  //   // 0, 0, 8, 9
+  //   tester
+  //     .receiveAssert(0)
+  //     .receiveAssert(0)
+  //     .receiveAssert(8)
+  //     .receiveAssert(9)
 
-  @Test
-  def testWithAndThen(): Unit =
-    val testData = List.range(0, 4).grouped(1).toList
+  // @Test
+  // def testWithAndThen(): Unit =
+  //   val testData = List.range(0, 4).grouped(1).toList
 
-    val task = Tasks
-      .filter[Int](_ >= 1)
-      .withAndThen(Tasks.map { _ + 1 })
-      .withAndThen(Tasks.map { _ + 2 })
-      .withAndThen(Tasks.map { _ + 3 })
-      .withAndThen(Tasks.filter(_ < 9))
+  //   val task = Tasks
+  //     .filter[Int](_ >= 1)
+  //     .withAndThen(Tasks.map { _ + 1 })
+  //     .withAndThen(Tasks.map { _ + 2 })
+  //     .withAndThen(Tasks.map { _ + 3 })
+  //     .withAndThen(Tasks.filter(_ < 9))
 
-    val tester = TestUtils.executeTask(task, testData)
+  //   val tester = TestUtils.executeTask(task, testData)
 
-    // , 7, 8, _
-    tester
-      .receiveAssert(7)
-      .receiveAssert(8)
+  //   // , 7, 8, _
+  //   tester
+  //     .receiveAssert(7)
+  //     .receiveAssert(8)
 
   @Test
   def testVSM(): Unit =

@@ -2,6 +2,7 @@ package portals
 
 import scala.annotation.targetName
 
+// format: off
 /** Flow Builder
   *
   * @tparam T
@@ -39,7 +40,9 @@ trait FlowBuilder[T, U, CT, CU]:
 
   def union(others: FlowBuilder[T, U, _, CU]*): FlowBuilder[T, U, CU, CU] = union(others.toList)
 
-  def from[CU, CCU](others: FlowBuilder[T, U, _, CU]*)(task: Task[CU, CCU]): FlowBuilder[T, U, CU, CCU]
+  def from[CU, CCU](others: FlowBuilder[T, U, _, CU]*)(
+      task: GenericTask[CU, CCU, _, _]
+  ): FlowBuilder[T, U, CU, CCU]
 
   //////////////////////////////////////////////////////////////////////////////
   // Stateful transformations
@@ -50,9 +53,9 @@ trait FlowBuilder[T, U, CT, CU]:
   // TODO: it should be possible to have generic keys
   def key(f: CU => Int): FlowBuilder[T, U, CU, CU]
 
-  def task[CCU](taskBehavior: Task[CU, CCU]): FlowBuilder[T, U, CU, CCU]
+  def task[CCU](taskBehavior: GenericTask[CU, CCU, _, _]): FlowBuilder[T, U, CU, CCU]
 
-  def processor[CCU](f: TaskContext[CU, CCU] ?=> CU => Unit): FlowBuilder[T, U, CU, CCU]
+  def processor[CCU](f: ProcessorTaskContext[CU, CCU] ?=> CU => Unit): FlowBuilder[T, U, CU, CCU]
 
   def flatMap[CCU](f: MapTaskContext[CU, CCU] ?=> CU => Seq[CCU]): FlowBuilder[T, U, CU, CCU]
 
@@ -60,7 +63,9 @@ trait FlowBuilder[T, U, CT, CU]:
 
   def vsm[CCU](defaultTask: VSMTask[CU, CCU]): FlowBuilder[T, U, CU, CCU]
 
-  def init[CCU](initFactory: TaskContext[CU, CCU] ?=> Task[CU, CCU]): FlowBuilder[T, U, CU, CCU]
+  def init[CCU](
+      initFactory: ProcessorTaskContext[CU, CCU] ?=> GenericTask[CU, CCU, Nothing, Nothing]
+  ): FlowBuilder[T, U, CU, CCU]
 
   //////////////////////////////////////////////////////////////////////////////
   // Useful operators
@@ -82,32 +87,32 @@ trait FlowBuilder[T, U, CT, CU]:
 
   def withName(name: String): FlowBuilder[T, U, CT, CU]
 
-  def withOnNext(onNext: TaskContext[CT, CU] ?=> CT => Unit): FlowBuilder[T, U, CT, CU]
+  // def withOnNext(onNext: TaskContext[CT, CU] ?=> CT => Unit): FlowBuilder[T, U, CT, CU]
 
-  def withOnError(onError: TaskContext[CT, CU] ?=> Throwable => Unit): FlowBuilder[T, U, CT, CU]
+  // def withOnError(onError: TaskContext[CT, CU] ?=> Throwable => Unit): FlowBuilder[T, U, CT, CU]
 
-  def withOnComplete(onComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
+  // def withOnComplete(onComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
-  def withOnAtomComplete(onAtomComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
+  // def withOnAtomComplete(onAtomComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
   def withWrapper(
-      onNext: TaskContext[CT, CU] ?=> (TaskContext[CT, CU] ?=> CT => Unit) => CT => Unit
+      onNext: ProcessorTaskContext[CT, CU] ?=> (ProcessorTaskContext[CT, CU] ?=> CT => Unit) => CT => Unit
   ): FlowBuilder[T, U, CT, CU]
 
-  def withStep(task: Task[CT, CU]): FlowBuilder[T, U, CT, CU]
+  def withStep(task: GenericTask[CT, CU, Nothing, Nothing]): FlowBuilder[T, U, CT, CU]
 
-  def withLoop(count: Int)(task: Task[CT, CU]): FlowBuilder[T, U, CT, CU]
+  def withLoop(count: Int)(task: GenericTask[CT, CU, Nothing, Nothing]): FlowBuilder[T, U, CT, CU]
 
-  def withAndThen[CCU](task: Task[CU, CCU]): FlowBuilder[T, U, CT, CCU]
+  // def withAndThen[CCU](task: Task[CU, CCU]): FlowBuilder[T, U, CT, CCU]
 
   //////////////////////////////////////////////////////////////////////////////
   // All* Combinators
   //////////////////////////////////////////////////////////////////////////////
 
-  def allWithOnAtomComplete[WT, WU](onAtomComplete: TaskContext[WT, WU] ?=> Unit): FlowBuilder[T, U, CT, CU]
+  // def allWithOnAtomComplete[WT, WU](onAtomComplete: ProcessorTaskContext[WT, WU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
   def allWithWrapper[WT, WU](
-      _onNext: TaskContext[WT, WU] ?=> (TaskContext[WT, WU] ?=> WT => Unit) => WT => Unit
+      _onNext: ProcessorTaskContext[WT, WU] ?=> (ProcessorTaskContext[WT, WU] ?=> WT => Unit) => WT => Unit
   ): FlowBuilder[T | WT, U | WU, CT, CU]
 
   //////////////////////////////////////////////////////////////////////////////
@@ -119,7 +124,7 @@ trait FlowBuilder[T, U, CT, CU]:
         f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
     ): FlowBuilder[T, U, CU, CCU]
 
-    def replier[CCU](f1: TaskContext[CU, CCU] ?=> CU => Unit)(
+    def replier[CCU](f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit)(
         f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
     ): FlowBuilder[T, U, CU, CCU]
 

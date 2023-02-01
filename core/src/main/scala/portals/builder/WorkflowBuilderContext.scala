@@ -3,9 +3,10 @@ package portals
 import scala.compiletime.ops.boolean
 
 class WorkflowBuilderContext[T, U](_path: String, _name: String)(using val bctx: ApplicationBuilderContext):
+  self =>
   val path: String = _path
 
-  var tasks: Map[String, Task[_, _]] = Map.empty
+  var tasks: Map[String, GenericTask[_, _, _, _]] = Map.empty
   var source: Option[String] = None
   var sink: Option[String] = None
   var connections: List[(String, String)] = List.empty
@@ -26,7 +27,7 @@ class WorkflowBuilderContext[T, U](_path: String, _name: String)(using val bctx:
         path = path,
         consumes = consumes,
         stream = streamref,
-        tasks = tasks,
+        tasks = self.tasks,
         source = source.get,
         sink = sink.get,
         connections = connections

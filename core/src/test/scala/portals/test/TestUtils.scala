@@ -10,7 +10,7 @@ import portals.*
 
 object TestUtils:
   def executeTask[T, U](
-      task: Task[T, U],
+      task: GenericTask[T, U, _, _],
       testData: List[List[T]],
       testDataKeys: List[List[Key[Int]]] = List.empty,
   ): Tester[U] =
@@ -87,15 +87,15 @@ object TestUtils:
     def enqueueSeal(): Unit = queue.enqueue(Seal)
     def enqueueError(t: Throwable): Unit = queue.enqueue(Error(t))
 
-    val task = new Task[T, T] {
-      override def onNext(using ctx: TaskContext[T, T])(t: T): Unit =
+    val task = new ExtensibleTask[T, T] {
+      override def onNext(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(t: T): Unit =
         queue.enqueue(Event(t))
         ctx.emit(t)
-      override def onError(using ctx: TaskContext[T, T])(t: Throwable): Unit =
+      override def onError(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(t: Throwable): Unit =
         queue.enqueue(Error(t))
-      override def onComplete(using ctx: TaskContext[T, T]): Unit =
+      override def onComplete(using ctx: TaskContextImpl[T, T, Nothing, Nothing]): Unit =
         queue.enqueue(Seal)
-      override def onAtomComplete(using ctx: TaskContext[T, T]): Unit =
+      override def onAtomComplete(using ctx: TaskContextImpl[T, T, Nothing, Nothing]): Unit =
         queue.enqueue(Atom)
     }
 
