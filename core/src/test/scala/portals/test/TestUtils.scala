@@ -10,7 +10,7 @@ import portals.*
 
 object TestUtils:
   def executeTask[T, U](
-      task: Task[T, U],
+      task: GenericTask[T, U, _, _],
       testData: List[List[T]],
       testDataKeys: List[List[Key[Int]]] = List.empty,
   ): Tester[U] =
@@ -87,20 +87,16 @@ object TestUtils:
     def enqueueSeal(): Unit = queue.enqueue(Seal)
     def enqueueError(t: Throwable): Unit = queue.enqueue(Error(t))
 
-    val task = new Task[T, T] {
-      override def onNext(using ctx: TaskContext[T, T])(t: T): Task[T, T] =
+    val task = new ExtensibleTask[T, T] {
+      override def onNext(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(t: T): Unit =
         queue.enqueue(Event(t))
         ctx.emit(t)
-        Tasks.same
-      override def onError(using ctx: TaskContext[T, T])(t: Throwable): Task[T, T] =
+      override def onError(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(t: Throwable): Unit =
         queue.enqueue(Error(t))
-        Tasks.same
-      override def onComplete(using ctx: TaskContext[T, T]): Task[T, T] =
+      override def onComplete(using ctx: TaskContextImpl[T, T, Nothing, Nothing]): Unit =
         queue.enqueue(Seal)
-        Tasks.same
-      override def onAtomComplete(using ctx: TaskContext[T, T]): Task[T, T] =
+      override def onAtomComplete(using ctx: TaskContextImpl[T, T, Nothing, Nothing]): Unit =
         queue.enqueue(Atom)
-        Tasks.same
     }
 
     def workflow(stream: AtomicStreamRef[T], builder: ApplicationBuilder): Workflow[T, T] =
@@ -191,9 +187,9 @@ object AsyncTestUtils:
       // while !future.isCompleted do ()
       Await.result(future, atMost)
 
-    def task[T](p: T => Boolean) = Tasks.map[T, T] { x => { if p(x) then complete(true); x } }
+    def task[T](p: T => Boolean) = TaskBuilder.map[T, T] { x => { if p(x) then complete(true); x } }
 
-    // def taskOpt[T](p: T => Option[Boolean]) = Tasks.map[T, T] { x => { p(x) match { case Some(b) => complete(b); }; x } }
+    // def taskOpt[T](p: T => Option[Boolean]) = TaskBuilder.map[T, T] { x => { p(x) match { case Some(b) => complete(b); }; x } }
 
     def workflow[T](stream: AtomicStreamRef[T], builder: ApplicationBuilder)(p: T => Boolean): Workflow[T, T] =
       builder
@@ -236,11 +232,11 @@ object AsyncTestUtils:
       val range = Range(from, to).iterator
       workflow[Int](stream, builder) { x => x == range.next() }
 
-    def task[T](p: T => Boolean) = Tasks.map[T, T] { x => { assertTrue(p(x)); x } }
+    def task[T](p: T => Boolean) = TaskBuilder.map[T, T] { x => { assertTrue(p(x)); x } }
 
     def taskRange(from: Int, to: Int) =
       val range = Range(from, to).iterator
-      Tasks.map[Int, Int] { x => { assertTrue(x == range.next()); x } }
+      TaskBuilder.map[Int, Int] { x => { assertTrue(x == range.next()); x } }
 
     def taskIterator[T](iterator: Iterator[T]) =
-      Tasks.map[Int, Int] { x => { assertTrue(x == iterator.next()); x } }
+      TaskBuilder.map[Int, Int] { x => { assertTrue(x == iterator.next()); x } }

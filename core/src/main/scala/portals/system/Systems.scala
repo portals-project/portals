@@ -1,8 +1,5 @@
 package portals
 
-import portals.system.parallel.*
-import portals.system.test.*
-
 trait Systems
 
 object Systems extends Systems:

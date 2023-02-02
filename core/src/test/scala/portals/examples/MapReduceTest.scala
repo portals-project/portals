@@ -35,15 +35,6 @@ class WordCountTest:
     import portals.DSL.*
 
     val tester = new TestUtils.Tester[(String, Int)]()
-
-    // our map function takes an string and splits it to produce a list of words
-    val mapper: String => Seq[(String, Int)] =
-      line => line.split("\\s+").map(w => (w, 1))
-
-    // our reduce function takes two mapped elements and adds the counts together
-    val reducer: ((String, Int), (String, Int)) => (String, Int) =
-      ((x, y) => (x._1, x._2 + y._2))
-
     // one naive implementation is to use local state for storing the counts
     val builder = ApplicationBuilders.application("application")
 
@@ -53,12 +44,12 @@ class WordCountTest:
     val _ = builder
       .workflows[String, (String, Int)]("wf")
       .source[String](generator.stream)
-      .flatMap(mapper)
+      .flatMap(line => line.split("\\s+").toSeq.map(w => (w, 1)))
       .key(_._1.hashCode()) // sets the contextual key to the word
       // reducer applied to word and state in the VSM
       .init[(String, Int)] {
         val counts = PerTaskState[Map[String, Int]]("counts", Map.empty)
-        Tasks.processor { case (k, v) =>
+        TaskBuilder.processor { case (k, v) =>
           val newCount = counts.get().getOrElse(k, 0) + v
           counts.set(counts.get() + (k -> newCount))
         }
@@ -70,7 +61,6 @@ class WordCountTest:
         val counts = PerTaskState[Map[String, Int]]("counts", Map.empty)
         counts.get().iterator.foreach { case (k, v) => ctx.emit(k, v) }
         ctx.state.clear()
-        Tasks.same
       }
       // .logger()
       // check that the current output type is (String, Int), otherwise something went wrong

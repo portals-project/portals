@@ -30,7 +30,7 @@ object DataParallelThroughputBenchmark extends Benchmark:
       .source[Int](generator.stream)
       .init {
         val state = PerTaskState("state", 0)
-        Tasks.map { x =>
+        TaskBuilder.map { x =>
           state.set(state.get() + 1)
           if state.get() == (nEvents / nPartitions) then completer.complete()
           x

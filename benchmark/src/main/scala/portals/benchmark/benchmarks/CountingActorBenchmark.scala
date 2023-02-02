@@ -4,7 +4,6 @@ import portals.*
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.system.test.*
 import portals.DSL.*
 
 object CountingActorBenchmark extends Benchmark:
@@ -42,7 +41,7 @@ object CountingActorBenchmark extends Benchmark:
       .source[Int](generator.stream)
       .init {
         var state: Int = 0
-        Tasks.map { x =>
+        TaskBuilder.map { x =>
           state += 1
           if state == nEvents - 1 then completer.complete(true)
           x

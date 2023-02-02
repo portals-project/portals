@@ -16,7 +16,6 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 
 import portals.*
-import portals.system.parallel.*
 
 class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) extends PortalsSystem:
   import AkkaRunner.Events.*
@@ -99,7 +98,7 @@ class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) exte
         val aref = system.spawnAnonymous(
           akkaRunner.task[Any, Any](
             to,
-            workflow.tasks(to).asInstanceOf[Task[Any, Any]],
+            workflow.tasks(to).asInstanceOf[GenericTask[Any, Any, Nothing, Nothing]],
             runtimeWorkflow.filter(x => toto.contains(x._1)).map(_._2).toSet,
             deps
           ),

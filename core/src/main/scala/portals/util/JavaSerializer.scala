@@ -6,7 +6,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
 object JavaSerializer extends Serializer {
-  // TODO: consider using `blocks` instead
+  // TODO: consider using `spores3` instead
 
   override def serialize[T](obj: T): Array[Byte] =
     val bytes = new ByteArrayOutputStream()
