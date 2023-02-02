@@ -9,7 +9,10 @@ trait GeneratorBuilder:
 
   def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]]): AtomicGeneratorRef[T]
 
-  def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]], keys: Iterator[Iterator[Key[Long]]]): AtomicGeneratorRef[T]
+  def fromIteratorOfIterators[T](
+      itit: Iterator[Iterator[T]],
+      keys: Iterator[Iterator[Key[Long]]]
+  ): AtomicGeneratorRef[T]
 
   def fromList[T](list: List[T]): AtomicGeneratorRef[T]
 
