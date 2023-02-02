@@ -267,7 +267,7 @@ object AkkaRunnerImpl extends AkkaRunner:
               // execute the atom on the task
               atom.foreach { x => execute(x) }
             }
-            _atom_stash = _atom_stash.mapValues(_.tail).toMap
+            _atom_stash = _atom_stash.view.mapValues(_.tail).toMap
 
           // get blocking subscriptionIds
           def atom_stash_get_blocking(): Set[String] =

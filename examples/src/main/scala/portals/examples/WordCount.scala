@@ -22,14 +22,6 @@ import portals.*
 @main def WordCount(): Unit =
   import portals.DSL.*
 
-  // our map function takes a string and splits it to produce a list of words
-  val mapper: String => Seq[(String, Int)] =
-    line => line.split("\\s+").map(w => (w, 1))
-
-  // our reduce function takes two mapped elements and adds the counts together
-  val reducer: ((String, Int), (String, Int)) => (String, Int) =
-    ((x, y) => (x._1, x._2 + y._2))
-
   val builder = ApplicationBuilders.application("application")
 
   val input = List("the quick brown fox jumps over the lazy dog")
@@ -38,7 +30,7 @@ import portals.*
   val _ = builder
     .workflows[String, (String, Int)]("wf")
     .source[String](generator.stream)
-    .flatMap(mapper)
+    .flatMap(line => line.split("\\s+").toSeq.map(w => (w, 1)))
     .key(_._1.hashCode()) // sets the contextual key to the word
     // reducer applied to word and state in the VSM
     .init[(String, Int)] {

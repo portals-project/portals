@@ -32,14 +32,6 @@ class IncrementalWordCountTest:
 
     val tester = new TestUtils.Tester[(String, Int)]()
 
-    // our map function takes an string and splits it to produce a list of words
-    val mapper: String => Seq[(String, Int)] =
-      line => line.split("\\s+").map(w => (w, 1))
-
-    // our reduce function takes two mapped elements and adds the counts together
-    val reducer: ((String, Int), (String, Int)) => (String, Int) =
-      ((x, y) => (x._1, x._2 + y._2))
-
     // one naive implementation is to use local state for storing the counts
     val builder = ApplicationBuilders.application("application")
 
@@ -51,7 +43,7 @@ class IncrementalWordCountTest:
       // input is a stream of lines of text, we give it the name "text"
       .source[String](generator.stream)
       // each line is splitted on whitespaces
-      .flatMap { _.split("\\s+") }
+      .flatMap { _.split("\\s+").toSeq }
       // we create tuples for each word, with the second element being the number of occurrences of the word
       .map { word => (word, 1) }
       // keyBy groups every tuple by the first element

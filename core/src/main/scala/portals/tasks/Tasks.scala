@@ -37,7 +37,7 @@ object TaskExtensions:
 
     /** behavior factory for flatMap */
     def flatMap[T, U](f: MapTaskContext[T, U] ?=> T => TraversableOnce[U]): GenericTask[T, U, Nothing, Nothing] =
-      ProcessorTask[T, U] { ctx => x => f(using ctx)(x).foreach(ctx.emit) }
+      ProcessorTask[T, U] { ctx => x => f(using ctx)(x).iterator.foreach(ctx.emit) }
 
     /** behavior factory for filter */
     def filter[T](p: T => Boolean): GenericTask[T, T, Nothing, Nothing] =
