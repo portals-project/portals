@@ -297,15 +297,6 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
   /** Terminate the runtime. */
   def shutdown(): Unit = () // do nothing :)
 
-  /** Check that the application is well-formed with respect to other running applications. Throws an exception if
-    * application is not well-formed.
-    */
+  /** Perform runtime wellformedness checks on the application. */
   def check(application: Application): Unit =
-    // 1. Check naming collision with other applications
-    if rctx.applications.contains(application.path) then ???
-    // this test should suffice, as all other paths will be a subpath of the application
-
-    // 2. Check that all external references exist
-    if !application.externalPortals.forall(x => rctx.portals.contains(x.path)) then ???
-    if !application.externalSequencers.forall(x => rctx.sequencers.contains(x.path)) then ???
-    if !application.externalStreams.forall(x => rctx.streams.contains(x.path)) then ???
+    RuntimeCompilerPhases.wellFormedCheck(application)(using rctx)
