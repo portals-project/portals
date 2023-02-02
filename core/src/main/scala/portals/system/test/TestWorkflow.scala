@@ -49,7 +49,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   private val sortedTasks = wf.tasks.toList.sortWith((t1, t2) => getOrdinal(t1._1) < getOrdinal(t2._1))
   // and initialized / prepared
   private val initializedTasks = sortedTasks.map { (name, task) =>
-    (name, Task.prepareTask(task, tctx.asInstanceOf))
+    (name, TaskExecution.prepareTask(task, tctx.asInstanceOf))
   }
   // clear any strange side-effects that happened during initialization
   tcb.clear(); tcb.clearAsks(); tcb.clearReps()
@@ -253,7 +253,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           tctx.state.key = key
           tctx.key = key
           tctx.path = path
-          Task.run_and_cleanup_reply(meta.id, e)(using tctx)
+          TaskExecution.run_and_cleanup_reply(meta.id, e)(using tctx)
         case _ => ??? // NOPE
     }
 
