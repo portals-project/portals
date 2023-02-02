@@ -6,18 +6,21 @@ import portals.*
 
 /** Internal API. Holds runtime information of the executed applications. */
 private[portals] class TestRuntimeContext():
+  private var _applications: Map[String, Application] = Map.empty
   private var _streams: Map[String, TestStream] = Map.empty
   private var _portals: Map[String, TestPortal] = Map.empty
   private var _workflows: Map[String, TestWorkflow] = Map.empty
   private var _sequencers: Map[String, TestSequencer] = Map.empty
   private var _generators: Map[String, TestGenerator] = Map.empty
   private var _connections: Map[String, TestConnection] = Map.empty
+  def applications: Map[String, Application] = _applications
   def streams: Map[String, TestStream] = _streams
   def portals: Map[String, TestPortal] = _portals
   def workflows: Map[String, TestWorkflow] = _workflows
   def sequencers: Map[String, TestSequencer] = _sequencers
   def generators: Map[String, TestGenerator] = _generators
   def connections: Map[String, TestConnection] = _connections
+  def addApplication(application: Application): Unit = _applications += application.path -> application
   def addStream(stream: AtomicStream[_]): Unit = _streams += stream.path -> TestStream(stream)(using this)
   def addPortal(portal: AtomicPortal[_, _]): Unit = _portals += portal.path -> TestPortal(portal)(using this)
   def addWorkflow(wf: Workflow[_, _]): Unit = _workflows += wf.path -> TestWorkflow(wf)(using this)
@@ -109,6 +112,11 @@ class TestRuntime(val seed: Option[Int] = None):
 
   /** Launch an application. */
   def launch(application: Application): Unit =
+    this.check(application)
+
+    // add application
+    rctx.addApplication(application)
+
     // launch streams
     application.streams.foreach { stream =>
       rctx.addStream(stream)
@@ -288,3 +296,16 @@ class TestRuntime(val seed: Option[Int] = None):
 
   /** Terminate the runtime. */
   def shutdown(): Unit = () // do nothing :)
+
+  /** Check that the application is well-formed with respect to other running applications. Throws an exception if
+    * application is not well-formed.
+    */
+  def check(application: Application): Unit =
+    // 1. Check naming collision with other applications
+    if rctx.applications.contains(application.path) then ???
+    // this test should suffice, as all other paths will be a subpath of the application
+
+    // 2. Check that all external references exist
+    if !application.externalPortals.forall(x => rctx.portals.contains(x.path)) then ???
+    if !application.externalSequencers.forall(x => rctx.sequencers.contains(x.path)) then ???
+    if !application.externalStreams.forall(x => rctx.streams.contains(x.path)) then ???
