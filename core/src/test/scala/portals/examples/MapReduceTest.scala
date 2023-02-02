@@ -49,7 +49,7 @@ class WordCountTest:
       // reducer applied to word and state in the VSM
       .init[(String, Int)] {
         val counts = PerTaskState[Map[String, Int]]("counts", Map.empty)
-        Tasks.processor { case (k, v) =>
+        TaskBuilder.processor { case (k, v) =>
           val newCount = counts.get().getOrElse(k, 0) + v
           counts.set(counts.get() + (k -> newCount))
         }

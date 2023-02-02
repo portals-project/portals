@@ -44,7 +44,7 @@ object FibonacciBenchmark extends Benchmark:
         val fib1 = TaskStates.perKey[Long]("fib1", -1)
         val fib2 = TaskStates.perKey[Long]("fib2", -1)
         val requests = TaskStates.perKey[List[Int]]("requests", List.empty)
-        Tasks.processor {
+        TaskBuilder.processor {
           case FibRequest(sender, receiver) =>
             if receiver <= 0 then ctx.emit(FibResponse(receiver, sender, v = 0))
             else if receiver == 1 then ctx.emit(FibResponse(receiver, sender, v = 1))

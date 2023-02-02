@@ -42,7 +42,7 @@ object CountingActorBenchmark extends Benchmark:
       .source[Int](generator.stream)
       .init {
         var state: Int = 0
-        Tasks.map { x =>
+        TaskBuilder.map { x =>
           state += 1
           if state == nEvents - 1 then completer.complete(true)
           x

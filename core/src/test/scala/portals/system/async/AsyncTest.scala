@@ -224,7 +224,7 @@ class AsyncTest:
       // completer
       .init[Int] { ctx ?=>
         val state = PerTaskState[Int]("state", 0)
-        Tasks.map { x =>
+        TaskBuilder.map { x =>
           if x == to - 1 then
             state.set(state.get() + 1)
             if state.get() == fanWidth then completer.complete()

@@ -15,11 +15,11 @@ class TasksTest:
   def testSteppers(): Unit =
     val testData = List.fill(10)(0).grouped(1).toList
 
-    val task = Tasks
+    val task = TaskBuilder
       .map[Int, Int] { x => x + 1 }
-      .withStep { Tasks.map { x => x + 2 } }
-      .withStep { Tasks.map { x => x + 3 } }
-      .withLoop(2) { Tasks.map { x => x + 0 } }
+      .withStep { TaskBuilder.map { x => x + 2 } }
+      .withStep { TaskBuilder.map { x => x + 3 } }
+      .withLoop(2) { TaskBuilder.map { x => x + 0 } }
 
     val tester = TestUtils.executeTask(task, testData)
 
@@ -40,7 +40,7 @@ class TasksTest:
   def testWrapper(): Unit =
     val testData = List(List(1, 2, 3, 4))
 
-    val task = Tasks
+    val task = TaskBuilder
       .map[Int, Int] { _ + 5 }
       .withWrapper { ctx ?=> wrapped => event =>
         if event < 3 then ctx.emit(0) else wrapped(event)
@@ -59,12 +59,12 @@ class TasksTest:
   def testWithAndThen(): Unit =
     val testData = List.range(0, 4).grouped(1).toList
     import portals.DSL.*
-    val task = Tasks
+    val task = TaskBuilder
       .filter[Int](_ >= 1)
-      .withAndThen(Tasks.map { _ + 1 })
-      .withAndThen(Tasks.map { _ + 2 })
-      .withAndThen(Tasks.map { _ + 3 })
-      .withAndThen(Tasks.filter(_ < 9))
+      .withAndThen(TaskBuilder.map { _ + 1 })
+      .withAndThen(TaskBuilder.map { _ + 2 })
+      .withAndThen(TaskBuilder.map { _ + 3 })
+      .withAndThen(TaskBuilder.filter(_ < 9))
 
     val tester = TestUtils.executeTask(task, testData)
 
@@ -99,7 +99,7 @@ class TasksTest:
           init // go to init
       }
 
-    val task = Tasks.vsm { VSM.init }
+    val task = TaskBuilder.vsm { VSM.init }
 
     val tester = TestUtils.executeTask(task, testData, testDataKeys)
 
@@ -115,7 +115,7 @@ class TasksTest:
 
     val testData = List(List(1, 2, 3), List(1, 2, 3))
 
-    val task = Tasks.processor[Int, Int] { ctx ?=> event =>
+    val task = TaskBuilder.processor[Int, Int] { ctx ?=> event =>
       val perKeyState: PerKeyState[Int] = PerKeyState("pks", 0)
       // emit state
       ctx.emit(perKeyState.get())
@@ -140,7 +140,7 @@ class TasksTest:
 
     val testData = List(List(1, 2, 3), List(1, 2, 3))
 
-    val task = Tasks.processor[Int, Int] { ctx ?=> event =>
+    val task = TaskBuilder.processor[Int, Int] { ctx ?=> event =>
       val perTaskState: PerTaskState[Int] = PerTaskState("pts", 0)
       // emit state
       ctx.emit(perTaskState.get())
@@ -163,9 +163,9 @@ class TasksTest:
   def testInit(): Unit =
     val testData = List(List(1, 2, 3))
 
-    val task = Tasks.init[Int, Int] {
+    val task = TaskBuilder.init[Int, Int] {
       val y = 1
-      Tasks.map { x => x + y }
+      TaskBuilder.map { x => x + y }
     }
 
     val tester = TestUtils.executeTask(task, testData)

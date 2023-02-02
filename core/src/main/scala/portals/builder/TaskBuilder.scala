@@ -1,9 +1,9 @@
 package portals
 
-private sealed trait Tasks
+private sealed trait TaskBuilder
 
 /** Core Task Factories. */
-object Tasks extends Tasks:
+object TaskBuilder extends TaskBuilder:
   //////////////////////////////////////////////////////////////////////////////
   // Task Factories
   //////////////////////////////////////////////////////////////////////////////
@@ -48,9 +48,9 @@ object Tasks extends Tasks:
     ): GenericTask[T, U, Req, Rep] =
       ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))(portals: _*)
 
-  extension (t: Tasks) {
+  extension (t: TaskBuilder) {
     /* Note: the reason we have this extra step via `portal` is to avoid the user having to specify the Req and Rep types. */
     def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) =
       new PortalsTasks[Req, Rep](portals: _*)
   }
-end Tasks // object
+end TaskBuilder // object

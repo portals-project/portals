@@ -187,9 +187,9 @@ object AsyncTestUtils:
       // while !future.isCompleted do ()
       Await.result(future, atMost)
 
-    def task[T](p: T => Boolean) = Tasks.map[T, T] { x => { if p(x) then complete(true); x } }
+    def task[T](p: T => Boolean) = TaskBuilder.map[T, T] { x => { if p(x) then complete(true); x } }
 
-    // def taskOpt[T](p: T => Option[Boolean]) = Tasks.map[T, T] { x => { p(x) match { case Some(b) => complete(b); }; x } }
+    // def taskOpt[T](p: T => Option[Boolean]) = TaskBuilder.map[T, T] { x => { p(x) match { case Some(b) => complete(b); }; x } }
 
     def workflow[T](stream: AtomicStreamRef[T], builder: ApplicationBuilder)(p: T => Boolean): Workflow[T, T] =
       builder
@@ -232,11 +232,11 @@ object AsyncTestUtils:
       val range = Range(from, to).iterator
       workflow[Int](stream, builder) { x => x == range.next() }
 
-    def task[T](p: T => Boolean) = Tasks.map[T, T] { x => { assertTrue(p(x)); x } }
+    def task[T](p: T => Boolean) = TaskBuilder.map[T, T] { x => { assertTrue(p(x)); x } }
 
     def taskRange(from: Int, to: Int) =
       val range = Range(from, to).iterator
-      Tasks.map[Int, Int] { x => { assertTrue(x == range.next()); x } }
+      TaskBuilder.map[Int, Int] { x => { assertTrue(x == range.next()); x } }
 
     def taskIterator[T](iterator: Iterator[T]) =
-      Tasks.map[Int, Int] { x => { assertTrue(x == iterator.next()); x } }
+      TaskBuilder.map[Int, Int] { x => { assertTrue(x == iterator.next()); x } }

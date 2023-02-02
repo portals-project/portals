@@ -113,7 +113,7 @@ object NEXMarkBenchmarkUtil:
           val auctions = PerKeyState[Set[Auction]]("auctions", Set.empty)
           val persons = PerKeyState[Set[Person]]("persons", Set.empty)
 
-          Tasks.processor {
+          TaskBuilder.processor {
             case x if x.getValue().newPerson != null =>
               val person = x.getValue().newPerson
               persons.set(persons.get() + person)
@@ -171,7 +171,7 @@ object NEXMarkBenchmarkUtil:
           val auctionIdToBid = PerTaskState[Map[Long, Bid]]("auctionIdToBid", Map.empty)
           val highestTimeStamp = PerTaskState[Instant]("highestTimeStamp", BoundedWindow.TIMESTAMP_MIN_VALUE)
 
-          Tasks
+          TaskBuilder
             .processor[TimestampedValue[Event], IntermediateType] { x =>
               x match
                 case x if x.getValue().newAuction != null =>
@@ -203,7 +203,7 @@ object NEXMarkBenchmarkUtil:
           val total = PerKeyState[Long]("total", 0)
           val num = PerKeyState[Long]("num", 0)
 
-          Tasks.processor { case IntermediateType(cid, price) =>
+          TaskBuilder.processor { case IntermediateType(cid, price) =>
             val _total = total.get()
             val _num = num.get()
             val newTotal = _total + price

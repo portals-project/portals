@@ -35,7 +35,7 @@ import portals.*
     // explicit reduce task
     .init {
       val count = PerKeyState[Int]("count", 0)
-      Tasks.map { case (key, value) =>
+      TaskBuilder.map { case (key, value) =>
         count.set(count.get() + value)
         (key, count.get())
       }
@@ -77,7 +77,7 @@ import portals.*
     .key { _._1.hashCode() }
     .init {
       val state = PerKeyState[Int]("state", 0)
-      Tasks.map { x =>
+      TaskBuilder.map { x =>
         val out = reducer(x._1)(state.get())(x._2); state.set(out._2); out
       }
     }

@@ -53,7 +53,7 @@ class IncrementalWordCountTest:
       // explicit reduce task
       .init {
         val count = PerKeyState[Int]("count", 0)
-        Tasks.map { case (key, value) =>
+        TaskBuilder.map { case (key, value) =>
           count.set(count.get() + value)
           (key, count.get())
         }

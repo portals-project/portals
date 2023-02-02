@@ -5,7 +5,7 @@ package portals
 ////////////////////////////////////////////////////////////////////////////////
 /** Task Extensions. */
 object TaskExtensions:
-  extension (t: Tasks) {
+  extension (t: TaskBuilder) {
 
     /** behavior factory for flatMap */
     def flatMap[T, U](f: MapTaskContext[T, U] ?=> T => TraversableOnce[U]): GenericTask[T, U, Nothing, Nothing] =
@@ -80,7 +80,7 @@ object VSMExtension:
     // this is fine, the methods are ignored as we reuse the previous behavior
     private[portals] case object Same extends VSMTaskUnimpl[Nothing, Nothing]
 
-  extension (t: Tasks) {
+  extension (t: TaskBuilder) {
 
     /** Vsm behavior factory
       *
@@ -96,9 +96,9 @@ object VSMExtension:
       * val vsm = VSMExtension.vsm[Int, Int] { init }
       * }}}
       */
-    def vsm[T, U](defaultTask: VSMTask[T, U]): GenericTask[T, U, Nothing, Nothing] = Tasks.init {
+    def vsm[T, U](defaultTask: VSMTask[T, U]): GenericTask[T, U, Nothing, Nothing] = TaskBuilder.init {
       lazy val _vsm_state = PerKeyState[VSMTask[T, U]]("$_vsm_state", defaultTask)
-      Tasks.processor[T, U] { event =>
+      TaskBuilder.processor[T, U] { event =>
         _vsm_state.get().onNext(event) match
           case VSMTasks.Same => () // do nothing, keep same behavior
           case t @ _ => _vsm_state.set(t)

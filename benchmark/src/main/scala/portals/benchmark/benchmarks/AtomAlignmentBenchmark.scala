@@ -44,13 +44,13 @@ object AtomAlignmentBenchmark extends Benchmark:
     // create grid
     val forwarder =
       if withWork then
-        Tasks.flatMap[Int, Int](x =>
+        TaskBuilder.flatMap[Int, Int](x =>
           Computation(1024 * 2)
           List(x)
         )
-      else Tasks.flatMap[Int, Int](x => List(x))
+      else TaskBuilder.flatMap[Int, Int](x => List(x))
 
-    val silent = Tasks.flatMap[Int, Int](x => List.empty[Int])
+    val silent = TaskBuilder.flatMap[Int, Int](x => List.empty[Int])
 
     val wfb = builder.workflows[Int, Int]("workflow")
 

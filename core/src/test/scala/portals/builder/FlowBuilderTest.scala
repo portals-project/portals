@@ -46,9 +46,9 @@ class FlowBuilderTest:
 
     val flows = TestUtils.flowBuilder[Int, Int] {
       _.map { x => x + 1 }
-        .withStep { Tasks.map { x => x + 2 } }
-        .withStep { Tasks.map { x => x + 3 } }
-        .withLoop(2) { Tasks.map { x => x + 0 } }
+        .withStep { TaskBuilder.map { x => x + 2 } }
+        .withStep { TaskBuilder.map { x => x + 3 } }
+        .withLoop(2) { TaskBuilder.map { x => x + 0 } }
     }
 
     val tester = TestUtils.executeWorkflow(flows, testData)
@@ -96,10 +96,10 @@ class FlowBuilderTest:
 
     val flows = TestUtils.flowBuilder[Int, Int] {
       _.filter { _ >= 1 }
-        .withAndThen(Tasks.map { _ + 1 })
-        .withAndThen(Tasks.map { _ + 2 })
-        .withAndThen(Tasks.map { _ + 3 })
-        .withAndThen(Tasks.filter(_ < 9))
+        .withAndThen(TaskBuilder.map { _ + 1 })
+        .withAndThen(TaskBuilder.map { _ + 2 })
+        .withAndThen(TaskBuilder.map { _ + 3 })
+        .withAndThen(TaskBuilder.filter(_ < 9))
     }
 
     val tester = TestUtils.executeWorkflow(flows, testData)
@@ -154,7 +154,7 @@ class FlowBuilderTest:
     val flows = TestUtils.flowBuilder[Int, Int] {
       _.init {
         val perKeyState: PerKeyState[Int] = PerKeyState("pks", 0)
-        Tasks.processor { event =>
+        TaskBuilder.processor { event =>
           // emit state
           ctx.emit(perKeyState.get())
           // set state to the event
@@ -183,7 +183,7 @@ class FlowBuilderTest:
     val flows = TestUtils.flowBuilder[Int, Int] {
       _.init {
         val perTaskState: PerTaskState[Int] = PerTaskState("pts", 0)
-        Tasks.processor { event =>
+        TaskBuilder.processor { event =>
           // emit state
           ctx.emit(perTaskState.get())
           // set state to the event
@@ -212,7 +212,7 @@ class FlowBuilderTest:
     val flows = TestUtils.flowBuilder[Int, Int] {
       _.init {
         val y = 1
-        Tasks.map { x => x + y }
+        TaskBuilder.map { x => x + y }
       }
     }
 
@@ -233,7 +233,7 @@ class FlowBuilderTest:
     val flows = TestUtils.flowBuilder[Int, Int] {
       _.init {
         val counter = PerTaskState("counter", 0)
-        Tasks.processor { event =>
+        TaskBuilder.processor { event =>
           counter.set(counter.get() + event)
           ctx.emit(event)
         }

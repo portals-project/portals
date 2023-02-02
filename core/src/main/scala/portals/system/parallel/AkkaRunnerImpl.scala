@@ -185,7 +185,7 @@ object AkkaRunnerImpl extends AkkaRunner:
           subscribers: Set[ActorRef[Event[T]]] = Set.empty,
           deps: Set[String] = Set.empty
       ): Behavior[Event[T]] =
-        Task[T, T](path, Tasks.identity.asInstanceOf, subscribers, deps)
+        Task[T, T](path, TaskBuilder.identity.asInstanceOf, subscribers, deps)
 
     // Task
     object Task:

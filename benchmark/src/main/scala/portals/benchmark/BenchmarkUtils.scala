@@ -24,7 +24,7 @@ object BenchmarkUtils:
     def waitForCompletion(): Boolean =
       Await.result(future, atMost)
 
-    def task[T](p: T => Boolean) = Tasks.map[T, T] { x => { if p(x) then complete(true); x } }
+    def task[T](p: T => Boolean) = TaskBuilder.map[T, T] { x => { if p(x) then complete(true); x } }
 
     def workflow[T](stream: AtomicStreamRef[T], builder: ApplicationBuilder)(p: T => Boolean): Workflow[T, T] =
       builder
@@ -44,7 +44,7 @@ object BenchmarkUtils:
     def waitForCompletion(): Unit =
       if !countDownLatch.await(atMost.length, atMost.unit) then throw TimeoutException()
 
-    def task[T](p: T => Boolean) = Tasks.map[T, T] { x => { if p(x) then complete(); x } }
+    def task[T](p: T => Boolean) = TaskBuilder.map[T, T] { x => { if p(x) then complete(); x } }
 
     def workflow[T](stream: AtomicStreamRef[T], builder: ApplicationBuilder)(p: T => Boolean): Workflow[T, T] =
       builder
