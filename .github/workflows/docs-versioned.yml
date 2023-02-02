@@ -22,6 +22,7 @@ jobs:
       with:
         deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
         external_repository: portals-project/portals-api
+        publish_branch: main
         publish_dir: './core/target/api'
         destination_dir: ${{ github.ref_name }}
         keep_files: true
