@@ -29,7 +29,7 @@ object TaskBuilder extends TaskBuilder:
     MapTask[T, U](ctx => f(using ctx))
 
   /** behavior factory for modifying the key context */
-  private[portals] def key[T](f: T => Int): GenericTask[T, T, Nothing, Nothing] =
+  private[portals] def key[T](f: T => Long): GenericTask[T, T, Nothing, Nothing] =
     ShuffleTask[T, T] { ctx => x =>
       ctx.key = Key(f(x))
       ctx.emit(x)

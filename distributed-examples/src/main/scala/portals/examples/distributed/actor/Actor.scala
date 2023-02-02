@@ -83,14 +83,14 @@ sealed trait ActorContext[T]:
   def log[U](msg: U): Unit
   def send[U](aref: ActorRef[U])(msg: U): Unit
   def create[U](behavior: ActorBehavior[U]): ActorRef[U]
-  private[portals] val tctx: TaskContext[ActorMessage, ActorMessage]
+  private[portals] val tctx: ProcessorTaskContext[ActorMessage, ActorMessage]
 end ActorContext // trait
 
 @experimental
 private[portals] object ActorContext:
   import ActorEvents.*
 
-  def apply[T](ctx: TaskContext[ActorMessage, ActorMessage]): ActorContext[T] =
+  def apply[T](ctx: ProcessorTaskContext[ActorMessage, ActorMessage]): ActorContext[T] =
     new ActorContext[T] {
       var self: ActorRef[T] = null
       override val state: ActorState = ActorState()
@@ -101,7 +101,7 @@ private[portals] object ActorContext:
         tctx.emit(ActorCreate[U](aref, behavior))
         aref
       }
-      override private[portals] val tctx: TaskContext[ActorMessage, ActorMessage] = ctx
+      override private[portals] val tctx: ProcessorTaskContext[ActorMessage, ActorMessage] = ctx
     }
 end ActorContext // object
 
@@ -167,12 +167,12 @@ private[portals] object ActorRuntime:
   import StashExtension.*
 
   def apply(): Task[ActorMessage, ActorMessage] =
-    Tasks.init { ctx ?=>
+    InitTask { ctx =>
+      given TaskContextImpl[ActorMessage, ActorMessage, Nothing, Nothing] = ctx
       val behavior = PerKeyState[ActorBehavior[Any]]("behavior", NoBehavior)
       val actx = ActorContext[Any](ctx)
-
-      Tasks.stash { stash => // stash messages if behavior not yet created
-        Tasks.processor {
+      TaskBuilder.stash { stash => // stash messages if behavior not yet created
+        TaskBuilder.processor {
           case ActorSend(aref, msg) => {
             actx.self = aref.asInstanceOf[ActorRef[Any]]
             behavior.get() match

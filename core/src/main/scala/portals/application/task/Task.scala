@@ -83,4 +83,6 @@ private[portals] case class InitTask[T, U, Req, Rep](initFactory: TaskContextImp
   override def onAtomComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit = this.prepOrGet.onAtomComplete
 end InitTask // case class
 
+// shorthand
+type Task[T, U] = GenericTask[T, U, Nothing, Nothing]
 // format: on

@@ -240,6 +240,7 @@ object AkkaRunnerImpl extends AkkaRunner:
               case portals.Event(key, event) =>
                 tctx.state.key = key
                 tctx.key = key
+                tctx.task = preparedTask
                 preparedTask.onNext(event)
               case portals.Atom =>
                 preparedTask.onAtomComplete
