@@ -141,7 +141,7 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     val behavior = TaskBuilder.map[CU, CCU](f)
     addTask(behavior)
 
-  override def key(f: CU => Int): FlowBuilder[T, U, CU, CU] =
+  override def key(f: CU => Long): FlowBuilder[T, U, CU, CU] =
     val behavior = TaskBuilder.key[CU](f)
     addTask(behavior)
 

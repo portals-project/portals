@@ -43,3 +43,10 @@ lazy val examples = project
     name := "portals-examples",
   )
   .dependsOn(portals)
+
+lazy val distributedExamples = project
+  .in(file("distributed-examples"))
+  .settings(
+    name := "portals-distributed-examples",
+  )
+  .dependsOn(portals)
