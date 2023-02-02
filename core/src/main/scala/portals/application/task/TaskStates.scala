@@ -16,6 +16,7 @@ end TaskStates // object
 trait TypedState[T]:
   def get(): T
   def set(value: T): Unit
+  def del(): Unit
 end TypedState // trait
 
 trait PerKeyState[T] extends TypedState[T]
@@ -41,13 +42,15 @@ class PerKeyStateImpl[T](name: String, initValue: T)(using StatefulTaskContext[_
 
   override def set(value: T): Unit = _state.set(name, value)
 
+  override def del(): Unit = _state.del(name)
+
 end PerKeyStateImpl // class
 
 class PerTaskStateImpl[T](name: String, initValue: T)(using StatefulTaskContext[_, _]) extends PerTaskState[T]:
   private val _state: TaskState[Any, Any] = summon[StatefulTaskContext[_, _]].state
 
-  private var _key: Key[Int] = _
-  private val _reservedKey: Key[Int] = Key(-2) // reserved to TaskState for now :)
+  private var _key: Key[Long] = _
+  private val _reservedKey: Key[Long] = Key(-2) // reserved to TaskState for now :)
 
   private def setKey(): Unit =
     // TODO: consider having perTaskState and perKeyState be disjoint states so we don't have to manipulate the key here
@@ -70,6 +73,11 @@ class PerTaskStateImpl[T](name: String, initValue: T)(using StatefulTaskContext[
   override def set(value: T): Unit =
     setKey()
     _state.set(name, value)
+    resetKey()
+
+  override def del(): Unit =
+    setKey()
+    _state.del(name)
     resetKey()
 
 end PerTaskStateImpl // class

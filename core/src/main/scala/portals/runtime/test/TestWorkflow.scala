@@ -89,11 +89,13 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
                   tctx.state.key = key
                   tctx.key = key
                   tctx.path = path
+                  tctx.task = task.asInstanceOf
                   task.asInstanceOf[GenericTask[Any, Any, Any, Any]].onNext(using tctx)(e)
                 case _: GenericTask[_, _, _, _] =>
                   tctx.state.key = key
                   tctx.key = key
                   tctx.path = path
+                  tctx.task = task.asInstanceOf
                   task.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
               }
             case Atom =>
@@ -226,6 +228,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           tctx.id = meta.id
           tctx.asker = meta.askingTask
           tctx.portal = meta.portal
+          tctx.task = task.asInstanceOf
           task.f2(tctx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
     }
@@ -253,6 +256,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           tctx.state.key = key
           tctx.key = key
           tctx.path = path
+          tctx.task = null
           TaskExecution.run_and_cleanup_reply(meta.id, e)(using tctx)
         case _ => ??? // NOPE
     }

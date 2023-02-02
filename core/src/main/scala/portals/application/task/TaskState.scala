@@ -27,7 +27,7 @@ private[portals] trait TaskState[K, V]:
 
   /** Contextual key for per-key execution */
   // has to be var so that it can be swapped at runtime
-  private[portals] var key: Key[Int]
+  private[portals] var key: Key[Long]
 
 end TaskState // trait
 

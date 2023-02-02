@@ -1,5 +1,7 @@
 package portals
 
+import scala.annotation.experimental
+
 ////////////////////////////////////////////////////////////////////////////////
 // Task Extensions
 ////////////////////////////////////////////////////////////////////////////////
@@ -250,3 +252,31 @@ object WithWrapperExtension:
   }
 end WithWrapperExtension
 export WithWrapperExtension.*
+
+////////////////////////////////////////////////////////////////////////////////
+// Stash Extension
+////////////////////////////////////////////////////////////////////////////////
+@experimental
+object StashExtension:
+  extension (t: TaskBuilder) {
+    def stash[T, U](f: TaskStash[T, U] => GenericTask[T, U, Nothing, Nothing]): GenericTask[T, U, Nothing, Nothing] =
+      InitTask { ctx =>
+        f(TaskStash[T, U]())
+      }
+  }
+
+  /** FIXME: we should really provide a more efficient state interface for lists or similar. */
+  class TaskStash[T, U]():
+    private lazy val _stash: TaskContextImpl[T, U, Nothing, Nothing] ?=> PerKeyState[List[T]] =
+      PerKeyState[List[T]]("_stash", List.empty)
+    def stash(msg: T): TaskContextImpl[T, U, Nothing, Nothing] ?=> Unit =
+      _stash.set(msg :: _stash.get())
+    def unstashAll(): TaskContextImpl[T, U, Nothing, Nothing] ?=> Unit =
+      _stash
+        .get()
+        .reverse
+        .foreach { msg => summon[TaskContextImpl[T, U, Nothing, Nothing]].task.onNext(msg) }
+      _stash.del()
+    def size(): TaskContextImpl[T, U, Nothing, Nothing] ?=> Int =
+      _stash.get().size
+end StashExtension

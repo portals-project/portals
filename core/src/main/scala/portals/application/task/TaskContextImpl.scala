@@ -20,9 +20,10 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
 
   /** should be var so that it can be swapped out during runtime */
   private[portals] var path: String = "" // TODO: make this set by the runtime
-  private[portals] var key: Key[Int] = Key(-1) // TODO: make this set by the runtime
+  private[portals] var key: Key[Long] = Key(-1) // TODO: make this set by the runtime
   private[portals] var system: PortalsSystem = _
   private[portals] var outputCollector: OutputCollector[T, U, Any, Any] = _
+  private[portals] var task: GenericTask[T, U, Req, Rep] = _
 
   //////////////////////////////////////////////////////////////////////////////
   // AskerTaskContext

@@ -31,7 +31,7 @@ private[portals] trait ReplyingTaskContext[T, U, Req, Rep] extends GenericTaskCo
 
 private[portals] trait KeyTaskContext[T, U, Req, Rep] extends GenericTaskContext[T, U, Req, Rep]:
   /** Internal API. Access and modify the key of a task. WARNING: can break the system. */
-  private[portals] var key: Key[Int]
+  private[portals] var key: Key[Long]
 
 private[portals] trait ProcessorTaskContext[T, U]
     extends GenericTaskContext[T, U, _, _]

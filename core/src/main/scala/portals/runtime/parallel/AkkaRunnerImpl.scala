@@ -217,7 +217,7 @@ object AkkaRunnerImpl extends AkkaRunner:
                 portal: String,
                 asker: String,
                 req: Any,
-                key: Key[Int],
+                key: Key[Long],
                 id: Int
             ): Unit = ???
 
@@ -226,7 +226,7 @@ object AkkaRunnerImpl extends AkkaRunner:
                 r: Any,
                 portal: String,
                 asker: String,
-                key: Key[Int],
+                key: Key[Long],
                 id: Int
             ): Unit = ???
           }
@@ -240,6 +240,7 @@ object AkkaRunnerImpl extends AkkaRunner:
               case portals.Event(key, event) =>
                 tctx.state.key = key
                 tctx.key = key
+                tctx.task = preparedTask
                 preparedTask.onNext(event)
               case portals.Atom =>
                 preparedTask.onAtomComplete

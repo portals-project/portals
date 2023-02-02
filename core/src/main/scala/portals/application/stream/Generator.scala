@@ -5,7 +5,7 @@ import scala.annotation.targetName
 /** Events to be produced by the generator. */
 object Generator:
   sealed trait GeneratorEvent[+T]
-  case class Event[T](key: Key[Int], t: T) extends GeneratorEvent[T]
+  case class Event[T](key: Key[Long], t: T) extends GeneratorEvent[T]
   case class Error[T](t: Throwable) extends GeneratorEvent[T]
   case object Atom extends GeneratorEvent[Nothing]
   case object Seal extends GeneratorEvent[Nothing]
@@ -28,7 +28,7 @@ private[portals] object GeneratorImpls:
   /** FromIteratorOfIterators */
   case class FromIteratorOfIterators[T](
       itit: Iterator[Iterator[T]],
-      keys: Iterator[Iterator[Key[Int]]],
+      keys: Iterator[Iterator[Key[Long]]],
   ) extends Generator[T]:
     def generate(): GeneratorEvent[T] = _iter.next()
 
@@ -45,7 +45,7 @@ private[portals] object GeneratorImpls:
   /** FromIteratorOfIteratorsWithKeyExtractor */
   case class FromIteratorOfIteratorsWithKeyExtractor[T](
       itit: Iterator[Iterator[T]],
-      keyExtractor: T => Key[Int] = (x: T) => Key(x.hashCode()),
+      keyExtractor: T => Key[Long] = (x: T) => Key(x.hashCode()),
   ) extends Generator[T]:
     private val _iter: Iterator[GeneratorEvent[T]] = itit
       .map {
@@ -63,7 +63,7 @@ private[portals] object GeneratorImpls:
   /** External Ref */
   class ExternalRef[T]():
     def submit(t: T): Unit = cb(Event(Key(t.hashCode()), t))
-    def submit(t: T, key: Key[Int]): Unit = cb(Event(key, t))
+    def submit(t: T, key: Key[Long]): Unit = cb(Event(key, t))
     def error(t: Throwable): Unit = cb(Error(t))
     def fuse(): Unit = cb(Atom)
     def seal(): Unit = cb(Seal)
@@ -121,13 +121,13 @@ object Generators:
   def fromIterator[T](it: Iterator[T]): Generator[T] =
     fromIteratorOfIterators(Iterator.single(it))
 
-  def fromIterator[T](it: Iterator[T], keys: Iterator[Key[Int]]): Generator[T] =
+  def fromIterator[T](it: Iterator[T], keys: Iterator[Key[Long]]): Generator[T] =
     fromIteratorOfIterators(Iterator.single(it), Iterator.single(keys))
 
   def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]]): Generator[T] =
     FromIteratorOfIteratorsWithKeyExtractor(itit)
 
-  def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]], keys: Iterator[Iterator[Key[Int]]]): Generator[T] =
+  def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]], keys: Iterator[Iterator[Key[Long]]]): Generator[T] =
     FromIteratorOfIterators(itit, keys)
 
   def fromRange(start: Int, end: Int, step: Int): Generator[Int] =
