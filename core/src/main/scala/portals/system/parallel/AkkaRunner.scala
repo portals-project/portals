@@ -46,7 +46,7 @@ trait AkkaRunner:
 
   def task[T, U](
       path: String,
-      task: GenericTask[T, U, _, _],
+      task: GenericTask[T, U, Nothing, Nothing],
       subscribers: Set[ActorRef[Event[U]]] = Set.empty,
       deps: Set[String] = Set.empty
   ): Behavior[Event[T]]

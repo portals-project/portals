@@ -99,7 +99,7 @@ class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) exte
         val aref = system.spawnAnonymous(
           akkaRunner.task[Any, Any](
             to,
-            workflow.tasks(to).asInstanceOf[Task[Any, Any]],
+            workflow.tasks(to).asInstanceOf[GenericTask[Any, Any, Nothing, Nothing]],
             runtimeWorkflow.filter(x => toto.contains(x._1)).map(_._2).toSet,
             deps
           ),

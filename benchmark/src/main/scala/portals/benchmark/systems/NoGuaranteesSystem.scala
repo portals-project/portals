@@ -35,7 +35,7 @@ object NoGuaranteesRunner extends AkkaRunner:
 
   def task[T, U](
       path: String,
-      task: Task[T, U],
+      task: GenericTask[T, U, Nothing, Nothing],
       subscribers: Set[ActorRef[Event[U]]] = Set.empty,
       deps: Set[String] = Set.empty
   ): Behavior[Event[T]] =
@@ -114,22 +114,22 @@ object NoGuaranteesRunner extends AkkaRunner:
   private object AtomicTaskExecutor:
     def apply[T, U](
         path: String,
-        task: Task[T, U],
+        task: GenericTask[T, U, Nothing, Nothing],
         subscribers: Set[ActorRef[Event[U]]] = Set.empty,
         deps: Set[String] = Set.empty
     ): Behavior[Event[T]] =
       Behaviors.setup { ctx =>
 
         // create task context
-        given tctx: TaskContextImpl[T, U] = TaskContext[T, U]()
-        tctx.cb = new TaskCallback[T, U, Any, Any] {
+        given tctx: TaskContextImpl[T, U, Nothing, Nothing] = TaskContextImpl[T, U, Nothing, Nothing]()
+        tctx.outputCollector = new OutputCollector[T, U, Any, Any] {
           def submit(event: WrappedEvent[U]): Unit =
             subscribers.foreach { sub => sub ! Event(path, event) }
           def ask(portal: String, asker: String, req: Any, key: Key[Int], id: Int): Unit = ???
           def reply(r: Any, portal: String, asker: String, key: Key[Int], id: Int): Unit = ???
         }
 
-        val preparedTask = Tasks.prepareTask(task, tctx)
+        val preparedTask = TaskXX.prepareTask(task, tctx)
 
         Behaviors.receiveMessage { case Event(_, event) =>
           event match

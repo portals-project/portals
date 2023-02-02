@@ -79,7 +79,7 @@ abstract class AkkaLocalSystem extends PortalsSystem:
         val aref = system.spawnAnonymous(
           runner.task[Any, Any](
             to,
-            workflow.tasks(to).asInstanceOf[GenericTask[Any, Any, Any, Any]],
+            workflow.tasks(to).asInstanceOf[GenericTask[Any, Any, Nothing, Nothing]],
             runtimeWorkflow.filter(x => toto.contains(x._1)).map(_._2).toSet,
             deps
           ),
