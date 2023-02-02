@@ -281,7 +281,7 @@ object MicroBatchingRunner extends AkkaRunner:
           def reply(r: Any, portal: String, asker: String, key: Key[Int], id: Int): Unit = ???
         }
 
-        val preparedTask = TaskXX.prepareTask(task, tctx)
+        val preparedTask = Task.prepareTask(task, tctx)
 
         Behaviors.receiveMessage { case Event(sender, event) =>
           event match

@@ -26,55 +26,11 @@ private class TestWorkflowContext:
     case ReplyInfo(x, _) => x
     case _ => ???
 
-/** Internal API. TaskCallback to collect submitted events as side effects. Works both for regular tasks and for
-  * AskerTasks and ReplierTasks.
-  */
-private class CollectingTaskCallBack[T, U, Req, Rep] extends OutputCollector[T, U, Req, Rep]:
-  //////////////////////////////////////////////////////////////////////////////
-  // Task
-  //////////////////////////////////////////////////////////////////////////////
-  private var _output = List.empty[WrappedEvent[U]]
-  def submit(event: WrappedEvent[U]): Unit = _output = event :: _output
-  def getOutput(): List[WrappedEvent[U]] = _output.reverse
-  def clear(): Unit = _output = List.empty
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Asker Task
-  //////////////////////////////////////////////////////////////////////////////
-  private var _asks = List.empty[Ask[Req]]
-  override def ask(
-      portal: String,
-      // portalAsker: String,
-      // replier: String,
-      askingTask: String,
-      req: Req,
-      key: Key[Int],
-      id: Int
-  ): Unit =
-    _asks = Ask(key, PortalMeta(portal, askingTask, id), req) :: _asks
-  def getAskOutput(): List[Ask[Req]] = _asks.reverse
-  def clearAsks(): Unit = _asks = List.empty
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Replier Task
-  //////////////////////////////////////////////////////////////////////////////
-  private var _reps = List.empty[Reply[Rep]]
-  override def reply(
-      r: Rep,
-      portal: String,
-      askingTask: String,
-      key: Key[Int],
-      id: Int
-  ): Unit = _reps = Reply(key, PortalMeta(portal, askingTask, id), r) :: _reps
-  def getRepOutput(): List[Reply[Rep]] = _reps.reverse
-  def clearReps(): Unit = _reps = List.empty
-end CollectingTaskCallBack // class
-
 /** Internal API. TestRuntime wrapper of a Workflow. */
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   import TestWorkflow.*
   private val wctx = new TestWorkflowContext()
-  private val tcb = CollectingTaskCallBack[Any, Any, Any, Any]()
+  private val tcb = OutputCollectorImpl[Any, Any, Any, Any]()
   private val tctx = TaskContextImpl[Any, Any, Any, Any]()
   // val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
   // val rectx = ReplierTaskContext.fromTaskContext(tctx, tcb)
@@ -93,7 +49,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   private val sortedTasks = wf.tasks.toList.sortWith((t1, t2) => getOrdinal(t1._1) < getOrdinal(t2._1))
   // and initialized / prepared
   private val initializedTasks = sortedTasks.map { (name, task) =>
-    (name, TaskXX.prepareTask(task, tctx.asInstanceOf))
+    (name, Task.prepareTask(task, tctx.asInstanceOf))
   }
   // clear any strange side-effects that happened during initialization
   tcb.clear(); tcb.clearAsks(); tcb.clearReps()
@@ -297,7 +253,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           tctx.state.key = key
           tctx.key = key
           tctx.path = path
-          TaskXX.run_and_cleanup_reply(meta.id, e)(using tctx)
+          Task.run_and_cleanup_reply(meta.id, e)(using tctx)
         case _ => ??? // NOPE
     }
 

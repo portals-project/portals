@@ -6,6 +6,7 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
     with ProcessorTaskContext[T, U]
     with AskerTaskContext[T, U, Req, Rep]
     with ReplierTaskContext[T, U, Req, Rep]:
+
   //////////////////////////////////////////////////////////////////////////////
   // ProcessorTaskContext
   //////////////////////////////////////////////////////////////////////////////
@@ -48,3 +49,4 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
 
   override def reply(msg: Rep): Unit =
     outputCollector.reply(msg, this.portal, this.asker, this.key, this.id)
+end TaskContextImpl // class

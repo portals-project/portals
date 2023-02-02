@@ -232,7 +232,7 @@ object AkkaRunnerImpl extends AkkaRunner:
           }
 
           // prepare task
-          val preparedTask = TaskXX.prepareTask(task, tctx)
+          val preparedTask = portals.Task.prepareTask(task, tctx)
 
           // used to execute a wrapped event on the task
           def execute(event: WrappedEvent[T]): Unit =

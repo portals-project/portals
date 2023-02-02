@@ -45,6 +45,10 @@ private[portals] case class ProcessorTask[T, U](f: TaskContextImpl[T, U, Nothing
   override def onNext(using ctx: TaskContextImpl[T, U, Nothing, Nothing])(t: T): Unit = f(ctx)(t)
 end ProcessorTask // trait
 
+private[portals] case class ShuffleTask[T, U](f: TaskContextImpl[T, U, Nothing, Nothing] => T => Unit) extends BaseTask[T, U, Nothing, Nothing]:
+  override def onNext(using ctx: TaskContextImpl[T, U, Nothing, Nothing])(t: T): Unit = f(ctx)(t)
+end ShuffleTask // trait
+
 private[portals] trait ExtensibleTask[T, U] extends GenericTask[T, U, Nothing, Nothing]
 end ExtensibleTask // trait
 
@@ -70,7 +74,7 @@ private[portals] case class InitTask[T, U, Req, Rep](initFactory: TaskContextImp
     _task match
       case Some(task) => task
       case None =>
-        _task = Some(TaskXX.prepareTask(this, ctx))
+        _task = Some(Task.prepareTask(this, ctx))
         _task.get
 
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = this.prepOrGet.onNext(t)
@@ -79,9 +83,8 @@ private[portals] case class InitTask[T, U, Req, Rep](initFactory: TaskContextImp
   override def onAtomComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit = this.prepOrGet.onAtomComplete
 end InitTask // case class
 
-object TaskXX:
-  /** Prepare a task behavior at runtime. This executes the initialization and returns the initialized task. This needs to be called internally to initialize the task behavior before execution.
-    */
+object Task:
+  /** Prepare a task behavior at runtime. This executes the initialization and returns the initialized task. This needs to be called internally to initialize the task behavior before execution. */
   private[portals] def prepareTask[T, U, Req, Rep](task: GenericTask[T, U, Req, Rep], ctx: TaskContextImpl[T, U, Req, Rep]): GenericTask[T, U, Req, Rep] =
     /** internal recursive method */
     def prepareTaskRec(task: GenericTask[T, U, Req, Rep], ctx: TaskContextImpl[T, U, Req, Rep]): GenericTask[T, U, Req, Rep] =
