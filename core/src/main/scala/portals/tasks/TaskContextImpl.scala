@@ -15,7 +15,7 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
 
   private lazy val _log = Logger(path)
 
-  override inline def log: Logger = _log
+  override def log: Logger = _log
 
   /** should be var so that it can be swapped out during runtime */
   private[portals] var path: String = "" // TODO: make this set by the runtime

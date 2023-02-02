@@ -7,6 +7,20 @@ private[portals] sealed trait GenericTask[T, U, Req, Rep]:
   def onError(using ctx: TaskContextImpl[T, U, Req, Rep])(t: Throwable): Unit
   def onComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit
   def onAtomComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit
+
+    // we use `_` underscore here, as otherwise copy is overridden by inheriting case classes
+  private[portals] def _copy(
+      _onNext: TaskContextImpl[T, U, Req, Rep] ?=> T => Unit = onNext,
+      _onError: TaskContextImpl[T, U, Req, Rep] ?=> Throwable => Unit = onError,
+      _onComplete: TaskContextImpl[T, U, Req, Rep] ?=> Unit = onComplete,
+      _onAtomComplete: TaskContextImpl[T, U, Req, Rep] ?=> Unit = onAtomComplete
+  ): GenericTask[T, U, Req, Rep] =
+    new GenericTask[T, U, Req, Rep] {
+      override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = _onNext(using ctx)(t)
+      override def onError(using ctx: TaskContextImpl[T, U, Req, Rep])(t: Throwable): Unit = _onError(using ctx)(t)
+      override def onComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit = _onComplete(using ctx)
+      override def onAtomComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit = _onAtomComplete(using ctx)
+    }
 end GenericTask // trait
 
 private[portals] sealed trait TaskUnimpl[T, U, Req, Rep] extends GenericTask[T, U, Req, Rep]:
@@ -48,7 +62,6 @@ end IdentityTask // case class
 
 // TODO: initialization should happen automatically using the initfactory
 private[portals] case class InitTask[T, U, Req, Rep](initFactory: TaskContextImpl[T, U, Req, Rep] => GenericTask[T, U, Req, Rep]) extends BaseTask[T, U, Req, Rep]:
-
   // wrapped initialized task
   var _task: Option[GenericTask[T, U, Req, Rep]] = None
 

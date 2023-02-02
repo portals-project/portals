@@ -187,35 +187,35 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     val oldName = fbctx.latest.get
     rename(oldName, name)
 
-  // override def withOnNext(_onNext: TaskContext[CT, CU] ?=> CT => Unit): FlowBuilder[T, U, CT, CU] =
-  //   val name = fbctx.latest.get
-  //   val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[CT, CU]]
-  //   val newBehavior = behavior.withOnNext(_onNext)
-  //   updateTask(name, newBehavior)
+  override def withOnNext(_onNext: ProcessorTaskContext[CT, CU] ?=> CT => Unit): FlowBuilder[T, U, CT, CU] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU, Nothing, Nothing]]
+    val newBehavior = behavior.withOnNext(_onNext)
+    updateTask(name, newBehavior)
 
-  // override def withOnError(_onError: TaskContext[CT, CU] ?=> Throwable => Unit): FlowBuilder[T, U, CT, CU] =
-  //   val name = fbctx.latest.get
-  //   val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[CT, CU]]
-  //   val newBehavior = behavior.withOnError(_onError)
-  //   updateTask(name, newBehavior)
+  override def withOnError(_onError: ProcessorTaskContext[CT, CU] ?=> Throwable => Unit): FlowBuilder[T, U, CT, CU] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU, Nothing, Nothing]]
+    val newBehavior = behavior.withOnError(_onError)
+    updateTask(name, newBehavior)
 
-  // override def withOnComplete(_onComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU] =
-  //   val name = fbctx.latest.get
-  //   val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[CT, CU]]
-  //   val newBehavior = behavior.withOnComplete(_onComplete)
-  //   updateTask(name, newBehavior)
+  override def withOnComplete(_onComplete: ProcessorTaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU, Nothing, Nothing]]
+    val newBehavior = behavior.withOnComplete(_onComplete)
+    updateTask(name, newBehavior)
 
-  // override def withOnAtomComplete(_onAtomComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU] =
-  //   val name = fbctx.latest.get
-  //   val behavior = fbctx.wbctx.tasks(name).asInstanceOf[Task[CT, CU]]
-  //   val newBehavior = behavior.withOnAtomComplete(_onAtomComplete)
-  //   updateTask(name, newBehavior)
+  override def withOnAtomComplete(_onAtomComplete: ProcessorTaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU, Nothing, Nothing]]
+    val newBehavior = behavior.withOnAtomComplete(_onAtomComplete)
+    updateTask(name, newBehavior)
 
   override def withWrapper(
       _onNext: ProcessorTaskContext[CT, CU] ?=> (ProcessorTaskContext[CT, CU] ?=> CT => Unit) => CT => Unit
   ): FlowBuilder[T, U, CT, CU] =
     val name = fbctx.latest.get
-    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[ProcessorTask[CT, CU]]
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU, Nothing, Nothing]]
     val newBehavior = behavior.withWrapper(_onNext)
     updateTask(name, newBehavior)
 
@@ -231,28 +231,28 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     val newBehavior = behavior.withLoop(count)(task)
     updateTask(name, newBehavior)
 
-  // override def withAndThen[CCU](task: Task[CU, CCU]): FlowBuilder[T, U, CT, CCU] =
-  //   val name = fbctx.latest.get
-  //   val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU, _, _]]
-  //   val newBehavior = behavior.withAndThen(task)
-  //   updateTask(name, newBehavior).asInstanceOf[FlowBuilder[T, U, CT, CCU]]
+  override def withAndThen[CCU](task: GenericTask[CU, CCU, Nothing, Nothing]): FlowBuilder[T, U, CT, CCU] =
+    val name = fbctx.latest.get
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU, Nothing, Nothing]]
+    val newBehavior = behavior.withAndThen(task)
+    updateTask(name, newBehavior).asInstanceOf[FlowBuilder[T, U, CT, CCU]]
 
-  // override def allWithOnAtomComplete[WT, WU](
-  //     _onAtomComplete: ProcessorTaskContext[WT, WU] ?=> Unit
-  // ): FlowBuilder[T, U, CT, CU] =
-  //   fbctx.wbctx.tasks.foreach { case (name, task) =>
-  //     val behavior = fbctx.wbctx.tasks(name).asInstanceOf[ProcessorTask[WT, WU]]
-  //     val newBehavior = behavior.withOnAtomComplete(_onAtomComplete)
-  //     updateTask(name, newBehavior)
-  //   }
-  //   this
+  override def allWithOnAtomComplete[WT, WU](
+      _onAtomComplete: ProcessorTaskContext[WT, WU] ?=> Unit
+  ): FlowBuilder[T, U, CT, CU] =
+    fbctx.wbctx.tasks.foreach { case (name, task) =>
+      val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[WT, WU, Nothing, Nothing]]
+      val newBehavior = behavior.withOnAtomComplete(_onAtomComplete)
+      updateTask(name, newBehavior)
+    }
+    this
 
   override def allWithWrapper[WT, WU](
       _onNext: ProcessorTaskContext[WT, WU] ?=> (ProcessorTaskContext[WT, WU] ?=> WT => Unit) => WT => Unit
   ): FlowBuilder[T | WT, U | WU, CT, CU] =
     fbctx.wbctx.tasks.foreach { case (name, task) =>
       // TODO: this is a hack, as the type of the task is not known
-      val behavior = fbctx.wbctx.tasks(name).asInstanceOf[ProcessorTask[WT, WU]]
+      val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[WT, WU, Nothing, Nothing]]
       val newBehavior = behavior.withWrapper(_onNext)
       updateTask(name, newBehavior)
     }

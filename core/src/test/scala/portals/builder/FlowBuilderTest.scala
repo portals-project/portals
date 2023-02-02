@@ -88,26 +88,26 @@ class FlowBuilderTest:
       .receiveAssert(8)
       .receiveAssert(9)
 
-  // @Test
-  // def testWithAndThen(): Unit =
-  //   import portals.DSL.*
+  @Test
+  def testWithAndThen(): Unit =
+    import portals.DSL.*
 
-  //   val testData = List.range(0, 4).grouped(1).toList
+    val testData = List.range(0, 4).grouped(1).toList
 
-  //   val flows = TestUtils.flowBuilder[Int, Int] {
-  //     _.filter { _ >= 1 }
-  //       .withAndThen(Tasks.map { _ + 1 })
-  //       .withAndThen(Tasks.map { _ + 2 })
-  //       .withAndThen(Tasks.map { _ + 3 })
-  //       .withAndThen(Tasks.filter(_ < 9))
-  //   }
+    val flows = TestUtils.flowBuilder[Int, Int] {
+      _.filter { _ >= 1 }
+        .withAndThen(Tasks.map { _ + 1 })
+        .withAndThen(Tasks.map { _ + 2 })
+        .withAndThen(Tasks.map { _ + 3 })
+        .withAndThen(Tasks.filter(_ < 9))
+    }
 
-  //   val tester = TestUtils.executeWorkflow(flows, testData)
+    val tester = TestUtils.executeWorkflow(flows, testData)
 
-  //   // , 7, 8, _
-  //   tester
-  //     .receiveAssert(7)
-  //     .receiveAssert(8)
+    // , 7, 8, _
+    tester
+      .receiveAssert(7)
+      .receiveAssert(8)
 
   @Test
   def testVSM(): Unit =
@@ -224,66 +224,66 @@ class FlowBuilderTest:
       .receiveAssert(3)
       .receiveAssert(4)
 
-  // @Test
-  // def testWithOnAtomComplete(): Unit =
-  //   import portals.DSL.*
+  @Test
+  def testWithOnAtomComplete(): Unit =
+    import portals.DSL.*
 
-  //   val testData = List(List(1, 2, 3, 4), List(1, 2, 3, 4))
+    val testData = List(List(1, 2, 3, 4), List(1, 2, 3, 4))
 
-  //   val flows = TestUtils.flowBuilder[Int, Int] {
-  //     _.init {
-  //       val counter = PerTaskState("counter", 0)
-  //       Tasks.processor { event =>
-  //         counter.set(counter.get() + event)
-  //         ctx.emit(event)
-  //       }
-  //     }
-  //       .withOnAtomComplete { ctx ?=>
-  //         ctx.emit(PerTaskState("counter", 0).get())
-  //       }
-  //   }
+    val flows = TestUtils.flowBuilder[Int, Int] {
+      _.init {
+        val counter = PerTaskState("counter", 0)
+        Tasks.processor { event =>
+          counter.set(counter.get() + event)
+          ctx.emit(event)
+        }
+      }
+        .withOnAtomComplete { ctx ?=>
+          ctx.emit(PerTaskState("counter", 0).get())
+        }
+    }
 
-  //   val tester = TestUtils.executeWorkflow(flows, testData)
+    val tester = TestUtils.executeWorkflow(flows, testData)
 
-  //   // 1, 2, 3, 4, 10, atom, 1, 2, 3, 4, 20
-  //   tester
-  //     .receiveAssert(1)
-  //     .receiveAssert(2)
-  //     .receiveAssert(3)
-  //     .receiveAssert(4)
-  //     .receiveAssert(10)
-  //     .receiveAssert(1)
-  //     .receiveAssert(2)
-  //     .receiveAssert(3)
-  //     .receiveAssert(4)
-  //     .receiveAssert(20)
-  //     .isEmpty()
+    // 1, 2, 3, 4, 10, atom, 1, 2, 3, 4, 20
+    tester
+      .receiveAssert(1)
+      .receiveAssert(2)
+      .receiveAssert(3)
+      .receiveAssert(4)
+      .receiveAssert(10)
+      .receiveAssert(1)
+      .receiveAssert(2)
+      .receiveAssert(3)
+      .receiveAssert(4)
+      .receiveAssert(20)
+      .isEmpty()
 
-  // @Test
-  // def testAllWithOnAtomComplete(): Unit =
-  //   import portals.DSL.*
+  @Test
+  def testAllWithOnAtomComplete(): Unit =
+    import portals.DSL.*
 
-  //   val testData = List(List(1, 2), List(1, 2))
+    val testData = List(List(1, 2), List(1, 2))
 
-  //   val flows = TestUtils.flowBuilder[Int, Int] {
-  //     _.map { _ + 1 }
-  //       .map { _ + 2 }
-  //       .map { _ + 3 }
-  //       .allWithOnAtomComplete { ctx ?=>
-  //         ctx.emit(0)
-  //       }
-  //   }
+    val flows = TestUtils.flowBuilder[Int, Int] {
+      _.map { _ + 1 }
+        .map { _ + 2 }
+        .map { _ + 3 }
+        .allWithOnAtomComplete { ctx ?=>
+          ctx.emit(0)
+        }
+    }
 
-  //   val tester = TestUtils.executeWorkflow(flows, testData)
+    val tester = TestUtils.executeWorkflow(flows, testData)
 
-  //   // 7, 8, unordered{0, 3, 5}, atom 7, 8, unordered{0, 3, 5} atom
-  //   assertEquals(Some(7), tester.receive())
-  //   assertEquals(Some(8), tester.receive())
-  //   assertEquals(Set(Some(0), Some(3), Some(5)), Set(tester.receive(), tester.receive(), tester.receive()))
-  //   assertEquals(Some(7), tester.receive())
-  //   assertEquals(Some(8), tester.receive())
-  //   assertEquals(Set(Some(0), Some(3), Some(5)), Set(tester.receive(), tester.receive(), tester.receive()))
-  //   assertFalse(tester.isEmpty())
+    // 7, 8, unordered{0, 3, 5}, atom 7, 8, unordered{0, 3, 5} atom
+    assertEquals(Some(7), tester.receive())
+    assertEquals(Some(8), tester.receive())
+    assertEquals(Set(Some(0), Some(3), Some(5)), Set(tester.receive(), tester.receive(), tester.receive()))
+    assertEquals(Some(7), tester.receive())
+    assertEquals(Some(8), tester.receive())
+    assertEquals(Set(Some(0), Some(3), Some(5)), Set(tester.receive(), tester.receive(), tester.receive()))
+    assertFalse(tester.isEmpty())
 
   @Test
   def testAllWrapper(): Unit =

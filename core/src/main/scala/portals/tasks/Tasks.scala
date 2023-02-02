@@ -55,26 +55,26 @@ object TaskExtensions:
 end TaskExtensions
 export TaskExtensions.*
 
-// //////////////////////////////////////////////////////////////////////////////
-// // Behavior Modifying Combinators
-// //////////////////////////////////////////////////////////////////////////////
-// /** Task Behavior Combinators. */
-// object TaskBehaviorCombinators:
-//   extension [T, U, Req, Rep](task: GenericTask[T, U, Req, Rep]) {
-//     def withOnNext(f: ProcessorTaskContext[T, U] ?=> T => Unit): GenericTask[T, U, Req, Rep] =
-//       task._copy(_onNext = f)
+//////////////////////////////////////////////////////////////////////////////
+// Behavior Modifying Combinators
+//////////////////////////////////////////////////////////////////////////////
+/** Task Behavior Combinators. */
+object TaskBehaviorCombinators:
+  extension [T, U, Req, Rep](task: GenericTask[T, U, Req, Rep]) {
+    def withOnNext(f: ProcessorTaskContext[T, U] ?=> T => Unit): GenericTask[T, U, Req, Rep] =
+      task._copy(_onNext = f)
 
-//     def withOnError(f: ProcessorTaskContext[T, U] ?=> Throwable => Unit): GenericTask[T, U, Req, Rep] =
-//       task._copy(_onError = f)
+    def withOnError(f: ProcessorTaskContext[T, U] ?=> Throwable => Unit): GenericTask[T, U, Req, Rep] =
+      task._copy(_onError = f)
 
-//     def withOnComplete(f: ProcessorTaskContext[T, U] ?=> Unit): GenericTask[T, U, Req, Rep] =
-//       task._copy(_onComplete = f)
+    def withOnComplete(f: ProcessorTaskContext[T, U] ?=> Unit): GenericTask[T, U, Req, Rep] =
+      task._copy(_onComplete = f)
 
-//     def withOnAtomComplete(f: ProcessorTaskContext[T, U] ?=> Unit): GenericTask[T, U, Req, Rep] =
-//       task._copy(_onAtomComplete = f)
-//   }
-// end TaskBehaviorCombinators
-// export TaskBehaviorCombinators.*
+    def withOnAtomComplete(f: ProcessorTaskContext[T, U] ?=> Unit): GenericTask[T, U, Req, Rep] =
+      task._copy(_onAtomComplete = f)
+  }
+end TaskBehaviorCombinators
+export TaskBehaviorCombinators.*
 
 ////////////////////////////////////////////////////////////////////////////////
 // VSM Extension
@@ -209,53 +209,51 @@ object StepExtension:
 end StepExtension
 export StepExtension.*
 
-// ////////////////////////////////////////////////////////////////////////////////
-// // WithAndThen Extension
-// ////////////////////////////////////////////////////////////////////////////////
-// /** WithAndThen Extension. */
-// object WithAndThenExtension:
-//   private[portals] trait WithAndThenContext[T, U] extends TaskContext[T, U]:
-//     var emitted: Seq[U]
-//     def reset(): Unit
+////////////////////////////////////////////////////////////////////////////////
+// WithAndThen Extension
+////////////////////////////////////////////////////////////////////////////////
+/** WithAndThen Extension. */
+object WithAndThenExtension:
+  private[portals] abstract class WithAndThenContext[T, U] extends TaskContextImpl[T, U, Nothing, Nothing]:
+    var emitted: Seq[U]
+    def reset(): Unit
 
-//   def fromTaskContext[T, U](ctx: TaskContext[T, U]) =
-//     new WithAndThenContext[T, U] {
-//       var emitted: Seq[U] = Seq.empty[U]
-//       override def reset(): Unit = emitted = Seq.empty[U]
-//       override def state: TaskState[Any, Any] = _ctx.state
-//       override def emit(event: U) = emitted = emitted :+ event
-//       override def log: Logger = _ctx.log
-//       private[portals] var key: portals.Key[Int] = ctx.key
-//       private[portals] var path: String = ctx.path
-//       private[portals] var system: portals.PortalsSystem = ctx.system
-//       private[portals] var _ctx: TaskContext[T, U] = ctx
-//     }
-//   end fromTaskContext // def
+  private[portals] def fromTaskContext[T, U](_ctx: TaskContext[T, U, Nothing, Nothing]) =
+    new WithAndThenContext[T, U]() {
+      var emitted: Seq[U] = Seq.empty[U]
+      override def reset(): Unit = emitted = Seq.empty[U]
+      override val state: TaskState[Any, Any] = _ctx.state
+      override def emit(event: U) = emitted = emitted :+ event
+      override def log: Logger = _ctx.log
+    }
+  end fromTaskContext // def
 
-//   extension [T, U](task: Task[T, U]) {
+  extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 
-//     /** Chaining a task with another `_task`, the tasks will share state. */
-//     def withAndThen[TT](_task: Task[U, TT]): Task[T, TT] =
-//       Tasks.init[T, TT] { ctx ?=>
-//         val _ctx = fromTaskContext(ctx).asInstanceOf[WithAndThenContext[T, U]]
-//         Tasks.processor[T, TT] { event =>
-//           task.onNext(using _ctx.asInstanceOf)(event)
-//           _ctx.emitted.foreach { event => _task.onNext(using ctx.asInstanceOf)(event) }
-//           _ctx.reset()
-//         }
-//       }
+    /** Chaining a task with another `_task`, the tasks will share state. */
+    def withAndThen[TT](_task: GenericTask[U, TT, Nothing, Nothing]): GenericTask[T, TT, Nothing, Nothing] =
+      InitTask[T, TT, Nothing, Nothing] { ctx =>
+        val _ctx = fromTaskContext(ctx).asInstanceOf[WithAndThenContext[T, U]]
+        ProcessorTask[T, TT] { ctx => event =>
+          task.onNext(using _ctx)(event)
+          _ctx.emitted.foreach { event =>
+            _task.onNext(using ctx.asInstanceOf[TaskContextImpl[U, TT, Nothing, Nothing]])(event)
+          }
+          _ctx.reset()
+        }
+      }
 
-//     // Optionally, if there are issues with nested inits:
-//     // def withAndThen[TT](_task: Task[U, TT]): Task[T, TT] =
-//     //   Tasks.processor[T, TT] { ctx ?=> event =>
-//     //     val _ctx = fromTaskContext[T, U](ctx.asInstanceOf)
-//     //     task.onNext(using _ctx)(event)
-//     //     _ctx.emitted.foreach { event => _task.onNext(using ctx.asInstanceOf)(event) }
-//     //     _ctx.reset()
-//     //   }
-//   }
-// end WithAndThenExtension
-// export WithAndThenExtension.*
+    // // Optionally, if there are issues with nested inits:
+    // def withAndThen[TT](_task: GenericTask[U, TT, Nothing, Nothing]): GenericTask[T, TT, Nothing, Nothing] =
+    //   Tasks.processor[T, TT] { ctx ?=> event =>
+    //     val _ctx = fromTaskContext[T, U](ctx.asInstanceOf)
+    //     task.onNext(using _ctx)(event)
+    //     _ctx.emitted.foreach { event => _task.onNext(using ctx.asInstanceOf)(event) }
+    //     _ctx.reset()
+    //   }
+  }
+end WithAndThenExtension
+export WithAndThenExtension.*
 
 ////////////////////////////////////////////////////////////////////////////////
 // WithWrapper Extension
@@ -263,7 +261,7 @@ export StepExtension.*
 /** WithWrapper Extension. */
 object WithWrapperExtension:
 
-  extension [T, U](task: ProcessorTask[T, U]) {
+  extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 
     /** Wrapping around the behavior of a task. The wrapped behavior is accessible for use.
       *

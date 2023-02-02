@@ -87,13 +87,13 @@ trait FlowBuilder[T, U, CT, CU]:
 
   def withName(name: String): FlowBuilder[T, U, CT, CU]
 
-  // def withOnNext(onNext: TaskContext[CT, CU] ?=> CT => Unit): FlowBuilder[T, U, CT, CU]
+  def withOnNext(onNext: ProcessorTaskContext[CT, CU] ?=> CT => Unit): FlowBuilder[T, U, CT, CU]
 
-  // def withOnError(onError: TaskContext[CT, CU] ?=> Throwable => Unit): FlowBuilder[T, U, CT, CU]
+  def withOnError(onError: ProcessorTaskContext[CT, CU] ?=> Throwable => Unit): FlowBuilder[T, U, CT, CU]
 
-  // def withOnComplete(onComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
+  def withOnComplete(onComplete: ProcessorTaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
-  // def withOnAtomComplete(onAtomComplete: TaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
+  def withOnAtomComplete(onAtomComplete: ProcessorTaskContext[CT, CU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
   def withWrapper(
       onNext: ProcessorTaskContext[CT, CU] ?=> (ProcessorTaskContext[CT, CU] ?=> CT => Unit) => CT => Unit
@@ -103,13 +103,13 @@ trait FlowBuilder[T, U, CT, CU]:
 
   def withLoop(count: Int)(task: GenericTask[CT, CU, Nothing, Nothing]): FlowBuilder[T, U, CT, CU]
 
-  // def withAndThen[CCU](task: Task[CU, CCU]): FlowBuilder[T, U, CT, CCU]
+  def withAndThen[CCU](task: GenericTask[CU, CCU, Nothing, Nothing]): FlowBuilder[T, U, CT, CCU]
 
   //////////////////////////////////////////////////////////////////////////////
   // All* Combinators
   //////////////////////////////////////////////////////////////////////////////
 
-  // def allWithOnAtomComplete[WT, WU](onAtomComplete: ProcessorTaskContext[WT, WU] ?=> Unit): FlowBuilder[T, U, CT, CU]
+  def allWithOnAtomComplete[WT, WU](onAtomComplete: ProcessorTaskContext[WT, WU] ?=> Unit): FlowBuilder[T, U, CT, CU]
 
   def allWithWrapper[WT, WU](
       _onNext: ProcessorTaskContext[WT, WU] ?=> (ProcessorTaskContext[WT, WU] ?=> WT => Unit) => WT => Unit
