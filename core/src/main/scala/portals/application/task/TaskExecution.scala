@@ -1,7 +1,10 @@
 package portals
 
 object TaskExecution:
-  /** Prepare a task behavior at runtime. This executes the initialization and returns the initialized task. This needs to be called internally to initialize the task behavior before execution. */
+  /** Prepare a task behavior at runtime. This executes the initialization and returns the initialized task. This needs
+    * to be called internally to initialize the task behavior before execution.
+    */
+  // format: off
   private[portals] def prepareTask[T, U, Req, Rep](task: GenericTask[T, U, Req, Rep], ctx: TaskContextImpl[T, U, Req, Rep]): GenericTask[T, U, Req, Rep] =
     /** internal recursive method */
     def prepareTaskRec(task: GenericTask[T, U, Req, Rep], ctx: TaskContextImpl[T, U, Req, Rep]): GenericTask[T, U, Req, Rep] =
@@ -13,7 +16,7 @@ object TaskExecution:
     /** prepare the task, recursively performing initialization */
     prepareTaskRec(task, ctx)
   end prepareTask // def
-
+  // format: on
 
   private[portals] def run_and_cleanup_reply[T, U, Req, Rep](id: Int, r: Rep)(using
       actx: AskerTaskContext[T, U, Req, Rep]
@@ -31,6 +34,3 @@ object TaskExecution:
     // cleanup continuation
     _continuations.remove(id)
   end run_and_cleanup_reply // def
-
-
-
