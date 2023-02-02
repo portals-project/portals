@@ -17,7 +17,7 @@ import portals.*
   val generator = builder.generators.fromList(List(message))
 
   val _ = builder
-    .workflows[String, String]()
+    .workflows[String, String]("hello")
     .source(generator.stream)
     .map { x => x }
     .logger()
