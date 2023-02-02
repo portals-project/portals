@@ -1,4 +1,4 @@
-package portals.system.test
+package portals
 
 import scala.collection.mutable.ArrayDeque
 import scala.util.Try

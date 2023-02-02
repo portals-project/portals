@@ -1,4 +1,4 @@
-package portals.system.test
+package portals
 
 import scala.util.Random
 
@@ -94,7 +94,7 @@ private[portals] class TestStreamTracker:
   /** Returns the progress of a stream as an optional range <From, To>, for which the range is inclusive. */
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
-class TestRuntime(val seed: Option[Int] = None):
+class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
   private val rctx = new TestRuntimeContext()
   private val progressTracker = TestProgressTracker()
   private val streamTracker = TestStreamTracker()

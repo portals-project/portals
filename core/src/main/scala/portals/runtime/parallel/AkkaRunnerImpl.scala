@@ -1,4 +1,4 @@
-package portals.system.parallel
+package portals
 
 import scala.collection.immutable.VectorBuilder
 
