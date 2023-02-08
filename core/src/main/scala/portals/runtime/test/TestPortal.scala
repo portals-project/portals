@@ -17,36 +17,37 @@ private[portals] class TestPortal(
   // This is sufficient, as the events have information with respect to the asker and replier.
   private val queue: ArrayDeque[TestAtom] = ArrayDeque.empty
 
-  private def setKeyBatchAsk(tp: TestAskBatch[_]): TestAskBatch[_] =
-    if !portal.key.isDefined then tp
+  /** Set the key correctly if a key function exists. */
+  private def setKey(ta: TestAtom): TestAtom =
+    if !portal.key.isDefined then ta
     else
-      TestAskBatch(
-        tp.meta,
-        tp.list.map {
-          case Ask(key, meta, event) =>
-            portals.Ask(Key(portal.key.get(event.asInstanceOf)), meta, event)
-          case x @ _ => x
-        }
-      )
-
-  private def setKeyBatchRep(tp: TestRepBatch[_]): TestRepBatch[_] =
-    if !portal.key.isDefined then tp
-    else
-      TestRepBatch(
-        tp.meta,
-        tp.list.map {
-          case Reply(key, meta, event) =>
-            portals.Reply(meta.askingKey, meta, event)
-          case x @ _ => x
-        }
-      )
+      ta match
+        case TestAskBatch(meta, list) =>
+          TestAskBatch(
+            meta,
+            list.map {
+              case Ask(key, meta, event) =>
+                portals.Ask(Key(portal.key.get(event.asInstanceOf)), meta, event)
+              case x @ _ => x
+            }
+          )
+        case TestRepBatch(meta, list) =>
+          TestRepBatch(
+            meta,
+            list.map {
+              case Reply(key, meta, event) =>
+                portals.Reply(meta.askingKey, meta, event)
+              case x @ _ => x
+            }
+          )
+        case _ => ???
 
   /** Enqueue an atom. */
   def enqueue(tp: TestAtom) = tp match {
-    case ta @ TestAskBatch(meta, list) =>
-      queue.append(setKeyBatchAsk(ta))
-    case tp @ TestRepBatch(_, _) =>
-      queue.append(setKeyBatchRep(tp))
+    case TestAskBatch(meta, list) =>
+      queue.append(setKey(tp))
+    case TestRepBatch(_, _) =>
+      queue.append(setKey(tp))
     case _ => ??? // not allowed
   }
 
