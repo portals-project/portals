@@ -62,6 +62,9 @@ object DSL:
 
     def Portal[T, R](name: String)(using ab: ApplicationBuilder): AtomicPortalRef[T, R] = ab.portals.portal(name)
 
+    def Portal[T, R](name: String, f: T => Long)(using ab: ApplicationBuilder): AtomicPortalRef[T, R] =
+      ab.portals.portal(name, f)
+
     def PortalsApp(name: String)(app: ApplicationBuilder ?=> Unit): Application =
       val builder = ApplicationBuilders.application(name)
       app(using builder)

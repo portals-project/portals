@@ -219,7 +219,11 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   end processAtomHelper
 
   /** Internal API. Process the ReplierTask on a batch of asks. */
-  private def processReplierTask(task: ReplierTask[_, _, _, _], input: TestAskBatch[_]): TestAtomBatch[_] = {
+  private def processReplierTask(
+      path: String,
+      task: ReplierTask[_, _, _, _],
+      input: TestAskBatch[_]
+  ): TestAtomBatch[_] = {
     input.list.foreach { event =>
       event match
         case Ask(key, meta, e) =>
@@ -228,7 +232,9 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
           tctx.id = meta.id
           tctx.asker = meta.askingTask
           tctx.portal = meta.portal
+          tctx.path = path
           tctx.task = task.asInstanceOf
+          tctx.askerKey = meta.askingKey
           task.f2(tctx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
     }
@@ -242,7 +248,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     wctx.info = AskInfo(atom.meta.portal, atom.meta.askingWF)
     val taskName = rctx.portals(atom.meta.portal).replierTask
     val task = initializedTasks.toMap.get(taskName).get
-    val outputs1 = processReplierTask(task.asInstanceOf, atom)
+    val outputs1 = processReplierTask(taskName, task.asInstanceOf, atom)
     val outputs2 = processAtomHelper(Map(taskName -> outputs1))
     wctx.info = null
     outputs2

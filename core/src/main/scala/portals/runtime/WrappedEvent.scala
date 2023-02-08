@@ -10,6 +10,7 @@ case object Seal extends WrappedEvent[Nothing]
 private[portals] case class PortalMeta(
     portal: String,
     askingTask: String,
+    askingKey: Key[Long],
     id: Int, // request id
 )
 
