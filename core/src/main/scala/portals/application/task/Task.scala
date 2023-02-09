@@ -49,7 +49,7 @@ private[portals] case class ShuffleTask[T, U](f: TaskContextImpl[T, U, Nothing, 
   override def onNext(using ctx: TaskContextImpl[T, U, Nothing, Nothing])(t: T): Unit = f(ctx)(t)
 end ShuffleTask // trait
 
-private[portals] trait ExtensibleTask[T, U] extends GenericTask[T, U, Nothing, Nothing]
+private[portals] trait ExtensibleTask[T, U, Req, Rep] extends GenericTask[T, U, Req, Rep]
 end ExtensibleTask // trait
 
 private[portals] case class AskerTask[T, U, Req, Rep](f: TaskContextImpl[T, U, Req, Rep] => T => Unit)(val portals: AtomicPortalRefType[Req, Rep]*) extends BaseTask[T, U, Req, Rep]:

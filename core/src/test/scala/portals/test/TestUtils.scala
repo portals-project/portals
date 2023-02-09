@@ -87,7 +87,7 @@ object TestUtils:
     def enqueueSeal(): Unit = queue.enqueue(Seal)
     def enqueueError(t: Throwable): Unit = queue.enqueue(Error(t))
 
-    val task = new ExtensibleTask[T, T] {
+    val task = new ExtensibleTask[T, T, Nothing, Nothing] {
       override def onNext(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(t: T): Unit =
         queue.enqueue(Event(t))
         ctx.emit(t)

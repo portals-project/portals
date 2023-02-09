@@ -116,7 +116,8 @@ export VSMExtension.*
 /** Step Extension. */
 object StepExtension:
 
-  private[portals] case class Stepper[T, U](steppers: List[Steppers[T, U]]) extends ExtensibleTask[T, U]:
+  private[portals] case class Stepper[T, U](steppers: List[Steppers[T, U]])
+      extends ExtensibleTask[T, U, Nothing, Nothing]:
     private val index: TaskContextImpl[T, U, Nothing, Nothing] ?=> PerTaskState[Int] = PerTaskState("$index", 0)
     private val loopcount: TaskContextImpl[T, U, Nothing, Nothing] ?=> PerTaskState[Int] = PerTaskState("$loopcount", 0)
     private val size: Int = steppers.size
