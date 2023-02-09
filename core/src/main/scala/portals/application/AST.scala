@@ -94,6 +94,7 @@ case class AtomicConnection[T](
 /** Atomic Portal. */
 case class AtomicPortal[T, R](
     path: String,
+    key: Option[T => Long] = None,
 ) extends AST
 
 /** Atomic Portal Reference. */

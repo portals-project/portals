@@ -28,7 +28,9 @@ object TaskExecution:
     // set future
     _futures.update(id, r)
     // run continuation
-    _continuations.get(id).get(using actx)
+    _continuations.get(id) match
+      case Some(continuation) => continuation(using actx)
+      case None => () // do nothing, no continuation was saved for this future
     // cleanup future
     _futures.remove(id)
     // cleanup continuation

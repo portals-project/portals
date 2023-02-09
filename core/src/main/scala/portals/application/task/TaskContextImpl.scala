@@ -47,7 +47,8 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
   private[portals] var asker: String = _
   private[portals] var portal: String = _
   private[portals] var portalAsker: String = _
+  private[portals] var askerKey: Key[Long] = _
 
   override def reply(msg: Rep): Unit =
-    outputCollector.reply(msg, this.portal, this.asker, this.key, this.id)
+    outputCollector.reply(msg, this.portal, this.asker, this.askerKey, this.id)
 end TaskContextImpl // class

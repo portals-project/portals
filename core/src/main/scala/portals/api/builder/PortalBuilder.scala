@@ -2,6 +2,7 @@ package portals
 
 trait PortalBuilder:
   def portal[T, R](name: String): AtomicPortalRef[T, R]
+  def portal[T, R](name: String, f: T => Long): AtomicPortalRef[T, R]
 
 object PortalBuilder:
   def apply(name: String)(using bctx: ApplicationBuilderContext): PortalBuilder =
@@ -12,5 +13,11 @@ class PortalBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) ext
   def portal[T, R](name: String): AtomicPortalRef[T, R] =
     val path = bctx.app.path + "/portals/" + name
     val portal = AtomicPortal[T, R](path)
+    bctx.addToContext(portal)
+    AtomicPortalRef[T, R](portal)
+
+  def portal[T, R](name: String, f: T => Long): AtomicPortalRef[T, R] =
+    val path = bctx.app.path + "/portals/" + name
+    val portal = AtomicPortal[T, R](path, Some(f))
     bctx.addToContext(portal)
     AtomicPortalRef[T, R](portal)
