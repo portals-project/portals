@@ -18,7 +18,7 @@ object DSL:
 
   // shorthands for the TaskContext methods
   def emit[T, U](event: U)(using EmittingTaskContext[T, U]) = summon[EmittingTaskContext[T, U]].emit(event)
-  def state[T, U](using StatefulTaskContext[T, U]) = summon[StatefulTaskContext[T, U]].state
+  def state[T, U](using StatefulTaskContext) = summon[StatefulTaskContext].state
   def log[T, U](using LoggingTaskContext[T, U]) = summon[LoggingTaskContext[T, U]].log
 
   //////////////////////////////////////////////////////////////////////////////

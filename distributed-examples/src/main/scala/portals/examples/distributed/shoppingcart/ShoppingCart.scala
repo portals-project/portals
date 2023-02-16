@@ -9,15 +9,18 @@ import portals.*
 ////////////////////////////////////////////////////////////////////////////////
 @experimental
 object ShoppingCart:
+  import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
+  import portals.examples.distributed.shoppingcart.ShoppingCartTasks.*
   import portals.DSL.*
   import portals.DSL.BuilderDSL.*
   import portals.DSL.ExperimentalDSL.*
 
-  import ShoppingCartEvents.*
+  private val _rand = scala.util.Random()
+  inline def sample_1024(): Boolean = _rand.nextInt(1024) < 1
 
   def app: Application = PortalsApp("shopping-cart") {
-    val inventoryops = Generators.fromList(Data.inventoryopsList)
-    val cartops = Generators.fromListOfLists(Data.cartopsList)
+    val inventoryops = Generators.fromIteratorOfIterators(ShoppingCartData.inveOpsIter)
+    val cartops = Generators.fromIteratorOfIterators(ShoppingCartData.cartOpsIter)
 
     val portal = Portal[InventoryReqs, InventoryReps]("inventory", { x => keyFrom(x) })
 
@@ -40,6 +43,8 @@ object ShoppingCart:
     val orders = Workflows[OrderOps, Nothing]("orders")
       .source(cart.stream)
       .key(keyFrom(_))
+      .filter { _ => sample_1024() }
+      .logger()
       .task(CustomTask.processor(() => new OrdersTask()))
       .withName("orders")
       .sink()
