@@ -1,15 +1,15 @@
 package portals
 
 trait TaskStates:
-  def perKey[T](name: String, initValue: T)(using StatefulTaskContext[_, _]): PerKeyState[T]
-  def perTask[T](name: String, initValue: T)(using StatefulTaskContext[_, _]): PerTaskState[T]
+  def perKey[T](name: String, initValue: T)(using StatefulTaskContext): PerKeyState[T]
+  def perTask[T](name: String, initValue: T)(using StatefulTaskContext): PerTaskState[T]
 end TaskStates // trait
 
 object TaskStates extends TaskStates:
-  override def perKey[T](name: String, initValue: T)(using StatefulTaskContext[_, _]): PerKeyState[T] =
+  override def perKey[T](name: String, initValue: T)(using StatefulTaskContext): PerKeyState[T] =
     PerKeyState(name, initValue)
 
-  override def perTask[T](name: String, initValue: T)(using StatefulTaskContext[_, _]): PerTaskState[T] =
+  override def perTask[T](name: String, initValue: T)(using StatefulTaskContext): PerTaskState[T] =
     PerTaskState(name, initValue)
 end TaskStates // object
 
@@ -24,17 +24,17 @@ trait PerKeyState[T] extends TypedState[T]
 trait PerTaskState[T] extends TypedState[T]
 
 object PerKeyState:
-  def apply[T](name: String, initValue: T)(using StatefulTaskContext[_, _]): PerKeyState[T] =
+  def apply[T](name: String, initValue: T)(using StatefulTaskContext): PerKeyState[T] =
     PerKeyStateImpl[T](name, initValue)
 end PerKeyState // object
 
 object PerTaskState:
-  def apply[T](name: String, initValue: T)(using StatefulTaskContext[_, _]): PerTaskState[T] =
+  def apply[T](name: String, initValue: T)(using StatefulTaskContext): PerTaskState[T] =
     PerTaskStateImpl[T](name, initValue)
 end PerTaskState // object
 
-class PerKeyStateImpl[T](name: String, initValue: T)(using StatefulTaskContext[_, _]) extends PerKeyState[T]:
-  private val _state: TaskState[Any, Any] = summon[StatefulTaskContext[_, _]].state
+class PerKeyStateImpl[T](name: String, initValue: T)(using StatefulTaskContext) extends PerKeyState[T]:
+  private val _state: TaskState[Any, Any] = summon[StatefulTaskContext].state
 
   override def get(): T = _state.get(name) match
     case Some(value) => value.asInstanceOf[T]
@@ -46,8 +46,8 @@ class PerKeyStateImpl[T](name: String, initValue: T)(using StatefulTaskContext[_
 
 end PerKeyStateImpl // class
 
-class PerTaskStateImpl[T](name: String, initValue: T)(using StatefulTaskContext[_, _]) extends PerTaskState[T]:
-  private val _state: TaskState[Any, Any] = summon[StatefulTaskContext[_, _]].state
+class PerTaskStateImpl[T](name: String, initValue: T)(using StatefulTaskContext) extends PerTaskState[T]:
+  private val _state: TaskState[Any, Any] = summon[StatefulTaskContext].state
 
   private var _key: Key[Long] = _
   private val _reservedKey: Key[Long] = Key(-2) // reserved to TaskState for now :)

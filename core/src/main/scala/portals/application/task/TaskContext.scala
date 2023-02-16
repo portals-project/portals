@@ -9,7 +9,7 @@ private[portals] trait EmittingTaskContext[T, U] extends GenericTaskContext[T, U
   /** Emit an event */
   def emit(u: U): Unit
 
-private[portals] trait StatefulTaskContext[T, U] extends GenericTaskContext[T, U, _, _]:
+private[portals] trait StatefulTaskContext extends GenericTaskContext[_, _, _, _]:
   /** State of the task, scoped by the contextual invocation context */
   def state: TaskState[Any, Any]
 
@@ -36,18 +36,18 @@ private[portals] trait KeyTaskContext[T, U, Req, Rep] extends GenericTaskContext
 private[portals] trait ProcessorTaskContext[T, U]
     extends GenericTaskContext[T, U, _, _]
     with EmittingTaskContext[T, U]
-    with StatefulTaskContext[T, U]
+    with StatefulTaskContext
     with LoggingTaskContext[T, U]
 
 private[portals] trait MapTaskContext[T, U]
     extends GenericTaskContext[T, U, _, _]
-    with StatefulTaskContext[T, U]
+    with StatefulTaskContext
     with LoggingTaskContext[T, U]
 
 private[portals] trait AskerTaskContext[T, U, Req, Rep]
     extends GenericTaskContext[T, U, Req, Rep]
     with EmittingTaskContext[T, U]
-    with StatefulTaskContext[T, U]
+    with StatefulTaskContext
     with LoggingTaskContext[T, U]
     with AskingTaskContext[T, U, Req, Rep]
     with AwaitingTaskContext[T, U, Req, Rep]
@@ -55,7 +55,7 @@ private[portals] trait AskerTaskContext[T, U, Req, Rep]
 private[portals] trait ReplierTaskContext[T, U, Req, Rep]
     extends GenericTaskContext[T, U, Req, Rep]
     with EmittingTaskContext[T, U]
-    with StatefulTaskContext[T, U]
+    with StatefulTaskContext
     with LoggingTaskContext[T, U]
     with ReplyingTaskContext[T, U, Req, Rep]
 
