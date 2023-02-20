@@ -4,7 +4,7 @@ import portals.*
 import portals.compiler.*
 
 /** Check if the application is well-formed. Throws exception. */
-object WellFormedCheck extends CompilerPhase[Application, Application]:
+private[portals] object WellFormedCheck extends CompilerPhase[Application, Application]:
   override def run(application: Application)(using CompilerContext): Application =
     // 1. check for naming collissions
     // X: no two distinct elements may share the same path

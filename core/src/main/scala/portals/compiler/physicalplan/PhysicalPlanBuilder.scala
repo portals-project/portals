@@ -2,7 +2,7 @@ package portals.compiler.physicalplan
 
 import portals.*
 
-object PhysicalPlanBuilder:
+private[portals] object PhysicalPlanBuilder:
   def fromApplication(app: Application): Plan[PlanConfig] =
     Plan(app, EmptyConfig)
 
