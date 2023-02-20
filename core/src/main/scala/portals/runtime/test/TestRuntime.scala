@@ -3,6 +3,7 @@ package portals
 import scala.util.Random
 
 import portals.*
+import portals.compiler.phases.RuntimeCompilerPhases
 
 /** Internal API. Holds runtime information of the executed applications. */
 private[portals] class TestRuntimeContext():

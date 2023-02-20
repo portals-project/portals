@@ -1,4 +1,4 @@
-package portals
+package portals.compiler
 
 private[portals] trait CompilerPhase[T, U] {
   self =>
