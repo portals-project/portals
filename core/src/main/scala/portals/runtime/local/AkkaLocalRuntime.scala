@@ -1,4 +1,4 @@
-package portals
+package portals.runtime.local
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Await

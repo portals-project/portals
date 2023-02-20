@@ -27,7 +27,7 @@ object ThreadRingWorkflowsAlternatingSequencers extends Benchmark:
     val completer = CompletionWatcher()
 
     val system = sSystem match
-      case "async" => Systems.parallel()
+      case "async" => Systems.local()
       case "noGuarantees" => Systems.asyncLocalNoGuarantees()
       case "microBatching" => Systems.asyncLocalMicroBatching()
       case "sync" => Systems.test()

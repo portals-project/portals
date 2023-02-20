@@ -252,7 +252,7 @@ object NEXMarkBenchmark extends Benchmark:
     val queryWorkflow = query(generator.stream, builder, completer)
 
     val system = sSystem match
-      case "async" => Systems.parallel()
+      case "async" => Systems.local()
       case "noGuarantees" => Systems.asyncLocalNoGuarantees()
       case "microBatching" => Systems.asyncLocalMicroBatching()
       case "sync" => Systems.test()

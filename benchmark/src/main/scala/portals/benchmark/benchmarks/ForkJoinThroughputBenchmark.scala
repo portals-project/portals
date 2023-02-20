@@ -27,7 +27,7 @@ object ForkJoinThroughputBenchmark extends Benchmark:
     val sSystem = config.get("--sSystem")
 
     val system = sSystem match
-      case "async" => Systems.parallel()
+      case "async" => Systems.local()
       case "noGuarantees" => Systems.asyncLocalNoGuarantees()
       case "microBatching" => Systems.asyncLocalMicroBatching()
       // TODO: make sync work for this case

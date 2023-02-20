@@ -1,4 +1,4 @@
-package portals
+package portals.runtime.local
 
 import scala.collection.immutable.VectorBuilder
 

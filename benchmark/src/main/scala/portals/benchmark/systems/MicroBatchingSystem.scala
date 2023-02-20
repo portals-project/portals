@@ -12,7 +12,9 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
 import portals.*
-
+import portals.runtime.local.AkkaLocalRuntime
+import portals.runtime.local.AkkaRunner
+import portals.runtime.local.AkkaRunnerImpl
 class MicroBatchingSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*
   override val runner: AkkaRunner = MicroBatchingRunner

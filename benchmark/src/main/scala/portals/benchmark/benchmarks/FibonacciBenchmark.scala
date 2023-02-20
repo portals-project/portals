@@ -24,7 +24,7 @@ object FibonacciBenchmark extends Benchmark:
     case class FibRequest(sender: Int, override val receiver: Int) extends FibEvent(receiver)
     case class FibResponse(sender: Int, override val receiver: Int, v: Long) extends FibEvent(receiver)
 
-    val system = Systems.parallel()
+    val system = Systems.local()
 
     val completer = CompletionWatcher()
 

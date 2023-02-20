@@ -26,7 +26,7 @@ object ChainOfTasksBenchmark extends Benchmark:
 
     val completer = CompletionWatcher()
 
-    val system = Systems.parallel()
+    val system = Systems.local()
 
     val builder = ApplicationBuilders.application("app")
 
