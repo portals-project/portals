@@ -5,7 +5,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
 import portals.*
-
+import portals.runtime.local.AkkaLocalRuntime
+import portals.runtime.local.AkkaRunner
 class NoGuaranteesSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*
   override val runner: AkkaRunner = NoGuaranteesRunner

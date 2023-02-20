@@ -1,9 +1,17 @@
-package portals
+package portals.compiler
 
-private[portals] class CompilerImpl extends Compiler[Application, Application]:
-  given ctx: CompilerContext = new CompilerContext
+import portals.*
+import portals.compiler.phases.*
+import portals.compiler.physicalplan.*
 
-  def compile(application: Application): Application =
-    CompilerPhases.WellFormedCheck.run(application)
+/** Compiler that will run all checks and transform the code to its physical representation. */
+private[portals] class CompilerImpl extends Compiler[Application, PhysicalPlan[_]]:
+  given ctx: CompilerContext = new CompilerContext()
+
+  override def compile(application: Application): PhysicalPlan[_] =
+    CompilerPhases.empty
+      .andThen(CompilerPhases.wellFormedCheck)
+      .andThen(CompilerPhases.codeGeneration)
+      .run(application)
 
 end CompilerImpl // class

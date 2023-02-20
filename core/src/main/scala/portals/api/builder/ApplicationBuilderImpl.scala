@@ -1,10 +1,12 @@
 package portals
 
+import portals.compiler.*
+
 /** Application Builder Implementation. */
 class ApplicationBuilderImpl(using bctx: ApplicationBuilderContext) extends ApplicationBuilder:
   override def build(): Application =
     bctx.freeze()
-    Compiler().compile(bctx.app) // may throw exception
+    CompilerBuilder.preCompiler().compile(bctx.app) // may throw exception
 
   override def registry: RegistryBuilder = RegistryBuilder()
 

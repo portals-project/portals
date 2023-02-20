@@ -19,4 +19,4 @@ object Systems extends Systems:
   //     override def stepUntilComplete(): Unit = Thread.sleep(500)
   //   }
 
-  def parallel(): PortalsSystem = new ParallelSystem()
+  def local(): PortalsSystem = new LocalSystem()

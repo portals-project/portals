@@ -16,7 +16,8 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 
 import portals.*
-
+import portals.runtime.local.AkkaRunner
+import portals.runtime.local.AkkaRunnerImpl
 class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) extends PortalsSystem:
   import AkkaRunner.Events.*
 
