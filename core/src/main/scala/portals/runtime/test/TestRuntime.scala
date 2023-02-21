@@ -5,7 +5,6 @@ import scala.util.Random
 import portals.*
 import portals.compiler.phases.RuntimeCompilerPhases
 
-import portals.runtime.test.TestSequencer
 /** Internal API. Holds runtime information of the executed applications. */
 private[portals] class TestRuntimeContext():
   private var _applications: Map[String, Application] = Map.empty
