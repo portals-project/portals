@@ -56,6 +56,8 @@ object DSL:
 
     def Generators(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators
 
+    def Splitters(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters
+
     def Sequencers(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers
 
     def Connections(using ab: ApplicationBuilder): ConnectionBuilder = ab.connections

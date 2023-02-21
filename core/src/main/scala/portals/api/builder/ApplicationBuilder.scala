@@ -8,6 +8,10 @@ trait ApplicationBuilder:
 
   def workflows[T, U](name: String = null): WorkflowBuilder[T, U]
 
+  def splitters: SplitterBuilder
+
+  def splitters(name: String = null): SplitterBuilder
+
   def generators: GeneratorBuilder
 
   def generators(name: String = null): GeneratorBuilder

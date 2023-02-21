@@ -13,10 +13,12 @@ class ApplicationBuilderContext(_path: String):
       app = app.copy(streams = app.streams :+ x)
     case x: AtomicSequencer[_] =>
       app = app.copy(sequencers = app.sequencers :+ x)
-    // case x: AtomicSplitter[_] =>
-    //   app = app.copy(splitters = app.splitters :+ x)
+    case x: AtomicSplitter[_] =>
+      app = app.copy(splitters = app.splitters :+ x)
     case x: AtomicConnection[_] =>
       app = app.copy(connections = app.connections :+ x)
+    case x: AtomicSplit[_] =>
+      app = app.copy(splits = app.splits :+ x)
     case x: AtomicPortal[_, _] =>
       app = app.copy(portals = app.portals :+ x)
     case x: ExtAtomicStreamRef[_] =>
