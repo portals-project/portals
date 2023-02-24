@@ -12,6 +12,10 @@ trait ApplicationBuilder:
 
   def splitters(name: String = null): SplitterBuilder
 
+  def splits: SplitBuilder
+
+  def splits(name: String = null): SplitBuilder
+
   def generators: GeneratorBuilder
 
   def generators(name: String = null): GeneratorBuilder

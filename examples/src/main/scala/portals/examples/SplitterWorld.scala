@@ -21,23 +21,35 @@ import portals.*
 
     val splitter = Splitters.empty[Int](generator.stream)
 
-    val split1 = Splitters.split(splitter, { _ % 2 == 0 })
-    val split2 = Splitters.split(splitter, { _ % 2 == 1 })
+    val split1 = splitter.split { _ % 2 == 0 }
+    val split2 = splitter.split { _ % 2 == 1 }
 
     val wfeven = Workflows[Int, Int]("wfeven")
       .source(split1)
       .logger("EVEN STEVEN: ")
+      .withOnAtomComplete {
+        ctx.log.info("ATOM")
+      }
+      .withOnComplete {
+        ctx.log.info("COMPLETE")
+      }
       .sink()
       .freeze()
-    
+
     val wfodd = Workflows[Int, Int]("wfodd")
       .source(split2)
       .logger("ODD COD: ")
+      .withOnAtomComplete {
+        ctx.log.info("ATOM")
+      }
+      .withOnComplete {
+        ctx.log.info("COMPLETE")
+      }
       .sink()
       .freeze()
   }
 
-  ASTPrinter.println(app) // print the application AST
+  // ASTPrinter.println(app) // print the application AST
 
   val system = Systems.test()
 

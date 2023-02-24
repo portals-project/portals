@@ -12,6 +12,7 @@ private[portals] class TestRuntimeContext():
   private var _portals: Map[String, TestPortal] = Map.empty
   private var _workflows: Map[String, TestWorkflow] = Map.empty
   private var _sequencers: Map[String, TestSequencer] = Map.empty
+  private var _splitters: Map[String, TestSplitter] = Map.empty
   private var _generators: Map[String, TestGenerator] = Map.empty
   private var _connections: Map[String, TestConnection] = Map.empty
   def applications: Map[String, Application] = _applications
@@ -19,6 +20,7 @@ private[portals] class TestRuntimeContext():
   def portals: Map[String, TestPortal] = _portals
   def workflows: Map[String, TestWorkflow] = _workflows
   def sequencers: Map[String, TestSequencer] = _sequencers
+  def splitters: Map[String, TestSplitter] = _splitters
   def generators: Map[String, TestGenerator] = _generators
   def connections: Map[String, TestConnection] = _connections
   def addApplication(application: Application): Unit = _applications += application.path -> application
@@ -26,6 +28,7 @@ private[portals] class TestRuntimeContext():
   def addPortal(portal: AtomicPortal[_, _]): Unit = _portals += portal.path -> TestPortal(portal)(using this)
   def addWorkflow(wf: Workflow[_, _]): Unit = _workflows += wf.path -> TestWorkflow(wf)(using this)
   def addSequencer(seqr: AtomicSequencer[_]): Unit = _sequencers += seqr.path -> TestSequencer(seqr)(using this)
+  def addSplitter(spltr: AtomicSplitter[_]): Unit = _splitters += spltr.path -> TestSplitter(spltr)(using this)
   def addGenerator(genr: AtomicGenerator[_]): Unit = _generators += genr.path -> TestGenerator(genr)(using this)
   def addConnection(conn: AtomicConnection[_]): Unit = _connections += conn.path -> TestConnection(conn)(using this)
 
@@ -148,6 +151,19 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
       )
     }
 
+    // launch splitters
+    application.splitters.foreach { splitr =>
+      rctx.addSplitter(splitr)
+      graphTracker.addEdge(splitr.in.path, splitr.path)
+      progressTracker.initProgress(splitr.path, splitr.in.path)
+    }
+
+    // // launch splits
+    // application.splits.foreach { split =>
+    //   // graphTracker.addEdge(split.from.path, split.to.path)
+    //   // progressTracker.initProgress(split.to.path, split.from.path)
+    // }
+
     // launch sequencers
     application.sequencers.foreach { seqr =>
       rctx.addSequencer(seqr)
@@ -213,6 +229,9 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
   private def chooseSequencer(): Option[(String, TestSequencer)] =
     randomSelection(rctx.sequencers, (path, seqr) => hasInput(path))
 
+  private def chooseSplitter(): Option[(String, TestSplitter)] =
+    randomSelection(rctx.splitters, (path, spltr) => hasInput(path))
+
   private def chooseGenerator(): Option[(String, TestGenerator)] =
     randomSelection(rctx.generators, (path, genr) => genr.generator.generator.hasNext())
 
@@ -262,6 +281,14 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
     val outputAtoms = genr.process()
     distributeAtoms(outputAtoms)
 
+  private def stepSplitter(path: String, spltr: TestSplitter): Unit =
+    val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
+    val idx = progressTracker.getProgress(path, from).get
+    val inputAtom = rctx.streams(from).read(idx)
+    val outputAtoms = spltr.process(inputAtom)
+    distributeAtoms(outputAtoms)
+    progressTracker.incrementProgress(path, from)
+
   /** Take a step. This will cause one of the processing entities (Workflows, Sequencers, etc.) to process one atom and
     * produce one (or more) atoms. Throws an exception if it cannot take a step.
     */
@@ -275,10 +302,13 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
             chooseSequencer() match
               case Some(path, seqr) => stepSequencer(path, seqr)
               case None =>
-                chooseGenerator() match
-                  case Some(path, genr) =>
-                    stepGenerator(path, genr)
-                  case None => ???
+                chooseSplitter() match
+                  case Some(path, spltr) => stepSplitter(path, spltr)
+                  case None =>
+                    chooseGenerator() match
+                      case Some(path, genr) =>
+                        stepGenerator(path, genr)
+                      case None => ???
     if stepN % GC_INTERVAL == 0 then garbageCollection()
 
   /** Takes steps until it cannot take more steps. */
@@ -293,6 +323,7 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
     choosePortal().isDefined
       || chooseWorkflow().isDefined
       || chooseSequencer().isDefined
+      || chooseSplitter().isDefined
       || chooseGenerator().isDefined
 
   /** Terminate the runtime. */

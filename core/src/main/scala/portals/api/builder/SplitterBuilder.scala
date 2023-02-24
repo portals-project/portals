@@ -2,9 +2,7 @@ package portals
 
 trait SplitterBuilder:
   def empty[T](stream: AtomicStreamRef[T]): AtomicSplitter[T]
-
-  def split[T](splitter: AtomicSplitter[T], filter: T => Boolean): AtomicStreamRef[T]
-end SplitterBuilder
+end SplitterBuilder // trait
 
 object SplitterBuilder:
   def apply(name: String)(using bctx: ApplicationBuilderContext): SplitterBuilder =
@@ -30,14 +28,3 @@ class SplitterBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) e
   override def empty[T](stream: AtomicStreamRef[T]): AtomicSplitter[T] =
     val _splitter = Splitters.empty[T]()
     this.build(stream, _splitter)
-
-  override def split[T](splitter: AtomicSplitter[T], filter: T => Boolean): AtomicStreamRef[T] =
-    val _name = bctx.name_or_id()
-    val _path = splitter.path + "/" + _name
-    val _split_path = splitter.path + "/" + "split" + "/" + bctx.name_or_id()
-    splitter.splitter.addOutput(_path, filter)
-    val _newStream = AtomicStream[T](_path)
-    val _newSplit = AtomicSplit[T](_split_path, AtomicSplitterRef(splitter.path), AtomicStreamRef(_newStream))
-    bctx.addToContext(_newStream)
-    bctx.addToContext(_newSplit)
-    AtomicStreamRef(_newStream)
