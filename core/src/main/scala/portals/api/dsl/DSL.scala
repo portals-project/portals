@@ -54,9 +54,19 @@ object DSL:
 
     def Workflows[T, U](name: String)(using ab: ApplicationBuilder): WorkflowBuilder[T, U] = ab.workflows[T, U](name)
 
+    def Generators(name: String)(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators(name)
+
     def Generators(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators
 
+    def Sequencers(name: String)(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers(name)
+
     def Sequencers(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers
+
+    def Splitters(name: String)(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters(name)
+
+    def Splitters(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters
+
+    def Splits(using ab: ApplicationBuilder): SplitBuilder = ab.splits
 
     def Connections(using ab: ApplicationBuilder): ConnectionBuilder = ab.connections
 
@@ -78,6 +88,11 @@ object DSL:
   /** Experimental API. Various mix of experimental API extensions. */
   @experimental
   object ExperimentalDSL:
+    extension [T](splitter: AtomicSplitter[T]) {
+      def split(f: T => Boolean)(using ab: ApplicationBuilder): AtomicStreamRef[T] =
+        ab.splits.split(splitter, f)
+    }
+
     extension (gb: GeneratorBuilder) {
       def empty[T]: AtomicGeneratorRef[T] = gb.fromList(List.empty)
 

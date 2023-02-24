@@ -19,11 +19,13 @@ case class Application(
     private[portals] generators: List[AtomicGenerator[_]] = List.empty,
     private[portals] streams: List[AtomicStream[_]] = List.empty,
     private[portals] sequencers: List[AtomicSequencer[_]] = List.empty,
-    // private[portals] splitters: List[AtomicSplitter[_]] = List.empty,
+    private[portals] splitters: List[AtomicSplitter[_]] = List.empty,
     private[portals] connections: List[AtomicConnection[_]] = List.empty,
+    private[portals] splits: List[AtomicSplit[_]] = List.empty,
     private[portals] portals: List[AtomicPortal[_, _]] = List.empty,
     private[portals] externalStreams: List[ExtAtomicStreamRef[_]] = List.empty,
     private[portals] externalSequencers: List[ExtAtomicSequencerRef[_]] = List.empty,
+    private[portals] externalSplitters: List[ExtAtomicSplitterRef[_]] = List.empty,
     private[portals] externalPortals: List[ExtAtomicPortalRef[_, _]] = List.empty,
 ) extends AST
 
@@ -63,16 +65,30 @@ case class AtomicSequencerRef[T](path: String, stream: AtomicStreamRef[T]) exten
 /** External Atomic Sequencer Ref. */
 case class ExtAtomicSequencerRef[T](path: String, stream: ExtAtomicStreamRef[T]) extends AtomicSequencerRefKind[T]
 
-// /** Atomic Splitter. */
-// case class AtomicSplitter[T](
-//     path: String,
-//     private[portals] in: AtomicStreamRef[T],
-//     streams: List[AtomicStreamRef[T]],
-//     // splitter: Splitter[T], // TODO: implement
-// ) extends AST
+/** Atomic Splitter Ref. */
+sealed trait AtomicSplitterRefKind[T] extends AST
 
-// /** Atomic Splitter Ref. */
-// case class AtomicSplitterRef[T](path: String, streams: List[AtomicStreamRef[T]]) extends AST
+/** External Atomic Splitter Ref. */
+case class ExtAtomicSplitterRef[T](path: String) extends AtomicSplitterRefKind[T]
+
+/** Atomic Splitter. */
+case class AtomicSplitter[T](
+    path: String,
+    private[portals] in: AtomicStreamRefKind[T],
+    streams: List[AtomicStreamRefKind[T]],
+    splitter: Splitter[T],
+) extends AtomicSplitterRefKind[T]
+
+/** Atomic Splitter Ref. */
+case class AtomicSplitterRef[T](path: String) extends AST
+
+/** Atomic Split. */
+case class AtomicSplit[T](
+    path: String,
+    private[portals] from: AtomicSplitterRef[T],
+    private[portals] to: AtomicStreamRefKind[T],
+    private[portals] filter: T => Boolean,
+) extends AST
 
 /** Atomic Generator. */
 case class AtomicGenerator[T](

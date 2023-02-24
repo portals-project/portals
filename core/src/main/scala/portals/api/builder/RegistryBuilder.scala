@@ -2,6 +2,7 @@ package portals
 
 trait RegistryBuilder:
   def sequencers: Registry[ExtAtomicSequencerRef]
+  def splitters: Registry[ExtAtomicSplitterRef]
   def streams: Registry[ExtAtomicStreamRef]
   def portals: Registry2[ExtAtomicPortalRef]
 end RegistryBuilder
@@ -11,6 +12,7 @@ object RegistryBuilder:
 
 class RegistryBuilderImpl(using bctx: ApplicationBuilderContext) extends RegistryBuilder:
   override def sequencers: Registry[ExtAtomicSequencerRef] = new SequencerRegistryImpl()
+  override def splitters: Registry[ExtAtomicSplitterRef] = new SplitterRegistryImpl()
   override def streams: Registry[ExtAtomicStreamRef] = new StreamsRegistryImpl()
   override def portals: Registry2[ExtAtomicPortalRef] = new PortalsRegistryImpl()
 
@@ -25,6 +27,12 @@ end Registry2
 class SequencerRegistryImpl(using bctx: ApplicationBuilderContext) extends Registry[ExtAtomicSequencerRef]:
   override def get[T](path: String): ExtAtomicSequencerRef[T] =
     val ref = ExtAtomicSequencerRef[T](path)
+    bctx.addToContext(ref)
+    ref
+
+class SplitterRegistryImpl(using bctx: ApplicationBuilderContext) extends Registry[ExtAtomicSplitterRef]:
+  override def get[T](path: String): ExtAtomicSplitterRef[T] =
+    val ref = ExtAtomicSplitterRef[T](path)
     bctx.addToContext(ref)
     ref
 

@@ -16,6 +16,14 @@ class ApplicationBuilderImpl(using bctx: ApplicationBuilderContext) extends Appl
     bctx._workflowBuilders = bctx._workflowBuilders :+ wfb
     wfb
 
+  override def splitters: SplitterBuilder = this.splitters(null)
+
+  override def splitters(name: String = null): SplitterBuilder = SplitterBuilder(name)
+
+  override def splits: SplitBuilder = this.splits(null)
+
+  override def splits(name: String = null): SplitBuilder = SplitBuilder(name)
+
   override def generators: GeneratorBuilder = this.generators(null)
 
   override def generators(name: String = null): GeneratorBuilder = GeneratorBuilder(name)
