@@ -62,7 +62,6 @@ class SplitterTest:
     val received2 = tester2.receiveAll()
     val receivedAtoms2 = tester2.receiveAllAtoms().filter(_.nonEmpty)
     val receivedWrapped2 = tester2.receiveAllWrapped()
-    // tester1.receive
 
     val testData = Iterator.range(0, 256).toList
     val testDataAtoms = Iterator.range(0, 256).grouped(5).map(_.toList).toList
