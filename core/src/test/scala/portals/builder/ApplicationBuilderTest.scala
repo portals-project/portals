@@ -174,16 +174,16 @@ class ApplicationBuilderTest:
 
     assertEquals(
       List(
-        tester.Event(1),
-        tester.Atom,
-        tester.Event(2),
-        tester.Event(3),
-        tester.Atom,
-        tester.Event(4),
-        tester.Event(5),
-        tester.Event(6),
-        tester.Atom,
-        tester.Seal
+        TestUtils.Tester.Event(1),
+        TestUtils.Tester.Atom,
+        TestUtils.Tester.Event(2),
+        TestUtils.Tester.Event(3),
+        TestUtils.Tester.Atom,
+        TestUtils.Tester.Event(4),
+        TestUtils.Tester.Event(5),
+        TestUtils.Tester.Event(6),
+        TestUtils.Tester.Atom,
+        TestUtils.Tester.Seal
       ),
       tester.receiveAllWrapped()
     )
@@ -231,13 +231,13 @@ class ApplicationBuilderTest:
 
     assertEquals(
       List(
-        tester.Event(0),
-        tester.Event(0),
-        tester.Atom,
-        tester.Event(1),
-        tester.Event(1),
-        tester.Atom,
-        tester.Seal
+        TestUtils.Tester.Event(0),
+        TestUtils.Tester.Event(0),
+        TestUtils.Tester.Atom,
+        TestUtils.Tester.Event(1),
+        TestUtils.Tester.Event(1),
+        TestUtils.Tester.Atom,
+        TestUtils.Tester.Seal
       ),
       tester.receiveAllWrapped()
     )
@@ -275,7 +275,7 @@ class ApplicationBuilderTest:
 
     val tester = TestUtils.executeWorkflow(flow, testData)
 
-    assertEquals(tester.Seal, tester.receiveAllWrapped().last)
+    assertEquals(TestUtils.Tester.Seal, tester.receiveAllWrapped().last)
 
   @Ignore // errors are not handled correctly by current sync runtime, nor the async
   @Test
@@ -295,4 +295,4 @@ class ApplicationBuilderTest:
     })
 
     assertEquals(true, execution.isFailure)
-    assertEquals(tester.Error(e), tester.receiveAllWrapped().last)
+    assertEquals(TestUtils.Tester.Error(e), tester.receiveAllWrapped().last)

@@ -22,15 +22,16 @@ private[portals] class TestSplitter(splitter: AtomicSplitter[_])(using rctx: Tes
         splitter.asInstanceOf[AtomicSplitter[Any]].splitter.split(splatom) match
           case Nil => List.empty
           case list =>
-            list.map { case (path, events) =>
-              TestAtomBatch(
-                path,
-                events.map {
-                  case Splitter.Event(key, t) => Event(key, t)
-                  case Splitter.Error(t) => Error(t)
-                  case Splitter.Atom => Atom
-                  case Splitter.Seal => Seal
-                }
-              )
-            }
+            list
+              .map { case (path, events) =>
+                TestAtomBatch(
+                  path,
+                  events.map {
+                    case Splitter.Event(key, t) => Event(key, t)
+                    case Splitter.Error(t) => Error(t)
+                    case Splitter.Atom => Atom
+                    case Splitter.Seal => Seal
+                  }
+                )
+              }
       case _ => ??? // should not happen

@@ -36,7 +36,7 @@ class FlowBuilderTest:
     assertTrue(tester.contains(4))
 
     // 3. The output contains a single atom
-    assertEquals(1, tester.receiveAllWrapped().filter { case tester.Atom => true; case _ => false }.size)
+    assertEquals(1, tester.receiveAllWrapped().filter { case TestUtils.Tester.Atom => true; case _ => false }.size)
 
   @Test
   def testSteppers(): Unit =
