@@ -67,8 +67,8 @@ case class ExtAtomicSequencerRef[T](path: String, stream: ExtAtomicStreamRef[T])
 /** Atomic Splitter. */
 case class AtomicSplitter[T](
     path: String,
-    private[portals] in: AtomicStreamRef[T],
-    streams: List[AtomicStreamRef[T]],
+    private[portals] in: AtomicStreamRefKind[T],
+    streams: List[AtomicStreamRefKind[T]],
     splitter: Splitter[T],
 ) extends AST
 

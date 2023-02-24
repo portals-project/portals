@@ -25,12 +25,12 @@ object Splitters:
       outputs = outputs + (path -> filter)
     override def removeOutput(path: Path): Unit =
       outputs = outputs - path
+      
     // TODO: should append atom/seal/error to all outs.
     override def split(atom: Atom): List[(Path, Atom)] =
       val has_atom = atom.exists { case Atom => true; case _ => false }
       val has_seal = atom.exists { case Seal => true; case _ => false }
       val error = atom.find { case Error(t) => true; case _ => false }
-      println(atom)
       val suffix =
         if error.isDefined & has_atom then List(error.get, Atom, Seal)
         else if has_seal & has_atom then List(Atom, Seal)

@@ -54,6 +54,8 @@ object DSL:
 
     def Workflows[T, U](name: String)(using ab: ApplicationBuilder): WorkflowBuilder[T, U] = ab.workflows[T, U](name)
 
+    def Generators(name: String)(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators(name)
+
     def Generators(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators
 
     def Splitters(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters

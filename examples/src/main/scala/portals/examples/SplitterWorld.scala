@@ -10,22 +10,34 @@ import portals.*
   import portals.DSL.BuilderDSL.*
   import portals.DSL.ExperimentalDSL.*
 
-  val app = PortalsApp("app") {
-    val generator = Generators
+  val extapp = PortalsApp("otherapp") {
+    val generator = Generators("generator")
       .fromIteratorOfIterators[Int](
         Iterator
           .range(0, 1024)
           .grouped(5)
           .map(_.iterator)
       )
+  }
 
-    val splitter = Splitters.empty[Int](generator.stream)
+  val app = PortalsApp("app") {
+    // val generator = Generators
+    //   .fromIteratorOfIterators[Int](
+    //     Iterator
+    //       .range(0, 1024)
+    //       .grouped(5)
+    //       .map(_.iterator)
+    //   )
+
+    val otherstream = Registry.streams.get[Int]("/otherapp/generators/generator/stream")
+
+    val splitter = Splitters.empty[Int](otherstream)
 
     val split1 = splitter.split { _ % 2 == 0 }
     val split2 = splitter.split { _ % 2 == 1 }
 
     val wfeven = Workflows[Int, Int]("wfeven")
-      .source(split1)
+      .source(otherstream)
       .logger("EVEN STEVEN: ")
       .withOnAtomComplete {
         ctx.log.info("ATOM")
@@ -49,9 +61,11 @@ import portals.*
       .freeze()
   }
 
-  // ASTPrinter.println(app) // print the application AST
+  // ASTPrinter.println(extapp) // print the application AST
 
   val system = Systems.test()
+
+  system.launch(extapp)
 
   system.launch(app)
 
