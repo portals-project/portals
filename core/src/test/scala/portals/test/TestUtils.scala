@@ -81,11 +81,6 @@ object TestUtils:
 
   // only for synchronous testing
   class Tester[T]:
-    // sealed trait WrappedEvent[+T]
-    // case class Event[T](event: T) extends WrappedEvent[T]
-    // case object Atom extends WrappedEvent[Nothing]
-    // case object Seal extends WrappedEvent[Nothing]
-    // case class Error(t: Throwable) extends WrappedEvent[Nothing]
     import Tester.*
 
     private val queue: Queue[WrappedEvent[T]] = Queue[WrappedEvent[T]]()

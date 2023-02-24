@@ -58,13 +58,15 @@ object DSL:
 
     def Generators(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators
 
+    def Sequencers(name: String)(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers(name)
+
+    def Sequencers(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers
+
     def Splitters(name: String)(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters(name)
 
     def Splitters(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters
 
     def Splits(using ab: ApplicationBuilder): SplitBuilder = ab.splits
-
-    def Sequencers(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers
 
     def Connections(using ab: ApplicationBuilder): ConnectionBuilder = ab.connections
 

@@ -65,8 +65,10 @@ case class AtomicSequencerRef[T](path: String, stream: AtomicStreamRef[T]) exten
 /** External Atomic Sequencer Ref. */
 case class ExtAtomicSequencerRef[T](path: String, stream: ExtAtomicStreamRef[T]) extends AtomicSequencerRefKind[T]
 
+/** Atomic Splitter Ref. */
 sealed trait AtomicSplitterRefKind[T] extends AST
 
+/** External Atomic Splitter Ref. */
 case class ExtAtomicSplitterRef[T](path: String) extends AtomicSplitterRefKind[T]
 
 /** Atomic Splitter. */
@@ -79,6 +81,14 @@ case class AtomicSplitter[T](
 
 /** Atomic Splitter Ref. */
 case class AtomicSplitterRef[T](path: String) extends AST
+
+/** Atomic Split. */
+case class AtomicSplit[T](
+    path: String,
+    private[portals] from: AtomicSplitterRef[T],
+    private[portals] to: AtomicStreamRefKind[T],
+    private[portals] filter: T => Boolean,
+) extends AST
 
 /** Atomic Generator. */
 case class AtomicGenerator[T](
@@ -95,14 +105,6 @@ case class AtomicConnection[T](
     path: String,
     private[portals] from: AtomicStreamRefKind[T],
     private[portals] to: AtomicSequencerRefKind[T],
-) extends AST
-
-/** Atomic Split. */
-case class AtomicSplit[T](
-    path: String,
-    private[portals] from: AtomicSplitterRef[T],
-    private[portals] to: AtomicStreamRefKind[T],
-    private[portals] filter: T => Boolean,
 ) extends AST
 
 /** Atomic Portal. */
