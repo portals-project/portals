@@ -158,11 +158,10 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
       progressTracker.initProgress(splitr.path, splitr.in.path)
     }
 
-    // // launch splits
-    // application.splits.foreach { split =>
-    //   // graphTracker.addEdge(split.from.path, split.to.path)
-    //   // progressTracker.initProgress(split.to.path, split.from.path)
-    // }
+    // launch splits
+    application.splits.foreach { split =>
+      rctx.splitters(split.from.path).addOutput(split.to.path, split.filter)
+    }
 
     // launch sequencers
     application.sequencers.foreach { seqr =>

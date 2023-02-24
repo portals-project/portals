@@ -25,6 +25,8 @@ class ApplicationBuilderContext(_path: String):
       app = app.copy(externalStreams = app.externalStreams :+ x)
     case x: ExtAtomicSequencerRef[_] =>
       app = app.copy(externalSequencers = app.externalSequencers :+ x)
+    case x: ExtAtomicSplitterRef[_] =>
+      app = app.copy(externalSplitters = app.externalSplitters :+ x)
     case x: ExtAtomicPortalRef[_, _] =>
       app = app.copy(externalPortals = app.externalPortals :+ x)
     case x: Application => ???

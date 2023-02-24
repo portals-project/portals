@@ -3,7 +3,8 @@ package portals
 import portals.*
 
 private[portals] class TestSplitter(splitter: AtomicSplitter[_])(using rctx: TestRuntimeContext):
-  def addOutput(path: String, filter: Any => Boolean): Unit = splitter.splitter.addOutput(path, filter)
+  def addOutput[T](path: String, filter: T => Boolean): Unit =
+    splitter.splitter.addOutput(path, filter.asInstanceOf[Any => Boolean])
   def removeOutput(path: String): Unit = splitter.splitter.removeOutput(path)
   def process(atom: TestAtom): List[TestAtom] =
     atom match

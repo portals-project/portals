@@ -18,26 +18,20 @@ import portals.*
           .grouped(5)
           .map(_.iterator)
       )
+
+    val splitter = Splitters("splitter").empty[Int](generator.stream)
   }
 
   val app = PortalsApp("app") {
-    // val generator = Generators
-    //   .fromIteratorOfIterators[Int](
-    //     Iterator
-    //       .range(0, 1024)
-    //       .grouped(5)
-    //       .map(_.iterator)
-    //   )
+    val splitter = Registry.splitters.get[Int]("/otherapp/splitters/splitter")
+    val split1 = Splits.split(splitter, { _ % 2 == 0 })
+    val split2 = Splits.split(splitter, { _ % 2 == 1 })
 
-    val otherstream = Registry.streams.get[Int]("/otherapp/generators/generator/stream")
-
-    val splitter = Splitters.empty[Int](otherstream)
-
-    val split1 = splitter.split { _ % 2 == 0 }
-    val split2 = splitter.split { _ % 2 == 1 }
+    // val split1 = splitter.split { _ % 2 == 0 }
+    // val split2 = splitter.split { _ % 2 == 1 }
 
     val wfeven = Workflows[Int, Int]("wfeven")
-      .source(otherstream)
+      .source(split1)
       .logger("EVEN STEVEN: ")
       .withOnAtomComplete {
         ctx.log.info("ATOM")

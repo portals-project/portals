@@ -58,6 +58,8 @@ object DSL:
 
     def Generators(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators
 
+    def Splitters(name: String)(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters(name)
+
     def Splitters(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters
 
     def Splits(using ab: ApplicationBuilder): SplitBuilder = ab.splits

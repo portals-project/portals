@@ -25,6 +25,7 @@ case class Application(
     private[portals] portals: List[AtomicPortal[_, _]] = List.empty,
     private[portals] externalStreams: List[ExtAtomicStreamRef[_]] = List.empty,
     private[portals] externalSequencers: List[ExtAtomicSequencerRef[_]] = List.empty,
+    private[portals] externalSplitters: List[ExtAtomicSplitterRef[_]] = List.empty,
     private[portals] externalPortals: List[ExtAtomicPortalRef[_, _]] = List.empty,
 ) extends AST
 
@@ -64,13 +65,17 @@ case class AtomicSequencerRef[T](path: String, stream: AtomicStreamRef[T]) exten
 /** External Atomic Sequencer Ref. */
 case class ExtAtomicSequencerRef[T](path: String, stream: ExtAtomicStreamRef[T]) extends AtomicSequencerRefKind[T]
 
+sealed trait AtomicSplitterRefKind[T] extends AST
+
+case class ExtAtomicSplitterRef[T](path: String) extends AtomicSplitterRefKind[T]
+
 /** Atomic Splitter. */
 case class AtomicSplitter[T](
     path: String,
     private[portals] in: AtomicStreamRefKind[T],
     streams: List[AtomicStreamRefKind[T]],
     splitter: Splitter[T],
-) extends AST
+) extends AtomicSplitterRefKind[T]
 
 /** Atomic Splitter Ref. */
 case class AtomicSplitterRef[T](path: String) extends AST
@@ -97,6 +102,7 @@ case class AtomicSplit[T](
     path: String,
     private[portals] from: AtomicSplitterRef[T],
     private[portals] to: AtomicStreamRefKind[T],
+    private[portals] filter: T => Boolean,
 ) extends AST
 
 /** Atomic Portal. */
