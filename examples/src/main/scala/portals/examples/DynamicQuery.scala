@@ -8,8 +8,8 @@ import portals.*
 @experimental
 @main def DynamicQuery(): Unit =
   import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+
+  import portals.ExperimentalDSL.*
 
   case class Query()
   case class QueryReply(x: Int)
@@ -45,7 +45,7 @@ import portals.*
       .portal(portal)
       .asker[Nothing] { x =>
         // query the aggregate
-        val future: Future[QueryReply] = portal.ask(Query())
+        val future: Future[QueryReply] = ask(portal)(Query())
         future.await {
           future.value.get match
             case QueryReply(x) =>

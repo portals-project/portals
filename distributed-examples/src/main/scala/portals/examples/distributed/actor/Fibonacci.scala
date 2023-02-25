@@ -54,8 +54,7 @@ object Fibonacci:
 @experimental
 object FibonacciMain extends App:
   import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.ExperimentalDSL.*
 
   import ActorEvents.*
   import Fibonacci.FibActors.initBehavior

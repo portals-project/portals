@@ -17,8 +17,8 @@ class PortalTest:
   @experimental
   def testPingPong(): Unit =
     import portals.DSL.*
-    import portals.DSL.BuilderDSL.*
-    import portals.DSL.ExperimentalDSL.*
+
+    import portals.ExperimentalDSL.*
 
     val testData = List(List(1024))
 
@@ -48,7 +48,7 @@ class PortalTest:
         .source(generator.stream)
         .portal(portal)
         .askerRec[Int] { self => x =>
-          val future: Future[Pong] = portal.ask(Ping(x))
+          val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
@@ -85,8 +85,8 @@ class PortalTest:
   @experimental
   def testMultipleAskers(): Unit =
     import portals.DSL.*
-    import portals.DSL.BuilderDSL.*
-    import portals.DSL.ExperimentalDSL.*
+
+    import portals.ExperimentalDSL.*
 
     sealed trait PingPong
     case class Ping(x: Int) extends PingPong
@@ -119,7 +119,7 @@ class PortalTest:
       val asker1 = askersrc
         .portal(portal)
         .askerRec[Int] { self => x =>
-          val future: Future[Pong] = portal.ask(Ping(x))
+          val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker1.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
@@ -133,7 +133,7 @@ class PortalTest:
       val asker2 = askersrc
         .portal(portal)
         .askerRec[Int] { self => x =>
-          val future: Future[Pong] = portal.ask(Ping(x))
+          val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker2.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
@@ -175,8 +175,7 @@ class PortalTest:
   @experimental
   def testMultiplePortals(): Unit =
     import portals.DSL.*
-    import portals.DSL.BuilderDSL.*
-    import portals.DSL.ExperimentalDSL.*
+    import portals.ExperimentalDSL.*
 
     sealed trait PingPong
     case class Ping(x: Int) extends PingPong
@@ -217,7 +216,7 @@ class PortalTest:
       def recAwait(x: Int, portal: AtomicPortalRef[Ping, Pong], tester: TestUtils.Tester[Int])(using
           AskerTaskContext[Int, Int, Ping, Pong]
       ): Unit =
-        val future: Future[Pong] = portal.ask(Ping(x))
+        val future: Future[Pong] = ask(portal)(Ping(x))
         future.await {
           tester.enqueueEvent(future.value.get.x)
           ctx.emit(future.value.get.x)

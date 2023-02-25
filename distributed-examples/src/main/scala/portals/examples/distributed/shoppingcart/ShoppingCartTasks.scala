@@ -10,15 +10,14 @@ object ShoppingCartTasks:
   class CartTask(portal: AtomicPortalRefKind[InventoryReqs, InventoryReps])
       extends CustomAskerTask[CartOps, OrderOps, InventoryReqs, InventoryReps]:
     import portals.DSL.*
-    import portals.DSL.BuilderDSL.*
-    import portals.DSL.ExperimentalDSL.*
+    import portals.ExperimentalDSL.*
 
     lazy val state: StatefulTaskContext ?=> PerKeyState[CartState] =
       PerKeyState[CartState]("state", CartState.zero)
 
     // format: off
     private def addToCart(event: AddToCart)(using AskerTaskContext[CartOps, OrderOps, InventoryReqs, InventoryReps]): Unit =
-      val resp = portal.ask(Get(event.item))
+      val resp = ask(portal)(Get(event.item))
       resp.await { resp.value.get match
         case GetReply(item, success) =>
           if success then
@@ -35,7 +34,7 @@ object ShoppingCartTasks:
     private def removeFromCart(event: RemoveFromCart)(using
         AskerTaskContext[CartOps, OrderOps, InventoryReqs, InventoryReps]
     ): Unit =
-      portal.ask(Put(event.item))
+      ask(portal)(Put(event.item))
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"User ${event.user} removed ${event.item} from cart")
 
     private def checkout(event: Checkout)(using
@@ -57,8 +56,7 @@ object ShoppingCartTasks:
   class InventoryTask(portal: AtomicPortalRefKind[InventoryReqs, InventoryReps])
       extends CustomReplierTask[InventoryReqs, Nothing, InventoryReqs, InventoryReps]:
     import portals.DSL.*
-    import portals.DSL.BuilderDSL.*
-    import portals.DSL.ExperimentalDSL.*
+    import portals.ExperimentalDSL.*
 
     lazy val state: StatefulTaskContext ?=> PerKeyState[Int] = PerKeyState[Int]("state", 0)
 

@@ -38,8 +38,7 @@ object PingPong:
 @experimental
 object PingPongMain extends App:
   import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.ExperimentalDSL.*
 
   import ActorEvents.*
   import PingPong.PingPongActors.*

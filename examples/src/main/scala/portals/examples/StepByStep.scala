@@ -11,8 +11,8 @@ import portals.*
 @experimental
 @main def StepByStep(): Unit =
   import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+
+  import portals.ExperimentalDSL.*
 
   val app = PortalsApp("StepByStep") {
 

@@ -206,8 +206,7 @@ private[portals] object ActorRuntime:
 @experimental
 object ActorWorkflow:
   import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.ExperimentalDSL.*
 
   import ActorEvents.*
 

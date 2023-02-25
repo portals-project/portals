@@ -12,8 +12,7 @@ object ShoppingCart:
   import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
   import portals.examples.distributed.shoppingcart.ShoppingCartTasks.*
   import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.ExperimentalDSL.*
 
   private val _rand = scala.util.Random()
   inline def sample_1024(): Boolean = _rand.nextInt(1024) < 1

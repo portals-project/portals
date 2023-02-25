@@ -8,8 +8,8 @@ import portals.*
 @experimental
 @main def PortalPingPong(): Unit =
   import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+
+  import portals.ExperimentalDSL.*
 
   val app = PortalsApp("PortalPingPong") {
     sealed trait PingPong
@@ -33,7 +33,7 @@ import portals.*
       .source(generator.stream)
       .portal(portal)
       .askerRec[Int] { self => x =>
-        val future: Future[Pong] = portal.ask(Ping(x))
+        val future: Future[Pong] = ask(portal)(Ping(x))
         future.await {
           ctx.emit(future.value.get.x)
           if future.value.get.x > 0 then self(future.value.get.x)

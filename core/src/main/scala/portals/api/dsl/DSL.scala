@@ -4,154 +4,146 @@ import scala.annotation.experimental
 
 object DSL:
   //////////////////////////////////////////////////////////////////////////////
-  // Tasks DSL
+  // Task DSL
   //////////////////////////////////////////////////////////////////////////////
+  /** Convenient shorthands for using the TaskContext. */
 
-  // shorthands for the TaskContext
-  // Here we can use a generic task context instead, and use the return type of
-  // the dependent contextual generic task context to obtain a more specific
-  // task context type. This can return both a MapTaskContext or the regular
-  // TaskContext, e.g.
-  /** def ctx[T, U, Req, Rep](using gctx: GenericTaskContext[T, U, Req, Rep]): gctx.type = gctx
+  /** Summon the given TaskContext.
+    *
+    * This is a generic method, so it can be used with any TaskContext. Here we use a generic task context instead, and
+    * use the return type of the dependent contextual generic task context to obtain a more specific task context type.
+    * This can for example return a MapTaskContext when used within a MapTask, or a regular ProcessorTaskContext when
+    * used within a ProcessorTask.
+    *
+    * @return
+    *   The contextual task context.
     */
   def ctx(using gctx: GenericGenericTaskContext): gctx.type = gctx
 
-  // shorthands for the TaskContext methods
+  /** Emit an event
+    *
+    * @param event
+    *   The event to emit.
+    */
   def emit[T, U](event: U)(using EmittingTaskContext[T, U]) = summon[EmittingTaskContext[T, U]].emit(event)
+
+  /** Task state.
+    *
+    * @return
+    *   The state of the task.
+    */
   def state[T, U](using StatefulTaskContext) = summon[StatefulTaskContext].state
+
+  /** Logger.
+    *
+    * @return
+    *   The logger.
+    */
   def log[T, U](using LoggingTaskContext[T, U]) = summon[LoggingTaskContext[T, U]].log
 
   //////////////////////////////////////////////////////////////////////////////
   // Portals DSL
   //////////////////////////////////////////////////////////////////////////////
+  /** Convenient shorthands for using the portals, askers, repliers, awaiters. */
 
-  def ask[T, U, Req, Rep](using
-      ctx: AskerTaskContext[T, U, Req, Rep]
-  )(portal: AtomicPortalRefType[Req, Rep])(req: Req): Unit = ctx.ask(portal)(req)
+  /** Ask the `portal` with `req`, returns a future of the reply.
+    *
+    * @param portal
+    *   The portal to ask.
+    * @param req
+    *   The request to send.
+    * @return
+    *   A future of the reply.
+    */
+  def ask[T, U, Req, Rep](using ctx: AskerTaskContext[T, U, Req, Rep])(portal: AtomicPortalRefType[Req, Rep])(
+      req: Req
+  ): Future[Rep] =
+    ctx.ask(portal)(req)
 
+  /** Reply with `rep` to the handled request.
+    *
+    * @param rep
+    *   The reply to send.
+    */
   def reply[T, U, Req, Rep](using
       ctx: ReplierTaskContext[T, U, Req, Rep]
   )(rep: Rep): Unit = ctx.reply(rep)
 
+  /** Await the completion of the `future` and then execute continuation `f`.
+    *
+    * @param future
+    *   The future to await.
+    * @param f
+    *   The function to execute.
+    */
   def await[T, U, Req, Rep](using
       ctx: AskerTaskContext[T, U, Req, Rep]
   )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit = ctx.await(future)(f)
 
-  extension [T, U, Req, Rep](portal: AtomicPortalRefType[Req, Rep]) {
-    def ask(using
-        AskerTaskContext[T, U, Req, Rep]
-    )(req: Req): Future[Rep] = ctx.ask(portal)(req)
-  }
-
   //////////////////////////////////////////////////////////////////////////////
   // Builder DSL
   //////////////////////////////////////////////////////////////////////////////
+  /** Convenient interface for using the ApplicationBuilder. */
 
-  /** Experimental API. More convenient interface for using the Builder. */
-  @experimental
-  object BuilderDSL:
-    def Registry(using ab: ApplicationBuilder): RegistryBuilder = ab.registry
+  /** Summon the RegistryBuilder. */
+  def Registry(using ab: ApplicationBuilder): RegistryBuilder = ab.registry
 
-    def Workflows[T, U](name: String)(using ab: ApplicationBuilder): WorkflowBuilder[T, U] = ab.workflows[T, U](name)
+  /** Summon the WorkflowBuilder. */
+  def Workflows[T, U](name: String)(using ab: ApplicationBuilder): WorkflowBuilder[T, U] = ab.workflows[T, U](name)
 
-    def Generators(name: String)(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators(name)
+  /** Summon the GeneratorBuilder. */
+  def Generators(name: String)(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators(name)
 
-    def Generators(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators
+  /** Summon the GeneratorBuilder. */
+  def Generators(using ab: ApplicationBuilder): GeneratorBuilder = ab.generators
 
-    def Sequencers(name: String)(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers(name)
+  /** Summon the SequencerBuilder. */
+  def Sequencers(name: String)(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers(name)
 
-    def Sequencers(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers
+  /** Summon the SequencerBuilder. */
+  def Sequencers(using ab: ApplicationBuilder): SequencerBuilder = ab.sequencers
 
-    def Splitters(name: String)(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters(name)
+  /** Summon the SplitterBuilder. */
+  def Splitters(name: String)(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters(name)
 
-    def Splitters(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters
+  /** Summon the SplitterBuilder. */
+  def Splitters(using ab: ApplicationBuilder): SplitterBuilder = ab.splitters
 
-    def Splits(using ab: ApplicationBuilder): SplitBuilder = ab.splits
+  /** Summon the SplitBuilder. */
+  def Splits(using ab: ApplicationBuilder): SplitBuilder = ab.splits
 
-    def Connections(using ab: ApplicationBuilder): ConnectionBuilder = ab.connections
+  /** Summon the ConnectionBuilder. */
+  def Connections(using ab: ApplicationBuilder): ConnectionBuilder = ab.connections
 
-    def Portal[T, R](name: String)(using ab: ApplicationBuilder): AtomicPortalRef[T, R] = ab.portals.portal(name)
+  /** Summon the PortalBuilder. */
+  def Portal[T, R](name: String)(using ab: ApplicationBuilder): AtomicPortalRef[T, R] = ab.portals.portal(name)
 
-    def Portal[T, R](name: String, f: T => Long)(using ab: ApplicationBuilder): AtomicPortalRef[T, R] =
-      ab.portals.portal(name, f)
+  /** Summon the PortalBuilder. */
+  def Portal[T, R](name: String, f: T => Long)(using ab: ApplicationBuilder): AtomicPortalRef[T, R] =
+    ab.portals.portal(name, f)
 
-    def PortalsApp(name: String)(app: ApplicationBuilder ?=> Unit): Application =
-      val builder = ApplicationBuilders.application(name)
-      app(using builder)
-      builder.build()
-  end BuilderDSL
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Experimental DSL
-  //////////////////////////////////////////////////////////////////////////////
-
-  /** Experimental API. Various mix of experimental API extensions. */
-  @experimental
-  object ExperimentalDSL:
-    extension [T](splitter: AtomicSplitter[T]) {
-      def split(f: T => Boolean)(using ab: ApplicationBuilder): AtomicStreamRef[T] =
-        ab.splits.split(splitter, f)
-    }
-
-    extension (gb: GeneratorBuilder) {
-      def empty[T]: AtomicGeneratorRef[T] = gb.fromList(List.empty)
-
-      def signal[T](sig: T): AtomicGeneratorRef[T] = gb.fromList(List[T](sig))
-    }
-
-    extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
-      def empty[NU](): FlowBuilder[T, U, CU, NU] = fb.flatMap(_ => List.empty[NU])
-    }
-
-    // same as empty :)
-    extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
-      def consume(): FlowBuilder[T, U, CU, CU] = fb.flatMap(_ => List.empty[CU])
-    }
-
-    extension [Rep](future: Future[Rep]) {
-      def await[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
-          f: AskerTaskContext[T, U, Req, Rep] ?=> Unit
-      ): Unit =
-        ctx.await(future)(f)
-    }
-
-    def await[T, U, Req, Rep](using
-        ctx: AskerTaskContext[T, U, Req, Rep]
-    )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit = ctx.await(future)(f)
-
-    /** Used for fecursive functions from the Asker Task. Yes, here we do need to have the AskerTaskContext as an
-      * implicit, otherwise it will crash.
-      */
-    private object Rec:
-      def rec0[A, T, U, Req, Rep](
-          f: (AskerTaskContext[T, U, Req, Rep] ?=> A) => AskerTaskContext[T, U, Req, Rep] ?=> A
-      ): AskerTaskContext[T, U, Req, Rep] ?=> A = f(rec0(f))
-
-      def rec1[A, B, T, U, Req, Rep](
-          fRec: (AskerTaskContext[T, U, Req, Rep] ?=> A => B) => AskerTaskContext[T, U, Req, Rep] ?=> A => B
-      ): AskerTaskContext[T, U, Req, Rep] ?=> A => B = fRec(rec1(fRec))
-
-    extension [T, U, CT, CU, Req, Rep](pfb: FlowBuilder[T, U, CT, CU]#PortalFlowBuilder[Req, Rep]) {
-      def askerRec[CCU](
-          fRec: (
-              AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
-          ) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
-      ): FlowBuilder[T, U, CU, CCU] =
-        pfb.asker(fRec(Rec.rec1(fRec)))
-    }
-
-    def awaitRec[T, U, Req, Rep](using
-        ctx: AskerTaskContext[T, U, Req, Rep]
-    )(future: Future[Rep])(
-        fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit
-    ): Unit = ctx.await(future)(fRec(Rec.rec0(fRec)))
-
-    extension [Rep](future: Future[Rep]) {
-      def awaitRec[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
-          fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit
-      ): Unit =
-        ctx.await(future)(fRec(Rec.rec0(fRec)))
-    }
-
-  end ExperimentalDSL
-end DSL
+  /** Build a new PortalsApplication.
+    *
+    * @example
+    *   {{{
+    * val myApp = PortalsApp("myApp") {
+    *   val generator = Generators.signal("hello world")
+    *   val workflow = Workflows[Int, Int]()
+    *     .source(generator.stream)
+    *     .map(_ + 1)
+    *     .sink()
+    *     .freeze()
+    *   }}}
+    *
+    * @param name
+    *   The name of the application.
+    * @param app
+    *   The application factory (see example).
+    * @return
+    *   The Portals application.
+    */
+  def PortalsApp(name: String)(app: ApplicationBuilder ?=> Unit): Application =
+    val builder = ApplicationBuilders.application(name)
+    app(using builder)
+    builder.build()
+end DSL // object
