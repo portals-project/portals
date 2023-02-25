@@ -17,7 +17,7 @@ object ShoppingCartTasks:
       PerKeyState[CartState]("state", CartState.zero)
 
     // format: off
-    private def addToCart(event: AddToCart)(using Context): Unit =
+    private def addToCart(event: AddToCart)(using AskerTaskContext[CartOps, OrderOps, InventoryReqs, InventoryReps]): Unit =
       val resp = portal.ask(Get(event.item))
       resp.await { resp.value.get match
         case GetReply(item, success) =>
@@ -32,20 +32,25 @@ object ShoppingCartTasks:
       }
     // format: on
 
-    private def removeFromCart(event: RemoveFromCart)(using Context): Unit =
+    private def removeFromCart(event: RemoveFromCart)(using
+        AskerTaskContext[CartOps, OrderOps, InventoryReqs, InventoryReps]
+    ): Unit =
       portal.ask(Put(event.item))
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"User ${event.user} removed ${event.item} from cart")
 
-    private def checkout(event: Checkout)(using Context): Unit =
+    private def checkout(event: Checkout)(using
+        AskerTaskContext[CartOps, OrderOps, InventoryReqs, InventoryReps]
+    ): Unit =
       val cart = state.get()
       ctx.emit(Order(event.user, cart))
       state.del()
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"Checking out ${event.user} with cart $cart")
 
-    override def onNext(using Context)(event: CartOps): Unit = event match
-      case event: AddToCart => addToCart(event)
-      case event: RemoveFromCart => removeFromCart(event)
-      case event: Checkout => checkout(event)
+    override def onNext(using AskerTaskContext[CartOps, OrderOps, InventoryReqs, InventoryReps])(event: CartOps): Unit =
+      event match
+        case event: AddToCart => addToCart(event)
+        case event: RemoveFromCart => removeFromCart(event)
+        case event: Checkout => checkout(event)
   end CartTask // class
 
   @experimental
@@ -57,31 +62,33 @@ object ShoppingCartTasks:
 
     lazy val state: StatefulTaskContext ?=> PerKeyState[Int] = PerKeyState[Int]("state", 0)
 
-    def get(e: Get)(using Context): Unit =
+    def get(e: Get)(using ProcessorTaskContext[InventoryReqs, Nothing]): Unit =
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"Taking ${e.item} from inventory")
       if state.get() > 0 then state.set(state.get() - 1) else ???
 
-    def put(e: Put)(using Context): Unit =
+    def put(e: Put)(using ProcessorTaskContext[InventoryReqs, Nothing]): Unit =
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"Putting ${e.item} in inventory")
       state.set(state.get() + 1)
 
-    def get_req(e: Get)(using ContextReply): Unit =
+    def get_req(e: Get)(using ReplierTaskContext[InventoryReqs, Nothing, InventoryReqs, InventoryReps]): Unit =
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"Checking if ${e.item} is in inventory")
       if state.get() > 0 then
         reply(GetReply(e.item, true))
         state.set(state.get() - 1)
       else reply(GetReply(e.item, false))
 
-    def put_req(e: Put)(using ContextReply): Unit =
+    def put_req(e: Put)(using ReplierTaskContext[InventoryReqs, Nothing, InventoryReqs, InventoryReps]): Unit =
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"Putting ${e.item} in inventory")
       state.set(state.get() + 1)
       reply(PutReply(e.item, true))
 
-    override def onNext(using Context)(event: InventoryReqs): Unit = event match
+    override def onNext(using ProcessorTaskContext[InventoryReqs, Nothing])(event: InventoryReqs): Unit = event match
       case e: Get => get(e)
       case e: Put => put(e)
 
-    override def onAsk(using ctx: ContextReply)(event: InventoryReqs): Unit = event match
+    override def onAsk(using ctx: ReplierTaskContext[InventoryReqs, Nothing, InventoryReqs, InventoryReps])(
+        event: InventoryReqs
+    ): Unit = event match
       case e: Get => get_req(e)
       case e: Put => put_req(e)
   end InventoryTask // class
@@ -90,6 +97,6 @@ object ShoppingCartTasks:
   class OrdersTask extends CustomProcessorTask[OrderOps, Nothing]:
     import portals.DSL.*
 
-    override def onNext(using Context)(event: OrderOps): Unit =
+    override def onNext(using ProcessorTaskContext[InventoryReqs, Nothing])(event: OrderOps): Unit =
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"Ordering $event")
   end OrdersTask // class
