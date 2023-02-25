@@ -8,72 +8,74 @@ import portals.*
 // Experimental DSL
 //////////////////////////////////////////////////////////////////////////////
 
-/** Experimental API. Various mix of experimental API extensions. */
+/** Experimental API. Various mix of experimental API extensions. Not stable. */
 @experimental
 object ExperimentalDSL:
+  //////////////////////////////////////////////////////////////////////////////
+  // Builder DSL
+  //////////////////////////////////////////////////////////////////////////////
   extension [T](splitter: AtomicSplitter[T]) {
+    // split a splitter by filter into a new stream.
     def split(f: T => Boolean)(using ab: ApplicationBuilder): AtomicStreamRef[T] =
       ab.splits.split(splitter, f)
   }
 
   extension (gb: GeneratorBuilder) {
+    // create a generator with no output (to be used to create an empty stream)
     def empty[T]: AtomicGeneratorRef[T] = gb.fromList(List.empty)
-
-    def signal[T](sig: T): AtomicGeneratorRef[T] = gb.fromList(List[T](sig))
   }
 
+  // consume the events of a flow
   extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
+    // consume events, change the type
     def empty[NU](): FlowBuilder[T, U, CU, NU] = fb.flatMap(_ => List.empty[NU])
-  }
-
-  // same as empty :)
-  extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
+    // consume events, keep the type
     def consume(): FlowBuilder[T, U, CU, CU] = fb.flatMap(_ => List.empty[CU])
+    // consume events, change type to Nothing
+    def nothing(): FlowBuilder[T, U, CU, Nothing] = fb.flatMap(_ => List.empty[Nothing])
   }
 
-  extension [Rep](future: Future[Rep]) {
-    def await[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
-        f: AskerTaskContext[T, U, Req, Rep] ?=> Unit
-    ): Unit =
-      ctx.await(future)(f)
-  }
-
-  def await[T, U, Req, Rep](using
-      ctx: AskerTaskContext[T, U, Req, Rep]
-  )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit = ctx.await(future)(f)
-
-  /** Used for fecursive functions from the Asker Task. Yes, here we do need to have the AskerTaskContext as an
-    * implicit, otherwise it will crash.
-    */
+  //////////////////////////////////////////////////////////////////////////////
+  // Recursive DSL
+  //////////////////////////////////////////////////////////////////////////////
+  /** Used for creating recursive functions. */
   private object Rec:
-    def rec0[A, T, U, Req, Rep](
-        f: (AskerTaskContext[T, U, Req, Rep] ?=> A) => AskerTaskContext[T, U, Req, Rep] ?=> A
-    ): AskerTaskContext[T, U, Req, Rep] ?=> A = f(rec0(f))
+    def rec[A, B](f: (A => B) => A => B): A => B = f(rec(f))
+    def contextual_rec[A, B](f: (A ?=> B) => A ?=> B): A ?=> B = f(contextual_rec(f))
 
-    def rec1[A, B, T, U, Req, Rep](
-        fRec: (AskerTaskContext[T, U, Req, Rep] ?=> A => B) => AskerTaskContext[T, U, Req, Rep] ?=> A => B
-    ): AskerTaskContext[T, U, Req, Rep] ?=> A => B = fRec(rec1(fRec))
-
+  // Recursive extensions for the FlowBuilder.
   extension [T, U, CT, CU, Req, Rep](pfb: FlowBuilder[T, U, CT, CU]#PortalFlowBuilder[Req, Rep]) {
-    def askerRec[CCU](
+
+    /** Shorthand for creating a recursive asker task.
+      *
+      * @example
+      *   {{{
+      * .recursiveAsker[Int] { self => x =>
+      *   val future: Future[Pong] = ask(portal)(Ping(x))
+      *   future.await {
+      *     ctx.emit(future.value.get.x)
+      *     if future.value.get.x > 0 then self(future.value.get.x)
+      *   }
+      * }
+      *   }}}
+      *
+      * @param fRec
+      *   The recursive function.
+      */
+    def recursiveAsker[CCU](
         fRec: (
             AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
         ) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
     ): FlowBuilder[T, U, CU, CCU] =
-      pfb.asker(fRec(Rec.rec1(fRec)))
+      pfb.asker(fRec(Rec.contextual_rec(fRec)))
   }
 
-  def awaitRec[T, U, Req, Rep](using
+  /** Shorthand for creating a recursive await. */
+  def awaitRec[T, U, Req, Rep](
+      future: Future[Rep]
+  )(fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit)(using
       ctx: AskerTaskContext[T, U, Req, Rep]
-  )(future: Future[Rep])(
-      fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit
-  ): Unit = ctx.await(future)(fRec(Rec.rec0(fRec)))
-
-  extension [Rep](future: Future[Rep]) {
-    def awaitRec[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
-        fRec: (AskerTaskContext[T, U, Req, Rep] ?=> Unit) => AskerTaskContext[T, U, Req, Rep] ?=> Unit
-    ): Unit =
-      ctx.await(future)(fRec(Rec.rec0(fRec)))
-  }
+  ): Unit =
+    ctx.await(future)(fRec(Rec.contextual_rec(fRec)))
 
 end ExperimentalDSL

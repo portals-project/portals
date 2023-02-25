@@ -32,7 +32,7 @@ import portals.*
     val asker = Workflows[Int, Int]("asker")
       .source(generator.stream)
       .portal(portal)
-      .askerRec[Int] { self => x =>
+      .recursiveAsker[Int] { self => x =>
         val future: Future[Pong] = ask(portal)(Ping(x))
         future.await {
           ctx.emit(future.value.get.x)

@@ -42,6 +42,21 @@ object DSL:
   def log[T, U](using LoggingTaskContext[T, U]) = summon[LoggingTaskContext[T, U]].log
 
   //////////////////////////////////////////////////////////////////////////////
+  // Builder DSL
+  //////////////////////////////////////////////////////////////////////////////
+  extension (gb: GeneratorBuilder) {
+
+    /** Generator with a single output value `sig`.
+      *
+      * @example
+      *   {{{val sig = Generators.signal[Int](1)}}}
+      * @param sig
+      *   The output value.
+      */
+    def signal[T](sig: T): AtomicGeneratorRef[T] = gb.fromList(List[T](sig))
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
   // Portals DSL
   //////////////////////////////////////////////////////////////////////////////
   /** Convenient shorthands for using the portals, askers, repliers, awaiters. */
@@ -80,8 +95,15 @@ object DSL:
       ctx: AskerTaskContext[T, U, Req, Rep]
   )(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit = ctx.await(future)(f)
 
+  extension [Rep](future: Future[Rep]) {
+    def await[T, U, Req](using ctx: AskerTaskContext[T, U, Req, Rep])(
+        f: AskerTaskContext[T, U, Req, Rep] ?=> Unit
+    ): Unit =
+      ctx.await(future)(f)
+  }
+
   //////////////////////////////////////////////////////////////////////////////
-  // Builder DSL
+  // Convenient Builder DSL
   //////////////////////////////////////////////////////////////////////////////
   /** Convenient interface for using the ApplicationBuilder. */
 

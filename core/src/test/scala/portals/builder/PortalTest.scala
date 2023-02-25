@@ -47,7 +47,7 @@ class PortalTest:
       val asker = Workflows[Int, Int]("asker")
         .source(generator.stream)
         .portal(portal)
-        .askerRec[Int] { self => x =>
+        .recursiveAsker[Int] { self => x =>
           val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker.enqueueEvent(future.value.get.x)
@@ -118,7 +118,7 @@ class PortalTest:
 
       val asker1 = askersrc
         .portal(portal)
-        .askerRec[Int] { self => x =>
+        .recursiveAsker[Int] { self => x =>
           val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker1.enqueueEvent(future.value.get.x)
@@ -132,7 +132,7 @@ class PortalTest:
 
       val asker2 = askersrc
         .portal(portal)
-        .askerRec[Int] { self => x =>
+        .recursiveAsker[Int] { self => x =>
           val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker2.enqueueEvent(future.value.get.x)
