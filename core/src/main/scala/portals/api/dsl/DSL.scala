@@ -155,6 +155,7 @@ object DSL:
     *     .map(_ + 1)
     *     .sink()
     *     .freeze()
+    * }
     *   }}}
     *
     * @param name
