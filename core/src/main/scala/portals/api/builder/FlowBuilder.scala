@@ -2,7 +2,6 @@ package portals
 
 import scala.annotation.targetName
 
-// format: off
 /** Flow Builder
   *
   * @tparam T
@@ -33,16 +32,11 @@ trait FlowBuilder[T, U, CT, CU]:
   // Structural operations
   //////////////////////////////////////////////////////////////////////////////
 
-  // TODO: deprecate and replaced by unionStar
-  // def union[CCT, CCU](other: FlowBuilder[T, U, CCT, CCU]): FlowBuilder[T, U, CCU | CU, CCU | CU]
-
   def union(others: List[FlowBuilder[T, U, _, CU]]): FlowBuilder[T, U, CU, CU]
 
   def union(others: FlowBuilder[T, U, _, CU]*): FlowBuilder[T, U, CU, CU] = union(others.toList)
 
-  def from[CU, CCU](others: FlowBuilder[T, U, _, CU]*)(
-      task: GenericTask[CU, CCU, _, _]
-  ): FlowBuilder[T, U, CU, CCU]
+  def from[CU, CCU](others: FlowBuilder[T, U, _, CU]*)(task: GenericTask[CU, CCU, _, _]): FlowBuilder[T, U, CU, CCU]
 
   //////////////////////////////////////////////////////////////////////////////
   // Stateful transformations
@@ -50,7 +44,6 @@ trait FlowBuilder[T, U, CT, CU]:
 
   def map[CCU](f: MapTaskContext[CU, CCU] ?=> CU => CCU): FlowBuilder[T, U, CU, CCU]
 
-  // TODO: it should be possible to have generic keys
   def key(f: CU => Long): FlowBuilder[T, U, CU, CU]
 
   def task[CCU](taskBehavior: GenericTask[CU, CCU, _, _]): FlowBuilder[T, U, CU, CCU]
@@ -119,16 +112,46 @@ trait FlowBuilder[T, U, CT, CU]:
   // Portals
   //////////////////////////////////////////////////////////////////////////////
 
-  trait PortalFlowBuilder[Req, Rep]:
-    def asker[CCU](
+  def asker[CCU, Req, Rep](
+      portals: AtomicPortalRefType[Req, Rep]*
+  )(
+      f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+  ): FlowBuilder[T, U, CU, CCU]
+
+  def replier[CCU, Req, Rep](
+      portals: AtomicPortalRefType[Req, Rep]*
+  )(
+      f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
+  )(
+      f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
+  ): FlowBuilder[T, U, CU, CCU]
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Portals DSL
+  //////////////////////////////////////////////////////////////////////////////
+  // It would be nice to move this to the DSL section, but couldn't get it to work with the same name `asker`.
+
+  private[portals] class FlowBuilderAsker[CCU]:
+    def apply[Req, Rep](
+        portals: AtomicPortalRefType[Req, Rep]*
+    )(
         f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
-    ): FlowBuilder[T, U, CU, CCU]
+    ): FlowBuilder[T, U, CU, CCU] =
+      asker[CCU, Req, Rep](portals: _*)(f)
 
-    def replier[CCU](f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit)(
+  def asker[CCU]: FlowBuilderAsker[CCU] = new FlowBuilderAsker[CCU]
+
+  private[portals] class FlowBuilderReplier[CCU]:
+    def apply[Req, Rep](
+        portals: AtomicPortalRefType[Req, Rep]*
+    )(
+        f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
+    )(
         f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
-    ): FlowBuilder[T, U, CU, CCU]
+    ): FlowBuilder[T, U, CU, CCU] =
+      replier[CCU, Req, Rep](portals: _*)(f1)(f2)
 
-  def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*): PortalFlowBuilder[Req, Rep]
+  def replier[CCU]: FlowBuilderReplier[CCU] = new FlowBuilderReplier[CCU]
 
 end FlowBuilder // trait
 

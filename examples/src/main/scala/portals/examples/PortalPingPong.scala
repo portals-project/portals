@@ -22,8 +22,7 @@ import portals.*
 
     val replier = Workflows[Nothing, Nothing]("replier")
       .source(Generators.empty.stream)
-      .portal(portal)
-      .replier[Nothing] { _ => () } { case Ping(x) =>
+      .replier[Nothing](portal) { _ => () } { case Ping(x) =>
         reply(Pong(x - 1))
       }
       .sink()
@@ -31,8 +30,7 @@ import portals.*
 
     val asker = Workflows[Int, Int]("asker")
       .source(generator.stream)
-      .portal(portal)
-      .recursiveAsker[Int] { self => x =>
+      .recursiveAsker[Int](portal) { self => x =>
         val future: Future[Pong] = ask(portal)(Ping(x))
         future.await {
           ctx.emit(future.value.get.x)

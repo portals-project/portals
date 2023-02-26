@@ -25,8 +25,7 @@ import portals.*
 
     val aggregator = Workflows[Int, Nothing]("aggregator")
       .source(generator.stream)
-      .portal(portal)
-      .replier[Nothing] { x =>
+      .replier[Nothing](portal) { x =>
         val sum = PerTaskState("sum", 0)
         sum.set(sum.get() + x) // aggregates sum
       } { case Query() =>
@@ -42,8 +41,7 @@ import portals.*
 
     val queryWorkflow = Workflows[Int, Nothing]("queryWorkflow")
       .source(queryTrigger.stream)
-      .portal(portal)
-      .asker[Nothing] { x =>
+      .asker[Nothing](portal) { x =>
         // query the aggregate
         val future: Future[QueryReply] = ask(portal)(Query())
         future.await {

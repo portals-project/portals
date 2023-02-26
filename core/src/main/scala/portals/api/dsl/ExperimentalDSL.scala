@@ -43,8 +43,16 @@ object ExperimentalDSL:
     def rec[A, B](f: (A => B) => A => B): A => B = f(rec(f))
     def contextual_rec[A, B](f: (A ?=> B) => A ?=> B): A ?=> B = f(contextual_rec(f))
 
+  private[portals] class RecursiveAsker[T, U, CT, CU, CCU](fb: FlowBuilder[T, U, CT, CU]):
+    def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+        fRec: (
+            AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+        ) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+    ): FlowBuilder[T, U, CU, CCU] =
+      fb.recursiveAsker[CCU, Req, Rep](portals: _*)(fRec)
+
   // Recursive extensions for the FlowBuilder.
-  extension [T, U, CT, CU, Req, Rep](pfb: FlowBuilder[T, U, CT, CU]#PortalFlowBuilder[Req, Rep]) {
+  extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
 
     /** Shorthand for creating a recursive asker task.
       *
@@ -62,12 +70,14 @@ object ExperimentalDSL:
       * @param fRec
       *   The recursive function.
       */
-    def recursiveAsker[CCU](
+    def recursiveAsker[CCU, Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
         fRec: (
             AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
         ) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
     ): FlowBuilder[T, U, CU, CCU] =
-      pfb.asker(fRec(Rec.contextual_rec(fRec)))
+      fb.asker[CCU][Req, Rep](portals: _*) { fRec(Rec.contextual_rec(fRec)) }
+
+    def recursiveAsker[CCU]: RecursiveAsker[T, U, CT, CU, CCU] = new RecursiveAsker(fb)
   }
 
   /** Shorthand for creating a recursive await. */

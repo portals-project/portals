@@ -1,7 +1,7 @@
 package portals
 
 trait FlowBuilderContext[T, U](using val wbctx: WorkflowBuilderContext[T, U]):
-  // latest task that has been created, used for combinators
+  // latest task that has been created
   val latest: Option[String] = None // immutable
 
 object FlowBuilderContext:

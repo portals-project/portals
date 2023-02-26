@@ -1,6 +1,7 @@
 package portals
 
 import scala.annotation.experimental
+import scala.annotation.targetName
 
 object DSL:
   //////////////////////////////////////////////////////////////////////////////
@@ -172,4 +173,66 @@ object DSL:
     val builder = ApplicationBuilder(name)
     app(using builder)
     builder.build()
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Portals FlowBuilder DSL
+  //////////////////////////////////////////////////////////////////////////////
+
+  class FlowBuilderAsker[T, U, CT, CU, CCU](fb: FlowBuilder[T, U, CT, CU]):
+    def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+        f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+    ): FlowBuilder[T, U, CU, CCU] =
+      fb.asker[CCU, Req, Rep](portals: _*)(f)
+
+  class FlowBuilderReplier[T, U, CT, CU, CCU](fb: FlowBuilder[T, U, CT, CU]):
+    def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+        f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
+    )(
+        f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
+    ): FlowBuilder[T, U, CU, CCU] =
+      fb.replier[CCU, Req, Rep](portals: _*)(f1)(f2)
+
+  extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
+    def asker[CCU]: FlowBuilderAsker[T, U, CT, CU, CCU] = new FlowBuilderAsker[T, U, CT, CU, CCU](fb)
+
+    def replier[CCU]: FlowBuilderReplier[T, U, CT, CU, CCU] = new FlowBuilderReplier[T, U, CT, CU, CCU](fb)
+  }
+  // class FlowBuilderAskerImpl[CCU] extends FlowBuilderAsker[CCU]:
+  //   def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+  //       f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+  //   ): FlowBuilder[T, U, CU, CCU] =
+  //     val behavior = TaskBuilder.portal[Req, Rep](portals: _*).asker[CU, CCU](f)
+  //     addTask(behavior)
+
+  // override def asker[CCU]: FlowBuilderAskerImpl[CCU] = new FlowBuilderAskerImpl[CCU]
+
+  // class FlowBuilderReplierImpl[CCU] extends FlowBuilderReplier[CCU]:
+  //   def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+  //       f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
+  //   )(
+  //       f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
+  //   ): FlowBuilder[T, U, CU, CCU] =
+  //     val behavior = TaskBuilder.portal[Req, Rep](portals: _*).replier[CU, CCU](f1)(f2)
+  //     addTask(behavior)
+
+  // override def replier[CCU]: FlowBuilderReplierImpl[CCU] = new FlowBuilderReplierImpl[CCU]
+//   trait FlowBuilderAsker[CCU]:
+//     def apply[Req, Rep](
+//         portals: AtomicPortalRefType[Req, Rep]*
+//     )(
+//         f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+//     ): FlowBuilder[T, U, CU, CCU]
+
+//   def asker[CCU]: FlowBuilderAsker[CCU]
+
+//   trait FlowBuilderReplier[CCU]:
+//     def apply[Req, Rep](
+//         portals: AtomicPortalRefType[Req, Rep]*
+//     )(
+//         f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
+//     )(
+//         f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
+//     ): FlowBuilder[T, U, CU, CCU]
+
+//   def replier[CCU]: FlowBuilderReplier[CCU]
 end DSL // object

@@ -32,7 +32,7 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     this
 
   // adds connection from latest task to the provided name
-  private[portals] def addConnectionTo(name: String): Unit =
+  private def addConnectionTo(name: String): Unit =
     fbctx.latest match
       case Some(n) =>
         fbctx.wbctx.connections = (n, name) :: fbctx.wbctx.connections
@@ -167,7 +167,7 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
   override def init[CCU](
       initFactory: ProcessorTaskContext[CU, CCU] ?=> GenericTask[CU, CCU, Nothing, Nothing]
   ): FlowBuilder[T, U, CU, CCU] =
-    val behavior = TaskBuilder.init(initFactory)
+    val behavior = TaskBuilder.init[CU, CCU](initFactory)
     addTask(behavior)
 
   override def identity(): FlowBuilder[T, U, CU, CU] =
@@ -262,19 +262,22 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
   // Portals
   //////////////////////////////////////////////////////////////////////////////
 
-  class PortalFlowBuilderImpl[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) extends PortalFlowBuilder[Req, Rep]:
-    def asker[CCU](
-        f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
-    ): FlowBuilder[T, U, CU, CCU] =
-      val behavior = TaskBuilder.portal[Req, Rep](portals: _*).asker[CU, CCU](f)
-      addTask(behavior)
+  override def asker[CCU, Req, Rep](
+      portals: AtomicPortalRefType[Req, Rep]*
+  )(
+      f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+  ): FlowBuilder[T, U, CU, CCU] =
+    val behavior = TaskBuilder.portal[Req, Rep](portals: _*).asker[CU, CCU](f)
+    addTask(behavior)
 
-    def replier[CCU](f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit)(
-        f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
-    ): FlowBuilder[T, U, CU, CCU] =
-      val behavior = TaskBuilder.portal[Req, Rep](portals: _*).replier[CU, CCU](f1)(f2)
-      addTask(behavior)
+  override def replier[CCU, Req, Rep](
+      portals: AtomicPortalRefType[Req, Rep]*
+  )(
+      f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
+  )(
+      f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
+  ): FlowBuilder[T, U, CU, CCU] =
+    val behavior = TaskBuilder.portal[Req, Rep](portals: _*).replier[CU, CCU](f1)(f2)
+    addTask(behavior)
 
-  def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*): PortalFlowBuilder[Req, Rep] =
-    new PortalFlowBuilderImpl[Req, Rep](portals: _*)
-end FlowBuilderImpl //
+end FlowBuilderImpl // class

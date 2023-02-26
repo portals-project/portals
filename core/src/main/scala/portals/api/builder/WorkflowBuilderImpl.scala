@@ -15,6 +15,4 @@ private[portals] class WorkflowBuilderImpl[T, U](using wbctx: WorkflowBuilderCon
 
   override def source[TT >: T <: T](ref: AtomicStreamRefKind[T]): FlowBuilder[T, U, TT, TT] =
     FlowBuilder(None).source(ref)
-
-  override def check(): Boolean = ???
 end WorkflowBuilderImpl
