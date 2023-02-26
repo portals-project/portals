@@ -1,8 +1,6 @@
 package portals
 
-import scala.compiletime.ops.boolean
-
-class WorkflowBuilderContext[T, U](_path: String, _name: String)(using val bctx: ApplicationBuilderContext):
+class WorkflowBuilderContext[T, U](_path: String)(using val bctx: ApplicationBuilderContext):
   self =>
   val path: String = _path
 
