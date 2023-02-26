@@ -1,14 +1,11 @@
 package portals
 
-import scala.annotation.targetName
-
 private[portals] class WorkflowBuilderImpl[T, U](using wbctx: WorkflowBuilderContext[T, U])
     extends WorkflowBuilder[T, U]:
 
-  // internal, do not use
+  // internal, do not use, completes anything that wasn't frozen
   private[portals] override def complete(): Unit =
     try wbctx.freeze()
-    // FIXME: we should not ignore the error here, it happens when we call freeze twice
     catch e => ()
 
   override def freeze(): Workflow[T, U] = wbctx.freeze()
