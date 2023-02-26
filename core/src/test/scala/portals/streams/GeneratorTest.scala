@@ -17,8 +17,7 @@ class GeneratorTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators
       .fromIterator[Int](Iterator.range(0, 10))
@@ -52,8 +51,7 @@ class GeneratorTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators
       .fromIteratorOfIterators[Int](Iterator.from(0).map { x => Iterator.range(0, 5).map(_ + 5 * x) })
@@ -96,8 +94,7 @@ class GeneratorTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     val (ext_ref, generator) = builder.generators.external[Int]()
 

@@ -122,7 +122,7 @@ object DataParallelThroughputBenchmark extends Benchmark:
 
     val completer = CountingCompletionWatcher(nPartitions)
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     sWorkload match
       case "countingActor" => countingActorWorkload(builder, completer, config)

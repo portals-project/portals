@@ -17,8 +17,7 @@ class SequencerTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     val sequencer = builder.sequencers
       .random[Int]()

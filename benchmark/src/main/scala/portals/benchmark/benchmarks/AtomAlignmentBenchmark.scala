@@ -35,7 +35,7 @@ object AtomAlignmentBenchmark extends Benchmark:
       case "sync" => Systems.test()
       case _ => ???
 
-    val builder = ApplicationBuilders.application("runOneIteration")
+    val builder = ApplicationBuilder("runOneIteration")
 
     // generator
     val generator = builder.generators.fromRange(0, nEvents, nAtomSize)

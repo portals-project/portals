@@ -15,7 +15,7 @@ import portals.*
 @main def IncrementalWordCount(): Unit =
   import portals.DSL.*
 
-  val builder = ApplicationBuilders.application("application")
+  val builder = ApplicationBuilder("application")
 
   val input = List("the quick brown fox jumps over the lazy dog")
   val generator = builder.generators.fromList(input)
@@ -65,7 +65,7 @@ import portals.*
   val reducer: String => Int => Int => (String, Int) =
     s => x => y => (s, x + y)
 
-  val builder = ApplicationBuilders.application("application")
+  val builder = ApplicationBuilder("application")
 
   val input = List("the quick brown fox jumps over the lazy dog")
   val generator = builder.generators.fromList(input)

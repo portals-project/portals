@@ -105,7 +105,7 @@ object DSL:
   //////////////////////////////////////////////////////////////////////////////
   // Convenient Builder DSL
   //////////////////////////////////////////////////////////////////////////////
-  /** Convenient interface for using the ApplicationBuilder. */
+  /** Convenient interface for using the ApplicationBuilder */
 
   /** Summon the RegistryBuilder. */
   def Registry(using ab: ApplicationBuilder): RegistryBuilder = ab.registry
@@ -169,7 +169,7 @@ object DSL:
     *   The Portals application.
     */
   def PortalsApp(name: String)(app: ApplicationBuilder ?=> Unit): Application =
-    val builder = ApplicationBuilders.application(name)
+    val builder = ApplicationBuilder(name)
     app(using builder)
     builder.build()
 end DSL // object

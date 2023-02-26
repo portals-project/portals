@@ -28,7 +28,7 @@ object ChainOfWorkflowsBenchmark extends Benchmark:
 
     val system = Systems.local()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, nEvents, stepSize)
 

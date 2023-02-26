@@ -19,7 +19,7 @@ class ApplicationBuilderTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders.application("application")
+    val builder = ApplicationBuilder("application")
 
     val sequencer = builder.sequencers.random[Int]()
 
@@ -65,7 +65,7 @@ class ApplicationBuilderTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     // 0, Atom, 1, Atom, ..., 4, Atom, Seal
     val input = List.range(0, 5).grouped(1).toList
@@ -107,8 +107,7 @@ class ApplicationBuilderTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     // 0, Atom, 1, Atom, ..., 4, Atom, Seal
     val input = List.range(0, 5).grouped(1).toList

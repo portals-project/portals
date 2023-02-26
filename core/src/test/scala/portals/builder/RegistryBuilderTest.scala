@@ -24,8 +24,7 @@ class RegistryBuilderTest:
     // App 1
     ////////////////////////////////////////////////////////////////////////////
     {
-      val builder = ApplicationBuilders
-        .application("app1")
+      val builder = ApplicationBuilder("app1")
 
       val generator = builder.generators.fromRange(0, 100, 5)
 
@@ -41,8 +40,7 @@ class RegistryBuilderTest:
     ////////////////////////////////////////////////////////////////////////////
 
     {
-      val builder = ApplicationBuilders
-        .application("app2")
+      val builder = ApplicationBuilder("app2")
 
       // REGISTRY
       val extSplitter = builder.registry.splitters.get[Int]("/app1/splitters/splitter")
@@ -116,8 +114,7 @@ class RegistryBuilderTest:
     // App 1
     ////////////////////////////////////////////////////////////////////////////
     {
-      val builder = ApplicationBuilders
-        .application("app1")
+      val builder = ApplicationBuilder("app1")
 
       val sequencer = builder.sequencers("sequencer").random[Int]()
 
@@ -140,8 +137,7 @@ class RegistryBuilderTest:
     ////////////////////////////////////////////////////////////////////////////
 
     {
-      val builder = ApplicationBuilders
-        .application("app2")
+      val builder = ApplicationBuilder("app2")
 
       val generator = builder.generators.fromRange(0, 100, 5)
 
@@ -195,8 +191,7 @@ class RegistryBuilderTest:
     // App 1
     ////////////////////////////////////////////////////////////////////////////
     {
-      val builder = ApplicationBuilders
-        .application("app1")
+      val builder = ApplicationBuilder("app1")
 
       val sequencer = builder.sequencers("sequencer").random[Int]()
 
@@ -218,8 +213,7 @@ class RegistryBuilderTest:
     ////////////////////////////////////////////////////////////////////////////
 
     {
-      val builder = ApplicationBuilders
-        .application("app2")
+      val builder = ApplicationBuilder("app2")
 
       // REGISTRY
       val extStream = builder.registry.streams.get[Int]("/app1/workflows/workflow/stream")
@@ -239,8 +233,7 @@ class RegistryBuilderTest:
     }
 
     {
-      val builder = ApplicationBuilders
-        .application("data")
+      val builder = ApplicationBuilder("data")
 
       val generator = builder.generators.fromRange(0, 100, 5)
 

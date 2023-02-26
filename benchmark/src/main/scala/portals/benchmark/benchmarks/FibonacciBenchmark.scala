@@ -28,7 +28,7 @@ object FibonacciBenchmark extends Benchmark:
 
     val completer = CompletionWatcher()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromList[FibEvent](List(FibRequest(sender = -1, receiver = nFib)))
     val sequencer = builder.sequencers.random[FibEvent]()

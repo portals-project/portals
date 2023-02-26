@@ -16,8 +16,7 @@ class SplitterTest:
     val tester1 = new TestUtils.Tester[Int]()
     val tester2 = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     // producer
     val generator = builder.generators.fromRange(0, 256, 5)

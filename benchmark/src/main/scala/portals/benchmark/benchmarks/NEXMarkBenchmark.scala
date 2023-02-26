@@ -245,7 +245,7 @@ object NEXMarkBenchmark extends Benchmark:
 
     val completer = CountingCompletionWatcher(nEvents / nAtomSize) // number of atoms :)
 
-    val builder = ApplicationBuilders.application("runOneIteration")
+    val builder = ApplicationBuilder("runOneIteration")
 
     val generator = builder.generators.generator(NEXMarkBenchmarkUtil.NEXMarkGenerator(nAtomSize, nEvents))
 

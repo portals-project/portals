@@ -10,8 +10,7 @@ import portals.*
 @main def HelloWorld(): Unit =
   import portals.DSL.*
 
-  val builder = ApplicationBuilders
-    .application("app")
+  val builder = ApplicationBuilder("app")
 
   val message = "Hello, World!"
   val generator = builder.generators.fromList(List(message))

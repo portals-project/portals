@@ -30,7 +30,7 @@ class PingPongTest:
     val system = Systems.test()
 
     {
-      val pinger = ApplicationBuilders.application("pinger")
+      val pinger = ApplicationBuilder("pinger")
 
       val sequencer = pinger.sequencers("sequencer").random[Pong]()
 
@@ -47,8 +47,7 @@ class PingPongTest:
     }
 
     {
-      val ponger = ApplicationBuilders
-        .application("ponger")
+      val ponger = ApplicationBuilder("ponger")
 
       val extStream = ponger.registry.streams.get[Ping]("/pinger/workflows/workflow/stream")
 
@@ -71,7 +70,7 @@ class PingPongTest:
     }
 
     {
-      val builder = ApplicationBuilders.application("generator")
+      val builder = ApplicationBuilder("generator")
 
       val generator = builder.generators.fromList(List(Pong(128)))
 

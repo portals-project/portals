@@ -23,7 +23,7 @@ class AsyncTest:
 
     val to = 1024 * 1024
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, to, 128)
 
@@ -53,7 +53,7 @@ class AsyncTest:
 
     val to = 1024 * 1024
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, to, to / 4)
 
@@ -81,7 +81,7 @@ class AsyncTest:
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val from = 0
     val to = 1024 * 8
@@ -126,7 +126,7 @@ class AsyncTest:
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val from = 0
     val to = 1024 * 8
@@ -172,7 +172,7 @@ class AsyncTest:
 
     val assertOutput = Range(0, to).flatMap { x => List.fill(fanWidth)(x) }.iterator
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, to, 1)
 
@@ -209,7 +209,7 @@ class AsyncTest:
 
     val fanWidth = 128
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val sequencer = builder.sequencers.random[Int]()
 
@@ -254,7 +254,7 @@ class AsyncTest:
 
     val chainLength = 32
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, to, 128)
 

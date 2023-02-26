@@ -36,7 +36,7 @@ class WordCountTest:
 
     val tester = new TestUtils.Tester[(String, Int)]()
     // one naive implementation is to use local state for storing the counts
-    val builder = ApplicationBuilders.application("application")
+    val builder = ApplicationBuilder("application")
 
     val input = List("the quick brown fox jumps over the lazy dog")
     val generator = builder.generators.fromList(input)

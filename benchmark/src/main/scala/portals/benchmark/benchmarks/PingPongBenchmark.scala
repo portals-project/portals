@@ -15,7 +15,7 @@ object PingPongBenchmark extends Benchmark:
 
   // creates a pingerponger application instance
   private def pinger(appName: String, completer: CompletionWatcher): Application =
-    val builder = ApplicationBuilders.application(appName)
+    val builder = ApplicationBuilder(appName)
 
     val sequencer = builder.sequencers("sequencer").random[Ping]()
 
@@ -58,7 +58,7 @@ object PingPongBenchmark extends Benchmark:
     val pongerApp = pinger("ponger", completer)
 
     // connect pinger to ponger and data generator
-    val builder = ApplicationBuilders.application("runOneIteration")
+    val builder = ApplicationBuilder("runOneIteration")
     val pingerStream = builder.registry.streams.get[Ping]("/pinger/workflows/workflow/stream")
     val pongerStream = builder.registry.streams.get[Ping]("/ponger/workflows/workflow/stream")
     val pingerSequencer = builder.registry.sequencers.get[Ping]("/pinger/sequencers/sequencer")

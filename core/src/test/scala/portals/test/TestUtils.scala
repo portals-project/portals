@@ -15,7 +15,7 @@ object TestUtils:
       testDataKeys: List[List[Key[Long]]] = List.empty,
   ): Tester[U] =
     val tester = Tester[U]()
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
     val generator =
       if testDataKeys.isEmpty then builder.generators.fromListOfLists(testData)
       else builder.generators.fromListOfLists(testData, testDataKeys)
@@ -39,7 +39,7 @@ object TestUtils:
       testDataKeys: List[List[Key[Long]]] = List.empty,
   ): Tester[U] =
     val tester = Tester[U]()
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator =
       if testDataKeys.isEmpty then builder.generators.fromListOfLists(testData)

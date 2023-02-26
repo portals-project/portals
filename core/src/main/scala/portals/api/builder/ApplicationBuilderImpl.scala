@@ -10,9 +10,13 @@ class ApplicationBuilderImpl(using bctx: ApplicationBuilderContext) extends Appl
 
   override def registry: RegistryBuilder = RegistryBuilder()
 
+  override def workflows[T, U]: WorkflowBuilder[T, U] = this.workflows(null)
+
   override def workflows[T, U](name: String = null): WorkflowBuilder[T, U] =
     val _name = bctx.name_or_id(name)
     val wfb = WorkflowBuilder[T, U](_name)
+    // added to the context, so that we later can check if it was frozen or not,
+    // if it wasn't frozen, then we try to freeze it when the application is built
     bctx._workflowBuilders = bctx._workflowBuilders :+ wfb
     wfb
 

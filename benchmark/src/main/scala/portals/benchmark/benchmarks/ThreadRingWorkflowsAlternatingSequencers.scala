@@ -33,7 +33,7 @@ object ThreadRingWorkflowsAlternatingSequencers extends Benchmark:
       case "sync" => Systems.test()
       case _ => ???
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromList(List(nEvents))
 
