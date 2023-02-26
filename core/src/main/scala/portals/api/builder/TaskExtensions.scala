@@ -18,6 +18,13 @@ object TaskExtensions:
       ProcessorTask[T, T] { ctx => event =>
         if (p(event)) ctx.emit(event)
       }
+
+    /** behavior factory for logger */
+    def logger[T](prefix: String = ""): GenericTask[T, T, Nothing, Nothing] =
+      ProcessorTask[T, T] { ctx => event =>
+        ctx.log.info(prefix + event)
+        ctx.emit(event)
+      }
   }
 end TaskExtensions
 export TaskExtensions.*
