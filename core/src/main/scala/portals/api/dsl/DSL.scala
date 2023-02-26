@@ -111,6 +111,9 @@ object DSL:
   def Registry(using ab: ApplicationBuilder): RegistryBuilder = ab.registry
 
   /** Summon the WorkflowBuilder. */
+  def Workflows[T, U]()(using ab: ApplicationBuilder): WorkflowBuilder[T, U] = ab.workflows[T, U]()
+
+  /** Summon the WorkflowBuilder. */
   def Workflows[T, U](name: String)(using ab: ApplicationBuilder): WorkflowBuilder[T, U] = ab.workflows[T, U](name)
 
   /** Summon the GeneratorBuilder. */
@@ -149,10 +152,10 @@ object DSL:
     * @example
     *   {{{
     * val myApp = PortalsApp("myApp") {
-    *   val generator = Generators.signal("hello world")
-    *   val workflow = Workflows[Int, Int]()
+    *   val generator = Generators.signal[String]("hello world")
+    *   val workflow = Workflows[String, String]()
     *     .source(generator.stream)
-    *     .map(_ + 1)
+    *     .logger()
     *     .sink()
     *     .freeze()
     * }
