@@ -13,13 +13,10 @@ end SequencerBuilder
 class SequencerBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) extends SequencerBuilder:
   private def build[T](_sequencer: Sequencer[T]): AtomicSequencerRef[T] =
     val _path = bctx.app.path + "/sequencers/" + name
-    val _name = name
-    val _ins = List.empty
     val aStream = AtomicStream[T](path = _path + "/stream")
     val _stream = AtomicStreamRef(aStream)
     val aSequencer = AtomicSequencer[T](
       path = _path,
-      // ins = _ins,
       stream = _stream,
       sequencer = _sequencer,
     )

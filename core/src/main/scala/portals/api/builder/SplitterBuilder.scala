@@ -13,7 +13,6 @@ end SplitterBuilder // trait
 class SplitterBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) extends SplitterBuilder:
   private def build[T](_stream: AtomicStreamRefKind[T], _splitter: Splitter[T]): AtomicSplitter[T] =
     val _path = bctx.app.path + "/splitters/" + name
-    val _name = name
     val _in = _stream
     val _streams = List.empty
     val aSplitter = AtomicSplitter[T](
