@@ -78,19 +78,20 @@ object AkkaRunnerImpl extends AkkaRunner:
         Behaviors.receiveMessage { case Next =>
           while go && generator.hasNext() do
             generator.generate() match
-              case Generator.Event(key, event) =>
+              case portals.Event(key, event) =>
                 vectorBuilder += portals.Event(key, event)
-              case Generator.Atom =>
+              case portals.Atom =>
                 vectorBuilder += portals.Atom
                 atom = true
-              case Generator.Seal =>
+              case portals.Seal =>
                 vectorBuilder.clear()
                 vectorBuilder += portals.Seal
                 seal = true
-              case Generator.Error(t) =>
+              case portals.Error(t) =>
                 vectorBuilder.clear()
                 vectorBuilder += portals.Error(t)
                 error = true
+              case _ => ???
 
           // if full atom, then send atom to stream and continue, else stop
           if atom == true then

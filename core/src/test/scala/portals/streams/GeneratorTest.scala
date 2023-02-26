@@ -1,5 +1,7 @@
 package portals
 
+import scala.annotation.experimental
+
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
@@ -89,6 +91,8 @@ class GeneratorTest:
     system.shutdown()
 
   @Test
+  @experimental
+  @deprecated
   def testExternal(): Unit =
     import portals.DSL.*
 

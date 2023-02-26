@@ -1,5 +1,7 @@
 package portals
 
+import scala.annotation.experimental
+
 import portals.GeneratorImpls.ExternalRef
 
 trait GeneratorBuilder:
@@ -24,6 +26,8 @@ trait GeneratorBuilder:
 
   def fromRange(start: Int, end: Int, step: Int): AtomicGeneratorRef[Int]
 
+  @experimental
+  @deprecated
   def external[T](): (ExternalRef[T], AtomicGeneratorRef[T])
 
   def generator[T](g: Generator[T]): AtomicGeneratorRef[T]
@@ -85,6 +89,8 @@ class GeneratorBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) 
     val _generator = Generators.fromRange(start, end, step)
     build(_generator)
 
+  @experimental
+  @deprecated
   override def external[T](): (ExternalRef[T], AtomicGeneratorRef[T]) =
     val (_extRef, _generator) = Generators.external[T]()
     (_extRef, build(_generator))

@@ -64,17 +64,19 @@ object NoGuaranteesRunner extends AkkaRunner:
           var stop = false
           while cont && generator.hasNext() do
             generator.generate() match
-              case Generator.Event(key, event) =>
+              case portals.Event(key, event) =>
                 stream ! Event(path, portals.Event[T](key, event))
                 Behaviors.same
-              case Generator.Atom =>
+              case portals.Atom =>
                 cont = false
-              case Generator.Seal =>
-                cont = false
-                stop = true
-              case Generator.Error(t) =>
+              case portals.Seal =>
                 cont = false
                 stop = true
+              case portals.Error(t) =>
+                cont = false
+                stop = true
+              case portals.Ask(_, _, _) => ???
+              case portals.Reply(_, _, _) => ???
           if stop == true then Behaviors.stopped
           else
             ctx.self ! Next

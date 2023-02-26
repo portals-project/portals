@@ -70,7 +70,6 @@ object DataParallelThroughputBenchmark extends Benchmark:
 
     val pinger = pingerPonger("pinger", pingersequencer.stream)
     val ponger = pingerPonger("ponger", pongersequencer.stream)
-
     builder.connections.connect(ponger.stream, pingersequencer)
     builder.connections.connect(pinger.stream, pongersequencer)
     builder.connections.connect(generator.stream, pingersequencer)

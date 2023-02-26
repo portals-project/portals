@@ -2,10 +2,6 @@ package portals
 
 import scala.util.Random
 
-// TODO: There is something awkward about the sequencer implementation at the moment.
-// The current way in which things are sequenced through the sequence method is awkward to use.
-// We should redesign this, and see what is better for writing strategies.
-
 /** Sequencer. */
 trait Sequencer[T] extends Serializable:
   /** Sequencing strategy.

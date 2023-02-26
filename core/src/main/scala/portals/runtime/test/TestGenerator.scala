@@ -9,15 +9,19 @@ private[portals] class TestGenerator(val generator: AtomicGenerator[_])(using rc
     var stop = false
     while generator.generator.hasNext() && !stop do
       generator.generator.generate() match
-        case event @ Generator.Event(key, t) =>
+        case event @ Event(key, t) =>
           atom = Event(key, t) :: atom
-        case Generator.Atom =>
+        case Atom =>
           atom = Atom :: atom
           stop = true
-        case Generator.Seal =>
+        case Seal =>
           atom = Seal :: atom
           stop = true
-        case Generator.Error(t) =>
+        case Error(t) =>
           atom = Error(t) :: atom
           stop = true
+        case Ask(_, _, _) =>
+          ???
+        case Reply(_, _, _) =>
+          ???
     List(TestAtomBatch(generator.stream.path, atom.reverse))
