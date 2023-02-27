@@ -6,7 +6,7 @@ import scala.util.Try
 
 import org.junit.Assert._
 
-import portals.examples.distributed.actor.ActorBehaviors.*
+import portals.examples.distributed.actor.ActorBehaviors
 
 @experimental
 object ActorTestUtils:
@@ -20,18 +20,18 @@ object ActorTestUtils:
 
     // the behavior which wraps around the submitted behavior, it intercepts all messages
     val behavior = ActorBehaviors.InitBehavior[T] { ctx =>
-      var innerBehavior = prepareBehavior(wrappedBehavior, ctx)
+      var innerBehavior = ActorBehaviors.prepareBehavior(wrappedBehavior, ctx)
       ActorBehaviors.ReceiveActorBehavior[T] { ctx => msg =>
         enqueue(msg)
         innerBehavior match
-          case ReceiveActorBehavior(f) =>
+          case ActorBehaviors.ReceiveActorBehavior(f) =>
             f(ctx)(msg) match
-              case newInnerBehavior @ ReceiveActorBehavior(f) =>
+              case newInnerBehavior @ ActorBehaviors.ReceiveActorBehavior(f) =>
                 innerBehavior = newInnerBehavior
                 ActorBehaviors.same
-              case StoppedBehavior =>
+              case ActorBehaviors.StoppedBehavior =>
                 ActorBehaviors.stopped
-              case SameBehavior =>
+              case ActorBehaviors.SameBehavior =>
                 ActorBehaviors.same
               case _ => ???
           case _ => ???
