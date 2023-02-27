@@ -1,6 +1,7 @@
 package portals.compiler
 
-/** Phase of the compiler that transforms an input of type `T` into an output of type `U`.
+/** Phase of the compiler that transforms an input of type `T` into an output of
+  * type `U`.
   *
   * @tparam T
   *   input type
@@ -28,7 +29,8 @@ private[portals] trait CompilerPhase[T, U] {
     * @tparam V
     *   output type of the next compiler phase
     * @return
-    *   a new compiler phase that first runs this compiler phase and then the next compiler phase in sequence
+    *   a new compiler phase that first runs this compiler phase and then the
+    *   next compiler phase in sequence
     */
   def andThen[V](next: CompilerPhase[U, V]): CompilerPhase[T, V] =
     new CompilerPhase[T, V] {

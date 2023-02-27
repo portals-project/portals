@@ -18,7 +18,8 @@ object TaskBuilder extends TaskBuilder:
 
   /** Behavior factory for initializing the task before any events.
     *
-    * Note: this may be **re-executed** more than once, every time that the task is restarted (e.g. after a failure).
+    * Note: this may be **re-executed** more than once, every time that the task
+    * is restarted (e.g. after a failure).
     */
   def init[T, U](
       initFactory: ProcessorTaskContext[T, U] ?=> GenericTask[T, U, Nothing, Nothing]

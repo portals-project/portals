@@ -4,8 +4,9 @@ import portals.*
 
 /** Hello World
   *
-  * This example creates a workflow that prints all the ingested events to the logger. We submit the event containing
-  * the message "Hello, World!" and expect it to be printed.
+  * This example creates a workflow that prints all the ingested events to the
+  * logger. We submit the event containing the message "Hello, World!" and
+  * expect it to be printed.
   */
 @main def HelloWorld(): Unit =
   import portals.DSL.*

@@ -4,13 +4,14 @@ import portals.*
 
 /** Incremental Word Count
   *
-  * Streaming Dataflow is straight-forward to implement in our model. We build a streaming pipeline from sources, apply
-  * transformations on the data through the processor abstraction, and end in a sink. The processor abstraction can then
-  * be used to implement all higher-level operators that are common in streaming dataflow, such as Map, FlatMap,
-  * Windowing, etc.
+  * Streaming Dataflow is straight-forward to implement in our model. We build a
+  * streaming pipeline from sources, apply transformations on the data through
+  * the processor abstraction, and end in a sink. The processor abstraction can
+  * then be used to implement all higher-level operators that are common in
+  * streaming dataflow, such as Map, FlatMap, Windowing, etc.
   *
-  * The incremental word count example computes the wordcount of a stream of lines of text. For each new ingested word,
-  * the updated wordcount is emitted.
+  * The incremental word count example computes the wordcount of a stream of
+  * lines of text. For each new ingested word, the updated wordcount is emitted.
   */
 @main def IncrementalWordCount(): Unit =
   import portals.DSL.*

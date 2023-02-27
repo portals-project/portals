@@ -3,7 +3,8 @@ package portals
 import scala.annotation.experimental
 
 /** Note: Scaladoc doesn't transfer or link documentation for exports #14342
-  * https://github.com/lampepfl/dotty/issues/14342 for now we removed exporting, and everything is flat in this file.
+  * https://github.com/lampepfl/dotty/issues/14342 for now we removed exporting,
+  * and everything is flat in this file.
   */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -100,9 +101,11 @@ extension (t: TaskBuilder) {
 
   /** Vsm behavior factory
     *
-    * The inner behavior should return the next state, for this we recommend the use of [VSMExtension.processor], note
-    * that the use of `Tasks.processor` will not work, as it returns `Unit` and not the next behavior. Warning: do not
-    * use vsm for the inner behavior, this will lead to an infinite loop and crash.
+    * The inner behavior should return the next state, for this we recommend the
+    * use of [VSMExtension.processor], note that the use of `Tasks.processor`
+    * will not work, as it returns `Unit` and not the next behavior. Warning: do
+    * not use vsm for the inner behavior, this will lead to an infinite loop and
+    * crash.
     *
     * Example:
     *
@@ -176,13 +179,15 @@ private[portals] case class Loop[T, U](override val task: GenericTask[T, U, Noth
 
 extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 
-  /** Behavior factory for taking steps over atoms. This will execute the provided `_task` for the following atom. */
+  /** Behavior factory for taking steps over atoms. This will execute the
+    * provided `_task` for the following atom.
+    */
   def withStep(_task: GenericTask[T, U, Nothing, Nothing]): GenericTask[T, U, Nothing, Nothing] = task match
     case stepper: Stepper[T, U] => stepper.copy(steppers = stepper.steppers :+ Step(_task))
     case _ => Stepper(List(Step(task), Step(_task)))
 
-  /** Behavior factory for looping behaviors over atoms. This will execute the provided `_task` for the following
-    * `count` atoms.
+  /** Behavior factory for looping behaviors over atoms. This will execute the
+    * provided `_task` for the following `count` atoms.
     */
   def withLoop(count: Int)(_task: GenericTask[T, U, Nothing, Nothing]): GenericTask[T, U, Nothing, Nothing] =
     task match
@@ -248,7 +253,8 @@ extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 
 extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 
-  /** Wrapping around the behavior of a task. The wrapped behavior is accessible for use.
+  /** Wrapping around the behavior of a task. The wrapped behavior is accessible
+    * for use.
     *
     * Example use:
     * {{{
@@ -284,7 +290,9 @@ object StashExtension:
       }
   }
 
-  /** FIXME: we should really provide a more efficient state interface for lists or similar. */
+  /** FIXME: we should really provide a more efficient state interface for lists
+    * or similar.
+    */
   class TaskStash[T, U]():
     private lazy val _stash: TaskContextImpl[T, U, Nothing, Nothing] ?=> PerKeyState[List[T]] =
       PerKeyState[List[T]]("_stash", List.empty)

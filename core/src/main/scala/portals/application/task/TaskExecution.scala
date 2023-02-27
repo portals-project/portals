@@ -3,8 +3,9 @@ package portals
 import portals.MapTaskStateExtension.*
 
 object TaskExecution:
-  /** Prepare a task behavior at runtime. This executes the initialization and returns the initialized task. This needs
-    * to be called internally to initialize the task behavior before execution.
+  /** Prepare a task behavior at runtime. This executes the initialization and
+    * returns the initialized task. This needs to be called internally to
+    * initialize the task behavior before execution.
     */
   // format: off
   private[portals] def prepareTask[T, U, Req, Rep](task: GenericTask[T, U, Req, Rep], ctx: TaskContextImpl[T, U, Req, Rep]): GenericTask[T, U, Req, Rep] =

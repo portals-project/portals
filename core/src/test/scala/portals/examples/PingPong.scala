@@ -11,7 +11,8 @@ import portals.test.*
 
 /** Ping Pong Examples
   *
-  * This is a collection of Ping Pong examples, and how we can implement Ping Pong in Portals.
+  * This is a collection of Ping Pong examples, and how we can implement Ping
+  * Pong in Portals.
   */
 
 /** Ping Pong Test */

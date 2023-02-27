@@ -16,7 +16,9 @@ class TestStream(stream: AtomicStream[_])(using rctx: TestRuntimeContext):
   def read(idx: Long): TestAtom =
     atomQueue((idx - index).toInt) // trust me :_)
 
-  /** Returns the range of indexes that can be read. The range is inclusive, i.e. [0, 0] means idx 0 can be read. */
+  /** Returns the range of indexes that can be read. The range is inclusive,
+    * i.e. [0, 0] means idx 0 can be read.
+    */
   def getIdxRange(): (Long, Long) = (Math.max(0, index), index + atomQueue.size)
 
   /** Prune all atoms up to index idx. */

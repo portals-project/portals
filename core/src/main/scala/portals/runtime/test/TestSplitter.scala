@@ -36,7 +36,8 @@ private[portals] class TestSplitter(splitter: AtomicSplitter[_])(using rctx: Tes
   def fromSplitterAtom(path: String, satom: List[WrappedEvent[Any]]): TestAtom =
     TestAtomBatch(path, satom)
 
-  /** Process an atom on the test splitter. This will produce a list of new atoms, one for each nonempty output.
+  /** Process an atom on the test splitter. This will produce a list of new
+    * atoms, one for each nonempty output.
     *
     * @param atom
     *   the atom to process.

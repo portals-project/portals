@@ -10,10 +10,13 @@ private[portals] trait TaskState[K, V]:
   /** delete the key, scoped by the dynamic invocation context */
   def del(k: K): Unit
 
-  /** iterate over all key-value pairs, **NOT** scoped by the dynamic invocation context */
+  /** iterate over all key-value pairs, **NOT** scoped by the dynamic context
+    */
   def iterator: Iterator[(K, V)]
 
-  /** clear the state of the current instance, **NOT** scoped by the dynamic invocation context */
+  /** clear the state of the current instance, **NOT** scoped by the dynamic
+    * context
+    */
   def clear(): Unit
 
   //////////////////////////////////////////////////////////////////////////////

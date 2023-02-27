@@ -30,7 +30,8 @@ trait Splitter[T]:
   def split(atom: List[WrappedEvent[T]]): List[(Path, List[WrappedEvent[T]])]
 
 object Splitters:
-  /** Creates an empty splitter, one that does not have any splits yet, to be used for adding new output splits.
+  /** Creates an empty splitter, one that does not have any splits yet, to be
+    * used for adding new output splits.
     *
     * @tparam T
     *   event type of the splitter

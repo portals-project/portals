@@ -11,10 +11,12 @@ object DSL:
 
   /** Summon the given TaskContext.
     *
-    * This is a generic method, so it can be used with any TaskContext. Here we use a generic task context instead, and
-    * use the return type of the dependent contextual generic task context to obtain a more specific task context type.
-    * This can for example return a MapTaskContext when used within a MapTask, or a regular ProcessorTaskContext when
-    * used within a ProcessorTask.
+    * This is a generic method, so it can be used with any TaskContext. Here we
+    * use a generic task context instead, and use the return type of the
+    * dependent contextual generic task context to obtain a more specific task
+    * context type. This can for example return a MapTaskContext when used
+    * within a MapTask, or a regular ProcessorTaskContext when used within a
+    * ProcessorTask.
     *
     * @return
     *   The contextual task context.
@@ -60,7 +62,8 @@ object DSL:
   //////////////////////////////////////////////////////////////////////////////
   // Portals DSL
   //////////////////////////////////////////////////////////////////////////////
-  /** Convenient shorthands for using the portals, askers, repliers, awaiters. */
+  /** Convenient shorthands for using the portals, askers, repliers, awaiters.
+    */
 
   /** Ask the `portal` with `req`, returns a future of the reply.
     *
