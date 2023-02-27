@@ -7,6 +7,7 @@ object TaskBuilder extends TaskBuilder:
   //////////////////////////////////////////////////////////////////////////////
   // Task Factories
   //////////////////////////////////////////////////////////////////////////////
+
   /** Behavior factory for handling incoming event and context. */
   def processor[T, U](onNext: ProcessorTaskContext[T, U] ?=> T => Unit): GenericTask[T, U, Nothing, Nothing] =
     ProcessorTask[T, U](ctx => onNext(using ctx))

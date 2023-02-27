@@ -22,8 +22,7 @@ private[portals] trait TaskState[K, V]:
 
   /** Path of the task */
   // has to be var so that it can be swapped at runtime
-  // TODO: this will be used once we are sharing state on some state backend, such as RocksDB
-  private[portals] var path: String // TODO: make this set by the runtime
+  private[portals] var path: String
 
   /** Contextual key for per-key execution */
   // has to be var so that it can be swapped at runtime

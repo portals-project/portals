@@ -1,6 +1,6 @@
 package portals
 
-/** Internal API. OutputCollector to collect submitted events as side effects. Works for all types of tasks. */
+/** Internal API. OutputCollector to collect submitted events as side effects. Works for all kinds of tasks. */
 private[portals] class OutputCollectorImpl[T, U, Req, Rep] extends OutputCollector[T, U, Req, Rep]:
   //////////////////////////////////////////////////////////////////////////////
   // Task

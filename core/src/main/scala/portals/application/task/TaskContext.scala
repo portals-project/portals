@@ -1,4 +1,3 @@
-// format: off
 package portals
 
 private[portals] sealed trait GenericGenericTaskContext
@@ -65,5 +64,3 @@ private[portals] trait TaskContext[T, U, Req, Rep]
     with MapTaskContext[T, U]
     with AskerTaskContext[T, U, Req, Rep]
     with ReplierTaskContext[T, U, Req, Rep]
-
-// format: on

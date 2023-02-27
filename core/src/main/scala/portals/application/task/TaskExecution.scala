@@ -1,5 +1,7 @@
 package portals
 
+import portals.MapTaskStateExtension.*
+
 object TaskExecution:
   /** Prepare a task behavior at runtime. This executes the initialization and returns the initialized task. This needs
     * to be called internally to initialize the task behavior before execution.

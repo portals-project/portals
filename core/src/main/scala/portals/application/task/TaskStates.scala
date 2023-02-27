@@ -1,5 +1,9 @@
 package portals
 
+////////////////////////////////////////////////////////////////////////////////
+// Task States
+////////////////////////////////////////////////////////////////////////////////
+
 trait TaskStates:
   def perKey[T](name: String, initValue: T)(using StatefulTaskContext): PerKeyState[T]
   def perTask[T](name: String, initValue: T)(using StatefulTaskContext): PerTaskState[T]
@@ -13,25 +17,26 @@ object TaskStates extends TaskStates:
     PerTaskState(name, initValue)
 end TaskStates // object
 
+////////////////////////////////////////////////////////////////////////////////
+// Typed State
+////////////////////////////////////////////////////////////////////////////////
+
 trait TypedState[T]:
   def get(): T
   def set(value: T): Unit
   def del(): Unit
 end TypedState // trait
 
-trait PerKeyState[T] extends TypedState[T]
+////////////////////////////////////////////////////////////////////////////////
+// Per Key State
+////////////////////////////////////////////////////////////////////////////////
 
-trait PerTaskState[T] extends TypedState[T]
+trait PerKeyState[T] extends TypedState[T]
 
 object PerKeyState:
   def apply[T](name: String, initValue: T)(using StatefulTaskContext): PerKeyState[T] =
     PerKeyStateImpl[T](name, initValue)
 end PerKeyState // object
-
-object PerTaskState:
-  def apply[T](name: String, initValue: T)(using StatefulTaskContext): PerTaskState[T] =
-    PerTaskStateImpl[T](name, initValue)
-end PerTaskState // object
 
 class PerKeyStateImpl[T](name: String, initValue: T)(using StatefulTaskContext) extends PerKeyState[T]:
   private val _state: TaskState[Any, Any] = summon[StatefulTaskContext].state
@@ -45,6 +50,17 @@ class PerKeyStateImpl[T](name: String, initValue: T)(using StatefulTaskContext) 
   override def del(): Unit = _state.del(name)
 
 end PerKeyStateImpl // class
+
+////////////////////////////////////////////////////////////////////////////////
+// Per Task State
+////////////////////////////////////////////////////////////////////////////////
+
+trait PerTaskState[T] extends TypedState[T]
+
+object PerTaskState:
+  def apply[T](name: String, initValue: T)(using StatefulTaskContext): PerTaskState[T] =
+    PerTaskStateImpl[T](name, initValue)
+end PerTaskState // object
 
 class PerTaskStateImpl[T](name: String, initValue: T)(using StatefulTaskContext) extends PerTaskState[T]:
   private val _state: TaskState[Any, Any] = summon[StatefulTaskContext].state
@@ -82,17 +98,22 @@ class PerTaskStateImpl[T](name: String, initValue: T)(using StatefulTaskContext)
 
 end PerTaskStateImpl // class
 
-// TODO: implement more efficient Map interface
-extension [K, V](state: PerTaskState[Map[K, V]]) {
-  def get(key: K): Option[V] = state.get().get(key)
+////////////////////////////////////////////////////////////////////////////////
+// Various State Extensions
+////////////////////////////////////////////////////////////////////////////////
 
-  def update(key: K, value: V): Unit =
-    state.set(
-      (state.get() + (key -> value))
-    )
+// map extension
+object MapTaskStateExtension:
+  extension [K, V](state: PerTaskState[Map[K, V]]) {
+    def get(key: K): Option[V] = state.get().get(key)
 
-  def remove(key: K): Unit =
-    state.set(
-      (state.get() - key)
-    )
-}
+    def update(key: K, value: V): Unit =
+      state.set(
+        (state.get() + (key -> value))
+      )
+
+    def remove(key: K): Unit =
+      state.set(
+        (state.get() - key)
+      )
+  }

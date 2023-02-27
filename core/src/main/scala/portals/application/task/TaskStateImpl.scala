@@ -13,13 +13,9 @@ private[portals] class TaskStateImpl[K, V] extends TaskState[K, V]:
 
   override def iterator: Iterator[(K, V)] = map.iterator.map(kv => (kv._1._2, kv._2))
 
-  private[portals] var path: String = "" // TODO: make this set by the runtime
+  private[portals] var path: String = _
 
-  private[portals] var key: Key[Long] = Key(-1) // TODO: make this set by the runtime
+  private[portals] var key: Key[Long] = _
 
-  // this seems inefficient
-  // TODO: more reliable way of building a key, simplify it, this seems error prone here
-  // that we need to do `key.x` as it is likely to forget to get the x.
   private def keyBuilder(k: K): (String, K) = (path + "$" + key.x.toString(), k)
-
 end TaskStateImpl // class
