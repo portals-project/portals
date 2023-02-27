@@ -113,13 +113,13 @@ trait FlowBuilder[T, U, CT, CU]:
   //////////////////////////////////////////////////////////////////////////////
 
   def asker[CCU, Req, Rep](
-      portals: AtomicPortalRefType[Req, Rep]*
+      portals: AtomicPortalRefKind[Req, Rep]*
   )(
       f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
   ): FlowBuilder[T, U, CU, CCU]
 
   def replier[CCU, Req, Rep](
-      portals: AtomicPortalRefType[Req, Rep]*
+      portals: AtomicPortalRefKind[Req, Rep]*
   )(
       f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
   )(
@@ -133,7 +133,7 @@ trait FlowBuilder[T, U, CT, CU]:
 
   private[portals] class FlowBuilderAsker[CCU]:
     def apply[Req, Rep](
-        portals: AtomicPortalRefType[Req, Rep]*
+        portals: AtomicPortalRefKind[Req, Rep]*
     )(
         f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
     ): FlowBuilder[T, U, CU, CCU] =
@@ -143,7 +143,7 @@ trait FlowBuilder[T, U, CT, CU]:
 
   private[portals] class FlowBuilderReplier[CCU]:
     def apply[Req, Rep](
-        portals: AtomicPortalRefType[Req, Rep]*
+        portals: AtomicPortalRefKind[Req, Rep]*
     )(
         f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
     )(

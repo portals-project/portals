@@ -14,7 +14,7 @@ object ExperimentalDSL:
   //////////////////////////////////////////////////////////////////////////////
   // Builder DSL
   //////////////////////////////////////////////////////////////////////////////
-  extension [T](splitter: AtomicSplitter[T]) {
+  extension [T](splitter: AtomicSplitterRefKind[T]) {
     // split a splitter by filter into a new stream.
     def split(f: T => Boolean)(using ab: ApplicationBuilder): AtomicStreamRef[T] =
       ab.splits.split(splitter, f)
@@ -44,7 +44,7 @@ object ExperimentalDSL:
     def contextual_rec[A, B](f: (A ?=> B) => A ?=> B): A ?=> B = f(contextual_rec(f))
 
   private[portals] class RecursiveAsker[T, U, CT, CU, CCU](fb: FlowBuilder[T, U, CT, CU]):
-    def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+    def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
         fRec: (
             AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
         ) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
@@ -70,7 +70,7 @@ object ExperimentalDSL:
       * @param fRec
       *   The recursive function.
       */
-    def recursiveAsker[CCU, Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+    def recursiveAsker[CCU, Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
         fRec: (
             AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
         ) => AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit

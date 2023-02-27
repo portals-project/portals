@@ -55,7 +55,7 @@ private[portals] trait ExtensibleTask[T, U, Req, Rep] extends GenericTask[T, U, 
 end ExtensibleTask // trait
 
 private[portals] case class AskerTask[T, U, Req, Rep](f: TaskContextImpl[T, U, Req, Rep] => T => Unit)(
-    val portals: AtomicPortalRefType[Req, Rep]*
+    val portals: AtomicPortalRefKind[Req, Rep]*
 ) extends BaseTask[T, U, Req, Rep]:
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f(ctx)(t)
 end AskerTask // trait
@@ -63,7 +63,7 @@ end AskerTask // trait
 private[portals] case class ReplierTask[T, U, Req, Rep](
     f1: TaskContextImpl[T, U, Req, Rep] => T => Unit,
     f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit
-)(val portals: AtomicPortalRefType[Req, Rep]*)
+)(val portals: AtomicPortalRefKind[Req, Rep]*)
     extends BaseTask[T, U, Req, Rep]:
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f1(ctx)(t)
 end ReplierTask // trait

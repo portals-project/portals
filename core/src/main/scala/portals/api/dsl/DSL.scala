@@ -71,7 +71,7 @@ object DSL:
     * @return
     *   A future of the reply.
     */
-  def ask[T, U, Req, Rep](using ctx: AskerTaskContext[T, U, Req, Rep])(portal: AtomicPortalRefType[Req, Rep])(
+  def ask[T, U, Req, Rep](using ctx: AskerTaskContext[T, U, Req, Rep])(portal: AtomicPortalRefKind[Req, Rep])(
       req: Req
   ): Future[Rep] =
     ctx.ask(portal)(req)
@@ -179,13 +179,13 @@ object DSL:
   //////////////////////////////////////////////////////////////////////////////
 
   class FlowBuilderAsker[T, U, CT, CU, CCU](fb: FlowBuilder[T, U, CT, CU]):
-    def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+    def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
         f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
     ): FlowBuilder[T, U, CU, CCU] =
       fb.asker[CCU, Req, Rep](portals: _*)(f)
 
   class FlowBuilderReplier[T, U, CT, CU, CCU](fb: FlowBuilder[T, U, CT, CU]):
-    def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+    def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
         f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
     )(
         f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
@@ -198,7 +198,7 @@ object DSL:
     def replier[CCU]: FlowBuilderReplier[T, U, CT, CU, CCU] = new FlowBuilderReplier[T, U, CT, CU, CCU](fb)
   }
   // class FlowBuilderAskerImpl[CCU] extends FlowBuilderAsker[CCU]:
-  //   def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+  //   def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
   //       f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
   //   ): FlowBuilder[T, U, CU, CCU] =
   //     val behavior = TaskBuilder.portal[Req, Rep](portals: _*).asker[CU, CCU](f)
@@ -207,7 +207,7 @@ object DSL:
   // override def asker[CCU]: FlowBuilderAskerImpl[CCU] = new FlowBuilderAskerImpl[CCU]
 
   // class FlowBuilderReplierImpl[CCU] extends FlowBuilderReplier[CCU]:
-  //   def apply[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*)(
+  //   def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
   //       f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
   //   )(
   //       f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
@@ -218,7 +218,7 @@ object DSL:
   // override def replier[CCU]: FlowBuilderReplierImpl[CCU] = new FlowBuilderReplierImpl[CCU]
 //   trait FlowBuilderAsker[CCU]:
 //     def apply[Req, Rep](
-//         portals: AtomicPortalRefType[Req, Rep]*
+//         portals: AtomicPortalRefKind[Req, Rep]*
 //     )(
 //         f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
 //     ): FlowBuilder[T, U, CU, CCU]
@@ -227,7 +227,7 @@ object DSL:
 
 //   trait FlowBuilderReplier[CCU]:
 //     def apply[Req, Rep](
-//         portals: AtomicPortalRefType[Req, Rep]*
+//         portals: AtomicPortalRefKind[Req, Rep]*
 //     )(
 //         f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
 //     )(

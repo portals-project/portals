@@ -39,7 +39,7 @@ object TaskBuilder extends TaskBuilder:
   // Portals Task Factories
   //////////////////////////////////////////////////////////////////////////////
 
-  class PortalsTasks[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*):
+  class PortalsTasks[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*):
     def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => Unit): GenericTask[T, U, Req, Rep] =
       AskerTask[T, U, Req, Rep](ctx => f(using ctx))(portals: _*)
 
@@ -50,7 +50,7 @@ object TaskBuilder extends TaskBuilder:
 
   extension (t: TaskBuilder) {
     /* Note: the reason we have this extra step via `portal` is to avoid the user having to specify the Req and Rep types. */
-    def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) =
+    def portal[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*) =
       new PortalsTasks[Req, Rep](portals: _*)
   }
 end TaskBuilder // object

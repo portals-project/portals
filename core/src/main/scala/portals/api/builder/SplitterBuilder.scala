@@ -1,7 +1,7 @@
 package portals
 
 trait SplitterBuilder:
-  def empty[T](stream: AtomicStreamRefKind[T]): AtomicSplitter[T]
+  def empty[T](stream: AtomicStreamRefKind[T]): AtomicSplitterRef[T]
 end SplitterBuilder // trait
 
 object SplitterBuilder:
@@ -11,7 +11,7 @@ object SplitterBuilder:
 end SplitterBuilder // trait
 
 class SplitterBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) extends SplitterBuilder:
-  private def build[T](_stream: AtomicStreamRefKind[T], _splitter: Splitter[T]): AtomicSplitter[T] =
+  private def build[T](_stream: AtomicStreamRefKind[T], _splitter: Splitter[T]): AtomicSplitterRef[T] =
     val _path = bctx.app.path + "/splitters/" + name
     val _in = _stream
     val _streams = List.empty
@@ -22,8 +22,8 @@ class SplitterBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) e
       splitter = _splitter,
     )
     bctx.addToContext(aSplitter)
-    aSplitter
+    AtomicSplitterRef(aSplitter)
 
-  override def empty[T](stream: AtomicStreamRefKind[T]): AtomicSplitter[T] =
+  override def empty[T](stream: AtomicStreamRefKind[T]): AtomicSplitterRef[T] =
     val _splitter = Splitters.empty[T]()
     this.build(stream, _splitter)

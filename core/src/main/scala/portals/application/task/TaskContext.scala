@@ -19,7 +19,7 @@ private[portals] trait LoggingTaskContext[T, U] extends GenericTaskContext[T, U,
 
 private[portals] trait AskingTaskContext[T, U, Req, Rep] extends GenericTaskContext[T, U, Req, Rep]:
   /** Ask the `portal` with `msg`, returns a future of the reply. */
-  def ask(portal: AtomicPortalRefType[Req, Rep])(msg: Req): Future[Rep]
+  def ask(portal: AtomicPortalRefKind[Req, Rep])(msg: Req): Future[Rep]
 
 private[portals] trait AwaitingTaskContext[T, U, Req, Rep] extends GenericTaskContext[T, U, Req, Rep]:
   /** Await for the completion of the `future`. */
