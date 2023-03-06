@@ -9,12 +9,13 @@ import org.junit.Test
 import portals.api.builder.ApplicationBuilder
 import portals.test.*
 
+import portals.api.dsl.DSL
 @RunWith(classOf[JUnit4])
 class SequencerTest:
 
   @Test
   def randomTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 

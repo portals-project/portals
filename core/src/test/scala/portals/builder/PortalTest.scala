@@ -16,9 +16,9 @@ class PortalTest:
   @Test
   @experimental
   def testPingPong(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
-    import portals.ExperimentalDSL.*
+    import portals.api.dsl.ExperimentalDSL.*
 
     val testData = List(List(1024))
 
@@ -84,9 +84,9 @@ class PortalTest:
   @Test
   @experimental
   def testMultipleAskers(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
-    import portals.ExperimentalDSL.*
+    import portals.api.dsl.ExperimentalDSL.*
 
     sealed trait PingPong
     case class Ping(x: Int) extends PingPong
@@ -171,8 +171,8 @@ class PortalTest:
   @Test
   @experimental
   def testMultiplePortals(): Unit =
-    import portals.DSL.*
-    import portals.ExperimentalDSL.*
+    import portals.api.dsl.DSL.*
+    import portals.api.dsl.ExperimentalDSL.*
 
     sealed trait PingPong
     case class Ping(x: Int) extends PingPong

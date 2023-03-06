@@ -6,12 +6,15 @@ import portals.*
 import portals.application.task.PerKeyState
 import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
 
+import portals.api.dsl.{CustomReplierTask, CustomAskerTask, CustomProcessorTask}
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 object ShoppingCartTasks:
   @experimental
   class CartTask(portal: AtomicPortalRefKind[InventoryReqs, InventoryReps])
       extends CustomAskerTask[CartOps, OrderOps, InventoryReqs, InventoryReps]:
-    import portals.DSL.*
-    import portals.ExperimentalDSL.*
+    import portals.api.dsl.DSL.*
+    import portals.api.dsl.ExperimentalDSL.*
 
     lazy val state: StatefulTaskContext ?=> PerKeyState[CartState] =
       PerKeyState[CartState]("state", CartState.zero)
@@ -56,8 +59,8 @@ object ShoppingCartTasks:
   @experimental
   class InventoryTask(portal: AtomicPortalRefKind[InventoryReqs, InventoryReps])
       extends CustomReplierTask[InventoryReqs, Nothing, InventoryReqs, InventoryReps]:
-    import portals.DSL.*
-    import portals.ExperimentalDSL.*
+    import portals.api.dsl.DSL.*
+    import portals.api.dsl.ExperimentalDSL.*
 
     lazy val state: StatefulTaskContext ?=> PerKeyState[Int] = PerKeyState[Int]("state", 0)
 
@@ -94,7 +97,7 @@ object ShoppingCartTasks:
 
   @experimental
   class OrdersTask extends CustomProcessorTask[OrderOps, Nothing]:
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     override def onNext(using ProcessorTaskContext[InventoryReqs, Nothing])(event: OrderOps): Unit =
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"Ordering $event")

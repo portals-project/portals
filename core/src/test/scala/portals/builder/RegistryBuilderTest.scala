@@ -9,12 +9,13 @@ import org.junit.Test
 import portals.api.builder.ApplicationBuilder
 import portals.test.*
 
+import portals.api.dsl.DSL
 @RunWith(classOf[JUnit4])
 class RegistryBuilderTest:
 
   @Test
   def testRegistrySplitter(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester1 = new TestUtils.Tester[Int]()
     val tester2 = new TestUtils.Tester[Int]()
@@ -105,7 +106,7 @@ class RegistryBuilderTest:
 
   @Test
   def testRegistrySequencer(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
@@ -182,7 +183,7 @@ class RegistryBuilderTest:
 
   @Test
   def testRegistryStream(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 

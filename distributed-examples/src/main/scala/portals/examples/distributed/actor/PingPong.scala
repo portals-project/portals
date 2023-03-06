@@ -4,6 +4,8 @@ import scala.annotation.experimental
 
 import portals.*
 
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 @experimental
 object PingPong:
   inline val PINGPONG_N = 1024
@@ -37,8 +39,8 @@ object PingPong:
 
 @experimental
 object PingPongMain extends App:
-  import portals.DSL.*
-  import portals.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   import ActorEvents.*
   import PingPong.PingPongActors.*

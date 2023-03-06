@@ -1,4 +1,4 @@
-package portals
+package portals.api.dsl
 
 import scala.annotation.experimental
 

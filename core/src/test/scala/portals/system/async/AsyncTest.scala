@@ -16,11 +16,12 @@ import portals.test.*
 import portals.test.AsyncTestUtils
 import portals.test.AsyncTestUtils.Asserter
 
+import portals.api.dsl.DSL
 @RunWith(classOf[JUnit4])
 class AsyncTest:
   @Test
   def lotsOfEventsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -50,7 +51,7 @@ class AsyncTest:
 
   @Test
   def largeAtomsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -80,7 +81,7 @@ class AsyncTest:
 
   @Test
   def chainOfWorkflowsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -125,7 +126,7 @@ class AsyncTest:
 
   @Test
   def chainOfTasksTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -165,7 +166,7 @@ class AsyncTest:
 
   @Test
   def taskFanOutInTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -204,7 +205,7 @@ class AsyncTest:
 
   @Test
   def manyGeneratorsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -249,7 +250,7 @@ class AsyncTest:
 
   @Test
   def manySequencersTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 

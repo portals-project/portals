@@ -4,7 +4,7 @@ import portals.*
 import portals.compiler.*
 
 /** Application Builder Implementation. */
-class ApplicationBuilderImpl(using bctx: ApplicationBuilderContext) extends ApplicationBuilder:
+private[portals] class ApplicationBuilderImpl(using bctx: ApplicationBuilderContext) extends ApplicationBuilder:
   override def build(): Application =
     bctx.freeze()
     CompilerBuilder.preCompiler().compile(bctx.app) // may throw exception

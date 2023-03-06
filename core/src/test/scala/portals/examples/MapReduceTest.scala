@@ -11,6 +11,7 @@ import portals.api.builder.TaskBuilder
 import portals.application.task.PerTaskState
 import portals.test.*
 
+import portals.api.dsl.DSL
 /** MapReduce tests
   *
   * These tests show how we can model the MapReduce paradigm with the Pods
@@ -39,7 +40,7 @@ class WordCountTest:
 
   @Test
   def testWordCount(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[(String, Int)]()
     // one naive implementation is to use local state for storing the counts

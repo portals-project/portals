@@ -5,6 +5,7 @@ import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.application.task.PerKeyState
 
+import portals.api.dsl.DSL
 /** Incremental Word Count
   *
   * Streaming Dataflow is straight-forward to implement in our model. We build a
@@ -17,7 +18,7 @@ import portals.application.task.PerKeyState
   * lines of text. For each new ingested word, the updated wordcount is emitted.
   */
 @main def IncrementalWordCount(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
   val builder = ApplicationBuilder("application")
 
@@ -59,7 +60,7 @@ import portals.application.task.PerKeyState
   system.shutdown()
 
 @main def IncrementalWordCountWithMapperReducer(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
   // our map function takes an string and splits it to produce a list of words
   val mapper: String => Seq[(String, Int)] =

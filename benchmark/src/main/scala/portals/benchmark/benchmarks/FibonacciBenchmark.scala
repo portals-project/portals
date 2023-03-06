@@ -6,7 +6,7 @@ import portals.application.task.TaskStates
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
+import portals.api.dsl.DSL.*
 
 object FibonacciBenchmark extends Benchmark:
   private val config = BenchmarkConfig()

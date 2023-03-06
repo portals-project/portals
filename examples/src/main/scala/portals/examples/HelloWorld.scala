@@ -3,6 +3,7 @@ package portals.examples
 import portals.*
 import portals.api.builder.ApplicationBuilder
 
+import portals.api.dsl.DSL
 /** Hello World
   *
   * This example creates a workflow that prints all the ingested events to the
@@ -10,7 +11,7 @@ import portals.api.builder.ApplicationBuilder
   * expect it to be printed.
   */
 @main def HelloWorld(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
   val builder = ApplicationBuilder("app")
 

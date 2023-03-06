@@ -6,11 +6,13 @@ import scala.concurrent.Await
 import portals.*
 import portals.application.task.PerTaskState
 
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 @experimental
 @main def DynamicQuery(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
-  import portals.ExperimentalDSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   case class Query()
   case class QueryReply(x: Int)

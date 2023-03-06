@@ -7,7 +7,7 @@ import portals.application.task.PerTaskState
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
+import portals.api.dsl.DSL.*
 
 object NEXMarkBenchmarkUtil:
   import org.apache.beam.sdk.nexmark.*

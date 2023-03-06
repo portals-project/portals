@@ -5,11 +5,13 @@ import scala.concurrent.Await
 
 import portals.*
 
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 @experimental
 @main def PortalPingPong(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
-  import portals.ExperimentalDSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   val app = PortalsApp("PortalPingPong") {
     sealed trait PingPong

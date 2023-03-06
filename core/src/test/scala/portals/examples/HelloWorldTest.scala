@@ -9,6 +9,7 @@ import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.test.*
 
+import portals.api.dsl.DSL
 /** HelloWorld Test
   *
   * This is a collection of canonical hello world tests.
@@ -25,7 +26,7 @@ class HelloWorldTest:
 
   @Test
   def testHelloWorld(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[String]()
 

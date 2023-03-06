@@ -14,12 +14,13 @@ import portals.application.task.PerKeyState
 import portals.application.task.PerTaskState
 import portals.test.*
 
+import portals.api.dsl.DSL
 @RunWith(classOf[JUnit4])
 class FlowBuilderTest:
 
   @Test
   def testDiamondTaskGraph(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1))
 
@@ -46,7 +47,7 @@ class FlowBuilderTest:
 
   @Test
   def testSteppers(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List.fill(10)(0).grouped(1).toList
 
@@ -74,7 +75,7 @@ class FlowBuilderTest:
 
   @Test
   def testWrapper(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2, 3, 4))
 
@@ -96,7 +97,7 @@ class FlowBuilderTest:
 
   @Test
   def testWithAndThen(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List.range(0, 4).grouped(1).toList
 
@@ -117,7 +118,7 @@ class FlowBuilderTest:
 
   @Test
   def testVSM(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List.range(0, 3).grouped(1).toList
     val testDataKeys = List.fill(3)(0).map(Key[Long](_)).grouped(1).toList
@@ -153,7 +154,7 @@ class FlowBuilderTest:
 
   @Test
   def testPerKeyState(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2, 3), List(1, 2, 3))
 
@@ -182,7 +183,7 @@ class FlowBuilderTest:
 
   @Test
   def testPerTaskState(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2, 3), List(1, 2, 3))
 
@@ -211,7 +212,7 @@ class FlowBuilderTest:
 
   @Test
   def testInit(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2, 3))
 
@@ -232,7 +233,7 @@ class FlowBuilderTest:
 
   @Test
   def testWithOnAtomComplete(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2, 3, 4), List(1, 2, 3, 4))
 
@@ -267,7 +268,7 @@ class FlowBuilderTest:
 
   @Test
   def testAllWithOnAtomComplete(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2), List(1, 2))
 
@@ -293,7 +294,7 @@ class FlowBuilderTest:
 
   @Test
   def testAllWrapper(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2, 3, 4), List(1, 2, 3, 4))
 

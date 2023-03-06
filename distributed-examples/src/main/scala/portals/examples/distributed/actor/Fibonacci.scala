@@ -4,6 +4,8 @@ import scala.annotation.experimental
 
 import portals.*
 
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 @experimental
 object Fibonacci:
   inline val FIB_N = 21
@@ -53,8 +55,8 @@ object Fibonacci:
 
 @experimental
 object FibonacciMain extends App:
-  import portals.DSL.*
-  import portals.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   import ActorEvents.*
   import Fibonacci.FibActors.initBehavior

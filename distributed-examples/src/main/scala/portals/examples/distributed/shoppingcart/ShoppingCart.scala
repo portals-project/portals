@@ -4,6 +4,9 @@ import scala.annotation.experimental
 
 import portals.*
 
+import portals.api.dsl.CustomTask
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 ////////////////////////////////////////////////////////////////////////////////
 // Shopping Cart
 ////////////////////////////////////////////////////////////////////////////////
@@ -11,8 +14,8 @@ import portals.*
 object ShoppingCart:
   import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
   import portals.examples.distributed.shoppingcart.ShoppingCartTasks.*
-  import portals.DSL.*
-  import portals.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   private val _rand = scala.util.Random()
   inline def sample_1024(): Boolean = _rand.nextInt(1024) < 1

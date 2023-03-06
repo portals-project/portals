@@ -11,6 +11,7 @@ import portals.api.builder.TaskBuilder
 import portals.application.task.PerKeyState
 import portals.test.*
 
+import portals.api.dsl.DSL
 /** Streaming Dataflow tests
   *
   * These tests show how we can model Streaming Dataflow in our model.
@@ -33,7 +34,7 @@ class IncrementalWordCountTest:
 
   @Test
   def testIncrementalWordCount(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[(String, Int)]()
 

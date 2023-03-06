@@ -7,6 +7,8 @@ import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.application.task.PerKeyState
 
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 @experimental
 sealed trait ActorState:
   def get(key: Any)(using ctx: ActorContext[_]): Option[Any]
@@ -209,8 +211,8 @@ private[portals] object ActorRuntime:
 
 @experimental
 object ActorWorkflow:
-  import portals.DSL.*
-  import portals.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   import ActorEvents.*
 

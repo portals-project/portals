@@ -10,6 +10,7 @@ import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.test.*
 
+import portals.api.dsl.DSL
 /** Ping Pong Examples
   *
   * This is a collection of Ping Pong examples, and how we can implement Ping
@@ -22,7 +23,7 @@ class PingPongTest:
 
   @Test
   def testPingPong(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     case class Ping(i: Int)
     case class Pong(i: Int)

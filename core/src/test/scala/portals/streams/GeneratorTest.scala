@@ -11,12 +11,13 @@ import org.junit.Test
 import portals.api.builder.ApplicationBuilder
 import portals.test.*
 
+import portals.api.dsl.DSL
 @RunWith(classOf[JUnit4])
 class GeneratorTest:
 
   @Test
   def fromIteratorTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
@@ -50,7 +51,7 @@ class GeneratorTest:
 
   @Test
   def fromIteratorOfIteratorsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
@@ -95,7 +96,7 @@ class GeneratorTest:
   @experimental
   @deprecated
   def testExternal(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 

@@ -5,15 +5,17 @@ import scala.annotation.experimental
 import portals.*
 import portals.api.builder.TaskBuilder
 
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 /** Step By Step
   *
   * Lyrics from Step by Step of the Album Step By Step by Eddie Rabbit, 1981.
   */
 @experimental
 @main def StepByStep(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
-  import portals.ExperimentalDSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   val app = PortalsApp("StepByStep") {
 

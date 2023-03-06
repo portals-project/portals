@@ -11,7 +11,7 @@ import scala.util.Random
 
 import portals.*
 import portals.api.builder.*
-import portals.DSL.*
+import portals.api.dsl.DSL.*
 
 object BenchmarkUtils:
   class CompletionWatcher():

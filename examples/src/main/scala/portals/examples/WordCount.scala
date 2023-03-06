@@ -5,6 +5,7 @@ import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.application.task.PerTaskState
 
+import portals.api.dsl.DSL
 /** Word Count
   *
   * This example shows how we can implement the Word Count example in the style
@@ -27,7 +28,7 @@ import portals.application.task.PerTaskState
   */
 
 @main def WordCount(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
   val builder = ApplicationBuilder("application")
 

@@ -1,7 +1,8 @@
-package portals
+package portals.api.dsl
 
 import scala.annotation.experimental
 
+import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.ConnectionBuilder
 import portals.api.builder.FlowBuilder
