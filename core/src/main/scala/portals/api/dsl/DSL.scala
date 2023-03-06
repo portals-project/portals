@@ -16,7 +16,7 @@ import portals.api.builder.WorkflowBuilder
 /** DSL extensions for Portals, convenient shorthands for building applications.
   *
   * @see
-  *   [[portals.DSL.PortalsApp]]
+  *   [[portals.api.dsl.DSL.PortalsApp]]
   */
 object DSL:
   //////////////////////////////////////////////////////////////////////////////
