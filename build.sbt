@@ -35,7 +35,7 @@ lazy val benchmark = project
     libraryDependencies += "org.apache.beam" % "beam-sdks-java-nexmark" % nexmarkVersion, // NEXMark benchmark
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
   )
-  .dependsOn(portals)
+  .dependsOn(portals % "test->test;compile->compile")
 
 lazy val examples = project
   .in(file("examples"))
@@ -43,7 +43,7 @@ lazy val examples = project
     name := "portals-examples",
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
-  .dependsOn(portals)
+  .dependsOn(portals % "test->test;compile->compile")
 
 lazy val distributedExamples = project
   .in(file("distributed-examples"))
@@ -51,4 +51,4 @@ lazy val distributedExamples = project
     name := "portals-distributed-examples",
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
-  .dependsOn(portals)
+  .dependsOn(portals % "test->test;compile->compile")

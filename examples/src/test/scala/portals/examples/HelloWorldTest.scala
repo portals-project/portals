@@ -5,10 +5,9 @@ import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Test
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
-import portals.api.dsl.DSL
-import portals.test.*
+import portals.test.TestUtils
+import portals.Systems
 
 /** HelloWorld Test
   *

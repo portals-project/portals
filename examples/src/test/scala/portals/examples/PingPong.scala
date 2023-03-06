@@ -6,10 +6,9 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.*
+import portals.Systems
 import portals.api.builder.ApplicationBuilder
-import portals.api.dsl.DSL
-import portals.test.*
+import portals.test.TestUtils
 
 /** Ping Pong Examples
   *
