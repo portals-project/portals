@@ -15,7 +15,7 @@ class ActorTest:
   @Test
   @experimental
   def testFibonacci(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     import ActorEvents.ActorMessage
     import ActorEvents.ActorCreate
