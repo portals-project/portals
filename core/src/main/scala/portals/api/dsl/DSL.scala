@@ -165,11 +165,11 @@ object DSL:
     * val myApp = PortalsApp("myApp") {
     *   val portal = Registry.portals.get[String, String]("/path/to/external/portal")
     *   val asker = TaskBuilder.asker[Int, Int, String, String](portal) { x =>
-    *   val future = ask(portal)(x.toString())
-    *   await(future) {
-    *     log.info(future.value.get)
+    *     val future = ask(portal)(x.toString())
+    *     await(future) {
+    *       log.info(future.value.get)
+    *     }
     *   }
-    * }
     * }
     *   }}}
     *
@@ -818,8 +818,69 @@ object DSL:
       fb.replier[CCU, Req, Rep](portals: _*)(f1)(f2)
 
   extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
+
+    /** Create an asker task.
+      *
+      * An asker task is a task that processes regular inputs and outputs, and
+      * may also send requests to a portal, and receive and await for the
+      * replies. This creates an asker task. During handling an event the asker
+      * can `ask` the portal, which returns a future of the reply, and can await
+      * for the completion of this reply.
+      *
+      * @example
+      *   {{{
+      * val myApp = PortalsApp("myApp") {
+      *   val portal = Registry.portals.get[String, String]("/path/to/external/portal")
+      *   val workflow = Workflows[Int, Nothing]("workflow")
+      *     .source( ... )
+      *     // Create the asker task
+      *     .asker(portal) [Nothing]{ x =>
+      *       val future = ask(portal)(x.toString())
+      *       await(future) {
+      *         log.info(future.value.get)
+      *       }
+      *     }
+      *     .sink()
+      *     .freeze()
+      * }
+      *   }}}
+      *
+      * @tparam CCU
+      *   The output type of the asker task.
+      * @return
+      *   The new flow builder.
+      */
     def asker[CCU]: FlowBuilderAsker[T, U, CT, CU, CCU] = new FlowBuilderAsker[T, U, CT, CU, CCU](fb)
 
+    /** Create a replier task.
+      *
+      * A replier task is a task that processes regular inputs and outputs, and
+      * processes requests from a portal. It establishes a connection to a
+      * portal, and becomes the main task that handles requests from this
+      * portal. The request handler may `reply` to the request.
+      *
+      * @example
+      *   {{{
+      * val myApp = PortalsApp("myApp") {
+      *   val portal = Registry.portals.get[String, String]("/path/to/external/portal")
+      *   val workflow = Workflows[Int, Int]("workflow")
+      *     .source( ... )
+      *     // Create the asker task
+      *     .replier(portal) [Nothing]{ x => // input handler
+      *       emit(x)
+      *     } { req => // request handler
+      *       reply("hello" + req)
+      *     }
+      *     .sink()
+      *     .freeze()
+      * }
+      *   }}}
+      *
+      * @tparam CCU
+      *   The output type of the replier task.
+      * @return
+      *   The new flow builder.
+      */
     def replier[CCU]: FlowBuilderReplier[T, U, CT, CU, CCU] = new FlowBuilderReplier[T, U, CT, CU, CCU](fb)
   }
 end DSL // object
