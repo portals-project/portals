@@ -1,4 +1,4 @@
-package portals
+package portals.application
 
 object ASTPrinter:
   def println(ast: AST): Unit = pprint.pprintln(ast)

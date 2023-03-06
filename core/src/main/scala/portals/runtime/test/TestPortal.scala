@@ -4,6 +4,7 @@ import scala.collection.mutable.ArrayDeque
 import scala.util.Try
 
 import portals.*
+import portals.application.AtomicPortal
 
 /** Internal API. The TestPortal connects the askers with the replier. The
   * replier needs to be set dynamically by the replying workflow.

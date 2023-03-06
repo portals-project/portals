@@ -3,6 +3,9 @@ package portals
 import scala.util.Random
 
 import portals.*
+import portals.application.*
+import portals.application.task.AskerTask
+import portals.application.task.ReplierTask
 import portals.compiler.phases.RuntimeCompilerPhases
 
 /** Internal API. Holds runtime information of the executed applications. */

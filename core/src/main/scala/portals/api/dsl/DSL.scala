@@ -12,6 +12,14 @@ import portals.api.builder.SequencerBuilder
 import portals.api.builder.SplitBuilder
 import portals.api.builder.SplitterBuilder
 import portals.api.builder.WorkflowBuilder
+import portals.application.*
+import portals.application.task.AskerTaskContext
+import portals.application.task.EmittingTaskContext
+import portals.application.task.GenericGenericTaskContext
+import portals.application.task.LoggingTaskContext
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.ReplierTaskContext
+import portals.application.task.StatefulTaskContext
 
 /** DSL extensions for Portals, convenient shorthands for building applications.
   *

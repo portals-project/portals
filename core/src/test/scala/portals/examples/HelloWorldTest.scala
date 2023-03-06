@@ -7,9 +7,9 @@ import org.junit.Test
 
 import portals.*
 import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL
 import portals.test.*
 
-import portals.api.dsl.DSL
 /** HelloWorld Test
   *
   * This is a collection of canonical hello world tests.

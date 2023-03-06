@@ -3,9 +3,9 @@ package portals.examples
 import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
+import portals.api.dsl.DSL
 import portals.application.task.PerKeyState
 
-import portals.api.dsl.DSL
 /** Incremental Word Count
   *
   * Streaming Dataflow is straight-forward to implement in our model. We build a

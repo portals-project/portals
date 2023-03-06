@@ -1,6 +1,7 @@
 package portals
 
 import portals.*
+import portals.application.Application
 
 /** Test system and runtime for Portals. This system is single-threaded,
   * synchronous, and lets the user proceed the computation by taking steps over

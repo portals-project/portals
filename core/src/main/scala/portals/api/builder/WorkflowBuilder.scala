@@ -1,6 +1,7 @@
 package portals.api.builder
 
 import portals.*
+import portals.application.*
 
 trait WorkflowBuilder[T, U]:
   private[portals] def complete(): Unit

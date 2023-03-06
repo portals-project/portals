@@ -1,4 +1,9 @@
-package portals
+package portals.application.task
+
+import portals.application.*
+import portals.application.task.ReplierTaskContext
+import portals.application.task.TaskContextImpl
+import portals.application.task.TaskExecution
 
 /** Internal API. For internal use only! Applies to this whole file. */
 private[portals] sealed trait GenericTask[T, U, Req, Rep]:

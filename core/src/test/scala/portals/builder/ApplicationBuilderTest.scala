@@ -6,7 +6,9 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.test.*
+import portals.application.AtomicStreamRef
+import portals.application.Workflow
+import portals.test.TestUtils
 
 @RunWith(classOf[JUnit4])
 class ApplicationBuilderTest:

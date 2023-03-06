@@ -1,4 +1,4 @@
-package portals
+package portals.application.sequencer
 
 import scala.util.Random
 

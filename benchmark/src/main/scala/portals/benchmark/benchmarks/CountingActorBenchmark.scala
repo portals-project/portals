@@ -2,10 +2,10 @@ package portals.benchmark.benchmarks
 
 import portals.*
 import portals.api.builder.*
+import portals.api.dsl.DSL.*
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.api.dsl.DSL.*
 
 object CountingActorBenchmark extends Benchmark:
   private val config = BenchmarkConfig()

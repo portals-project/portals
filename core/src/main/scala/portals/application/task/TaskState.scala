@@ -1,4 +1,7 @@
-package portals
+package portals.application.task
+
+import portals.*
+import portals.application.task.TaskStateImpl
 
 private[portals] trait TaskState[K, V]:
   /** get the value of the key, scoped by the dynamic invocation context */

@@ -1,6 +1,7 @@
 package portals.api.builder
 
 import portals.*
+import portals.application.*
 import portals.compiler.*
 
 /** Application Builder Implementation. */

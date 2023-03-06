@@ -1,4 +1,6 @@
-package portals
+package portals.application.task
+
+import portals.*
 
 trait OutputCollector[T, U, Req, Rep]:
   //////////////////////////////////////////////////////////////////////////////

@@ -3,12 +3,19 @@ package portals.examples.distributed.shoppingcart
 import scala.annotation.experimental
 
 import portals.*
-import portals.application.task.PerKeyState
-import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
-
-import portals.api.dsl.{CustomReplierTask, CustomAskerTask, CustomProcessorTask}
+import portals.api.dsl.CustomAskerTask
+import portals.api.dsl.CustomProcessorTask
+import portals.api.dsl.CustomReplierTask
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL
+import portals.application.task.AskerTaskContext
+import portals.application.task.PerKeyState
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.ReplierTaskContext
+import portals.application.task.StatefulTaskContext
+import portals.application.AtomicPortalRefKind
+import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
+
 object ShoppingCartTasks:
   @experimental
   class CartTask(portal: AtomicPortalRefKind[InventoryReqs, InventoryReps])

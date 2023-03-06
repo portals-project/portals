@@ -1,6 +1,9 @@
 package portals.api.builder
 
 import portals.*
+import portals.application.*
+import portals.application.sequencer.Sequencer
+import portals.application.sequencer.Sequencers
 
 trait SequencerBuilder:
   def random[T](): AtomicSequencerRef[T]

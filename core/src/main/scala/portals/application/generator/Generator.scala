@@ -1,6 +1,8 @@
-package portals
+package portals.application.generator
 
 import scala.annotation.experimental
+
+import portals.*
 
 /** Generator. */
 trait Generator[T]:

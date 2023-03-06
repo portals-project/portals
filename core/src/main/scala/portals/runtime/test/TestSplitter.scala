@@ -1,6 +1,7 @@
 package portals
 
 import portals.*
+import portals.application.AtomicSplitter
 
 /** Internal API. Test Runtime wrapper around the Splitter. */
 private[portals] class TestSplitter(splitter: AtomicSplitter[_])(using rctx: TestRuntimeContext):

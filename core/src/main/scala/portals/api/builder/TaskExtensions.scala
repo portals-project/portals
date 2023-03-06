@@ -3,8 +3,17 @@ package portals.api.builder
 import scala.annotation.experimental
 
 import portals.*
+import portals.application.task.ExtensibleTask
+import portals.application.task.GenericTask
+import portals.application.task.InitTask
+import portals.application.task.MapTaskContext
 import portals.application.task.PerKeyState
 import portals.application.task.PerTaskState
+import portals.application.task.ProcessorTask
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.TaskContext
+import portals.application.task.TaskContextImpl
+import portals.application.task.TaskState
 
 /** Note: Scaladoc doesn't transfer or link documentation for exports #14342
   * https://github.com/lampepfl/dotty/issues/14342 for now we removed exporting,

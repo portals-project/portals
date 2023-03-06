@@ -8,10 +8,10 @@ import org.junit.Test
 import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
+import portals.api.dsl.DSL
 import portals.application.task.PerTaskState
 import portals.test.*
 
-import portals.api.dsl.DSL
 /** MapReduce tests
   *
   * These tests show how we can model the MapReduce paradigm with the Pods

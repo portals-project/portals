@@ -2,11 +2,12 @@ package portals.benchmark.benchmarks
 
 import portals.*
 import portals.api.builder.*
+import portals.api.dsl.DSL.*
+import portals.application.*
 import portals.application.task.PerTaskState
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.api.dsl.DSL.*
 
 object DataParallelThroughputBenchmark extends Benchmark:
   private val config = BenchmarkConfig()

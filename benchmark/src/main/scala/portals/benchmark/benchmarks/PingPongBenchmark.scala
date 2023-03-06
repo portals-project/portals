@@ -2,10 +2,11 @@ package portals.benchmark.benchmarks
 
 import portals.*
 import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL.*
+import portals.application.Application
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.api.dsl.DSL.*
 
 object PingPongBenchmark extends Benchmark:
   private val config = BenchmarkConfig()

@@ -1,6 +1,7 @@
-package portals
+package portals.application.splitter
 
-import Common.Types.*
+import portals.*
+import portals.application.Common.Types.*
 
 /** Splitter, can split atoms with filters to the corresponding paths. */
 trait Splitter[T]:

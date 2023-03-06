@@ -1,8 +1,16 @@
 package portals.api.builder
 
 import portals.*
+import portals.application.*
+import portals.application.task.AskerTaskContext
+import portals.application.task.GenericTask
+import portals.application.task.MapTaskContext
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.ReplierTaskContext
 
-private[portals] class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) extends FlowBuilder[T, U, CT, CU]:
+private[portals] class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U])
+    extends FlowBuilder[T, U, CT, CU]:
+
   given WorkflowBuilderContext[T, U] = fbctx.wbctx // used for creating new FlowBuilder instances
 
   //////////////////////////////////////////////////////////////////////////////

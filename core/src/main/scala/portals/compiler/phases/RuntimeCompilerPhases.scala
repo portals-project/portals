@@ -1,6 +1,7 @@
 package portals.compiler.phases
 
 import portals.*
+import portals.application.Application
 
 // phases to be executed at runtime
 private[portals] object RuntimeCompilerPhases:

@@ -1,4 +1,6 @@
-package portals
+package portals.application.task
+
+import portals.*
 
 /** Internal API. OutputCollector to collect submitted events as side effects.
   * Works for all kinds of tasks.

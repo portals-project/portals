@@ -4,6 +4,11 @@ import scala.annotation.experimental
 
 import portals.*
 import portals.api.builder.TaskBuilder
+import portals.application.*
+import portals.application.task.AskerTaskContext
+import portals.application.task.GenericTask
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.ReplierTaskContext
 
 /** Custom task used for extending and writing a task in object oriented style.
   *

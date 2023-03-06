@@ -1,6 +1,19 @@
 package portals.api.builder
 
 import portals.*
+import portals.application.*
+import portals.application.task.AskerTask
+import portals.application.task.AskerTaskContext
+import portals.application.task.GenericTask
+import portals.application.task.IdentityTask
+import portals.application.task.InitTask
+import portals.application.task.MapTask
+import portals.application.task.MapTaskContext
+import portals.application.task.ProcessorTask
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.ReplierTask
+import portals.application.task.ReplierTaskContext
+import portals.application.task.ShuffleTask
 
 private sealed trait TaskBuilder
 

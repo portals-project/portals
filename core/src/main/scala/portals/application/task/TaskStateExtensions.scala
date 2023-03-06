@@ -1,6 +1,8 @@
 package portals.application.task
 
 import portals.*
+import portals.application.task.StatefulTaskContext
+import portals.application.task.TaskState
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task States

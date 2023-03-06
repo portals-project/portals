@@ -1,6 +1,7 @@
 package portals
 
 import portals.*
+import portals.application.AtomicGenerator
 
 /** Internal API. TestGenerator. */
 private[portals] class TestGenerator(val generator: AtomicGenerator[_])(using rctx: TestRuntimeContext):

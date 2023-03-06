@@ -8,9 +8,9 @@ import org.junit.Test
 
 import portals.*
 import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL
 import portals.test.*
 
-import portals.api.dsl.DSL
 /** Ping Pong Examples
   *
   * This is a collection of Ping Pong examples, and how we can implement Ping

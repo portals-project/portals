@@ -1,6 +1,8 @@
 package portals
 
 import portals.*
+import portals.application.*
+import portals.application.task.*
 
 object TestWorkflow:
   enum ExecutionMode:

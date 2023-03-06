@@ -7,9 +7,8 @@ import org.junit.Ignore
 import org.junit.Test
 
 import portals.api.builder.ApplicationBuilder
-import portals.test.*
-
 import portals.api.dsl.DSL
+import portals.test.*
 @RunWith(classOf[JUnit4])
 class RegistryBuilderTest:
 

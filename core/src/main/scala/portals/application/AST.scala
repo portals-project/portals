@@ -1,4 +1,9 @@
-package portals
+package portals.application
+
+import portals.application.generator.Generator
+import portals.application.sequencer.Sequencer
+import portals.application.splitter.Splitter
+import portals.application.task.GenericTask
 
 ////////////////////////////////////////////////////////////////////////////////
 // AST

@@ -1,6 +1,7 @@
 package portals.api.builder
 
 import portals.*
+import portals.application.Application
 
 /** Application Builder. */
 trait ApplicationBuilder:

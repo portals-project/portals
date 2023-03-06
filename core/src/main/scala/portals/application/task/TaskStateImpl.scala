@@ -1,4 +1,7 @@
-package portals
+package portals.application.task
+
+import portals.*
+import portals.application.task.TaskState
 
 private[portals] class TaskStateImpl[K, V] extends TaskState[K, V]:
   private var map: Map[(String, K), V] = Map.empty

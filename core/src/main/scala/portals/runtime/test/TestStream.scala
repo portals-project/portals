@@ -3,6 +3,7 @@ package portals
 import scala.collection.mutable.ArrayDeque
 
 import portals.*
+import portals.application.AtomicStream
 
 class TestStream(stream: AtomicStream[_])(using rctx: TestRuntimeContext):
   private var atomQueue = ArrayDeque.empty[TestAtom]

@@ -1,6 +1,8 @@
 package portals.api.builder
 
 import portals.*
+import portals.application.*
+import portals.application.task.GenericTask
 
 class WorkflowBuilderContext[T, U](_path: String)(using val bctx: ApplicationBuilderContext):
   self =>

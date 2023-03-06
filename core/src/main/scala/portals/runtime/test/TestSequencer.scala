@@ -1,6 +1,8 @@
 package portals
 
 import portals.*
+import portals.application.sequencer.SequencerImpls
+import portals.application.AtomicSequencer
 
 /** Internal API. Test Runtime wrapper around the Sequencer. */
 private[portals] class TestSequencer(sequencer: AtomicSequencer[_])(using rctx: TestRuntimeContext):

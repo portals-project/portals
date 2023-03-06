@@ -8,10 +8,10 @@ import org.junit.Test
 import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
+import portals.api.dsl.DSL
 import portals.application.task.PerKeyState
 import portals.test.*
 
-import portals.api.dsl.DSL
 /** Streaming Dataflow tests
   *
   * These tests show how we can model Streaming Dataflow in our model.

@@ -3,6 +3,12 @@ package portals.api.builder
 import scala.annotation.targetName
 
 import portals.*
+import portals.application.*
+import portals.application.task.AskerTaskContext
+import portals.application.task.GenericTask
+import portals.application.task.MapTaskContext
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.ReplierTaskContext
 
 /** Flow Builder
   *
