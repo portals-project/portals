@@ -41,6 +41,7 @@ lazy val examples = project
   .in(file("examples"))
   .settings(
     name := "portals-examples",
+    libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
   .dependsOn(portals)
 
@@ -48,5 +49,6 @@ lazy val distributedExamples = project
   .in(file("distributed-examples"))
   .settings(
     name := "portals-distributed-examples",
+    libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
   .dependsOn(portals)

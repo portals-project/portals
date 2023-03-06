@@ -1,4 +1,4 @@
-package portals
+package portals.api.builder
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -9,6 +9,7 @@ import org.junit.Test
 import portals.application.AtomicStreamRef
 import portals.application.Workflow
 import portals.test.TestUtils
+import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class ApplicationBuilderTest:

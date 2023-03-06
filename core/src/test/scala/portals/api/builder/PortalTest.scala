@@ -1,4 +1,4 @@
-package portals
+package portals.api.builder
 
 import scala.annotation.experimental
 
@@ -8,9 +8,11 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.*
 import portals.application.task.AskerTaskContext
 import portals.application.AtomicPortalRef
 import portals.test.*
+import portals.test.TestUtils
 
 @RunWith(classOf[JUnit4])
 class PortalTest:

@@ -1,4 +1,4 @@
-package portals
+package portals.api.builder
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -6,9 +6,12 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.dsl.DSL
 import portals.test.*
+import portals.test.TestUtils
+
 @RunWith(classOf[JUnit4])
 class RegistryBuilderTest:
 
