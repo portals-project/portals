@@ -120,11 +120,6 @@ private[portals] class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderCon
     val behavior = TaskBuilder.identity[CU]
     addTaskFrom(behavior, this :: others)
 
-  override def from[CU, CCU](others: FlowBuilder[T, U, _, CU]*)(
-      task: GenericTask[CU, CCU, _, _]
-  ): FlowBuilder[T, U, CU, CCU] =
-    addTaskFrom[CU, CCU](task, others.toList)
-
   override def map[CCU](f: MapTaskContext[CU, CCU] ?=> CU => CCU): FlowBuilder[T, U, CU, CCU] =
     val behavior = TaskBuilder.map[CU, CCU](f)
     addTask(behavior)
