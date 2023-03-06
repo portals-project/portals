@@ -1,6 +1,8 @@
 package portals
 
-import portals.MapTaskStateExtension.*
+import portals.api.builder.*
+import portals.application.task.MapTaskStateExtension.*
+import portals.application.task.PerTaskState
 
 private[portals] class TaskContextImpl[T, U, Req, Rep]
     extends TaskContext[T, U, Req, Rep]

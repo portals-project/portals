@@ -2,6 +2,16 @@ package portals
 
 import scala.annotation.experimental
 
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.ConnectionBuilder
+import portals.api.builder.FlowBuilder
+import portals.api.builder.GeneratorBuilder
+import portals.api.builder.RegistryBuilder
+import portals.api.builder.SequencerBuilder
+import portals.api.builder.SplitBuilder
+import portals.api.builder.SplitterBuilder
+import portals.api.builder.WorkflowBuilder
+
 /** DSL extensions for Portals, convenient shorthands for building applications.
   *
   * @see

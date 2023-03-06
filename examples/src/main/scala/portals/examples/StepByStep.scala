@@ -3,6 +3,7 @@ package portals.examples
 import scala.annotation.experimental
 
 import portals.*
+import portals.api.builder.TaskBuilder
 
 /** Step By Step
   *

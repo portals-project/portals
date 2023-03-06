@@ -1,6 +1,8 @@
-package portals
+package portals.api.builder
 
 import scala.annotation.targetName
+
+import portals.*
 
 /** Flow Builder
   *

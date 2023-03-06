@@ -1,4 +1,6 @@
-package portals
+package portals.api.builder
+
+import portals.*
 
 /** Application Builder Context. */
 class ApplicationBuilderContext(_path: String):

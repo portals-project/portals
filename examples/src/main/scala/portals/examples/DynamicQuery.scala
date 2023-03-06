@@ -4,6 +4,7 @@ import scala.annotation.experimental
 import scala.concurrent.Await
 
 import portals.*
+import portals.application.task.PerTaskState
 
 @experimental
 @main def DynamicQuery(): Unit =

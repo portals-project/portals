@@ -9,6 +9,9 @@ import org.junit.Ignore
 import org.junit.Test
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.TaskBuilder
+import portals.application.task.PerTaskState
 import portals.test.*
 import portals.test.AsyncTestUtils
 import portals.test.AsyncTestUtils.Asserter

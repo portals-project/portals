@@ -1,7 +1,8 @@
-package portals
+package portals.api.builder
 
 import scala.annotation.experimental
 
+import portals.*
 import portals.GeneratorImpls.ExternalRef
 
 trait GeneratorBuilder:

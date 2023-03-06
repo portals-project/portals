@@ -10,6 +10,7 @@ import scala.util.hashing.MurmurHash3
 import scala.util.Random
 
 import portals.*
+import portals.api.builder.*
 import portals.DSL.*
 
 object BenchmarkUtils:

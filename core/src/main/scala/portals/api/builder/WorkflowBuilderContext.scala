@@ -1,4 +1,6 @@
-package portals
+package portals.api.builder
+
+import portals.*
 
 class WorkflowBuilderContext[T, U](_path: String)(using val bctx: ApplicationBuilderContext):
   self =>

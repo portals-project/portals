@@ -3,6 +3,7 @@ package portals.examples.distributed.shoppingcart
 import scala.annotation.experimental
 
 import portals.*
+import portals.application.task.PerKeyState
 import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
 
 object ShoppingCartTasks:

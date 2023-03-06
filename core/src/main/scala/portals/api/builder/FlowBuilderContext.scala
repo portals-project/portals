@@ -1,4 +1,6 @@
-package portals
+package portals.api.builder
+
+import portals.*
 
 trait FlowBuilderContext[T, U](using val wbctx: WorkflowBuilderContext[T, U]):
   // latest task that has been created

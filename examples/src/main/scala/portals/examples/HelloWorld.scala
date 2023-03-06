@@ -1,6 +1,7 @@
 package portals.examples
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
 
 /** Hello World
   *

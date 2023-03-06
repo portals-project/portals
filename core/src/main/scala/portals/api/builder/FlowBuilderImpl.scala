@@ -1,4 +1,6 @@
-package portals
+package portals.api.builder
+
+import portals.*
 
 class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) extends FlowBuilder[T, U, CT, CU]:
   given WorkflowBuilderContext[T, U] = fbctx.wbctx // used for creating new FlowBuilder instances

@@ -3,6 +3,9 @@ package portals.examples.distributed.actor
 import scala.annotation.experimental
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.TaskBuilder
+import portals.application.task.PerKeyState
 
 @experimental
 sealed trait ActorState:
@@ -162,9 +165,10 @@ end ActorEvents // object
 
 @experimental
 private[portals] object ActorRuntime:
+  import portals.api.builder.StashExtension.*
+
   import ActorBehaviors.*
   import ActorEvents.*
-  import StashExtension.*
 
   def apply(): Task[ActorMessage, ActorMessage] =
     InitTask { ctx =>

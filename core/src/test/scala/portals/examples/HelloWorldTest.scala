@@ -6,6 +6,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
 import portals.test.*
 
 /** HelloWorld Test

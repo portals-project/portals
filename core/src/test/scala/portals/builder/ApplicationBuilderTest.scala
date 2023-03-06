@@ -13,6 +13,7 @@ class ApplicationBuilderTest:
 
   @Test
   def testExternalCycle(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val testData = List(List(8))
@@ -61,6 +62,7 @@ class ApplicationBuilderTest:
 
   @Test
   def testChainOfWorkflows(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
@@ -103,6 +105,7 @@ class ApplicationBuilderTest:
 
   @Test
   def testChainOfTasks(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
@@ -143,6 +146,7 @@ class ApplicationBuilderTest:
 
   @Test
   def basicAtomsTest(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val testData = List.range(0, 1024).grouped(128).toList
@@ -160,6 +164,7 @@ class ApplicationBuilderTest:
 
   @Test
   def basicAtomTest(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val testData = List(List(1), List(2, 3), List(4, 5, 6))
@@ -189,6 +194,7 @@ class ApplicationBuilderTest:
 
   @Test
   def testDiamond(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val testData = List.range(0, 256).grouped(128).toList
@@ -215,6 +221,7 @@ class ApplicationBuilderTest:
   // @Ignore // fails on synchronous runtime as Seal is duplicated when fan-out-in pattern.
   @Test
   def testDiamond2(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val testData = List.range(0, 2).grouped(1).toList
@@ -243,6 +250,7 @@ class ApplicationBuilderTest:
 
   @Test
   def testDiamond3(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val testData = List.range(0, 256).grouped(1).toList
@@ -265,6 +273,7 @@ class ApplicationBuilderTest:
 
   @Test
   def testSealTrigger(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val testData = List.range(0, 256).grouped(1).toList
@@ -279,6 +288,7 @@ class ApplicationBuilderTest:
   @Ignore // errors are not handled correctly by current sync runtime, nor the async
   @Test
   def testErrorTrigger(): Unit =
+    import portals.api.builder.ApplicationBuilder
     import portals.DSL.*
 
     val testData = List.range(0, 256).grouped(1).toList

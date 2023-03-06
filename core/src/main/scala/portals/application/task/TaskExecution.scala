@@ -1,6 +1,7 @@
 package portals
 
-import portals.MapTaskStateExtension.*
+import portals.application.task.MapTaskStateExtension.*
+import portals.application.task.PerTaskState
 
 object TaskExecution:
   /** Prepare a task behavior at runtime. This executes the initialization and

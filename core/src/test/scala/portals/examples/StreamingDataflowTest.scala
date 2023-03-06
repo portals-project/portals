@@ -6,6 +6,9 @@ import org.junit.Assert._
 import org.junit.Test
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.TaskBuilder
+import portals.application.task.PerKeyState
 import portals.test.*
 
 /** Streaming Dataflow tests

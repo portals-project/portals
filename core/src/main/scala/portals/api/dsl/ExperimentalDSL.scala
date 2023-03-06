@@ -3,7 +3,9 @@ package portals
 import scala.annotation.experimental
 
 import portals.*
-
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.FlowBuilder
+import portals.api.builder.GeneratorBuilder
 //////////////////////////////////////////////////////////////////////////////
 // Experimental DSL
 //////////////////////////////////////////////////////////////////////////////

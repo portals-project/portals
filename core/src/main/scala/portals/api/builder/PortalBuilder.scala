@@ -1,4 +1,6 @@
-package portals
+package portals.api.builder
+
+import portals.*
 
 trait PortalBuilder:
   def portal[T, R](name: String): AtomicPortalRef[T, R]

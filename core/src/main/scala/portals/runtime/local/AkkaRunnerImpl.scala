@@ -7,7 +7,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
 import portals.*
-
+import portals.api.builder.TaskBuilder
 object AkkaRunnerImpl extends AkkaRunner:
   import AkkaRunner.Events.*
 

@@ -7,6 +7,7 @@ import org.junit.Ignore
 import org.junit.Test
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
 import portals.test.*
 
 /** Ping Pong Examples

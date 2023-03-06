@@ -1,4 +1,6 @@
-package portals
+package portals.api.builder
+
+import portals.*
 
 private[portals] class WorkflowBuilderImpl[T, U](using wbctx: WorkflowBuilderContext[T, U])
     extends WorkflowBuilder[T, U]:

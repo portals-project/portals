@@ -1,6 +1,7 @@
 package portals.benchmark.benchmarks
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
