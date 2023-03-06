@@ -6,17 +6,10 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.Systems
 import portals.api.builder.ApplicationBuilder
 import portals.test.TestUtils
+import portals.Systems
 
-/** Ping Pong Examples
-  *
-  * This is a collection of Ping Pong examples, and how we can implement Ping
-  * Pong in Portals.
-  */
-
-/** Ping Pong Test */
 @RunWith(classOf[JUnit4])
 class PingPongTest:
 

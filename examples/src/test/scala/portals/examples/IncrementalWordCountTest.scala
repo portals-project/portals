@@ -11,23 +11,6 @@ import portals.application.task.PerKeyState
 import portals.test.TestUtils
 import portals.Systems
 
-/** Streaming Dataflow tests
-  *
-  * These tests show how we can model Streaming Dataflow in our model.
-  *
-  * Streaming Dataflow is straight-forward to implement in our model, Pods
-  * Workflows are a hybrid of dataflow and actors. We build a streaming pipeline
-  * from sources, apply transformations on the data through the processor
-  * abstraction, and end in a sink. The processor abstraction can then be used
-  * to implement all higher-level operators that are common in streaming
-  * dataflow, such as Map, FlatMap, Windowing, etc.
-  */
-
-/** Incremental Word Count
-  *
-  * The incremental word count test computes the wordcount of a stream of lines
-  * of text. For each new ingested word, the updated wordcount is emitted.
-  */
 @RunWith(classOf[JUnit4])
 class IncrementalWordCountTest:
 

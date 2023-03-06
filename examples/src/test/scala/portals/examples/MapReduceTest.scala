@@ -11,29 +11,6 @@ import portals.application.task.PerTaskState
 import portals.test.TestUtils
 import portals.Systems
 
-/** MapReduce tests
-  *
-  * These tests show how we can model the MapReduce paradigm with the Pods
-  * Workflows.
-  *
-  * A MapReduce job executes three steps.
-  *   1. Map: The Map step takes the map function and applies it to the input
-  *      data. The output data is a collection of key-value pairs. 2. Shuffle:
-  *      The shuffle step takes the map output and shuffles it according to the
-  *      key of the key-value pairs. 3. Reduce: The Reduce step takes the reduce
-  *      function and applies it to each group of values that is grouped by key.
-  *
-  * A MapReduce job is simply modeled as a workflow with three tasks, one for
-  * each step (map, shuffle, reduce).
-  */
-
-/** Word Count
-  *
-  * The first test is the canonical word count test. We have an input of streams
-  * of strings, each string is a line of text, the strings are split on
-  * whitespace to form words, and from this we count the number of occurence of
-  * each word.
-  */
 @RunWith(classOf[JUnit4])
 class WordCountTest:
 
