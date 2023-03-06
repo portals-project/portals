@@ -1,4 +1,4 @@
-package portals
+package portals.api.builder
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -6,14 +6,18 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL
 import portals.test.*
+import portals.test.TestUtils
 
 @RunWith(classOf[JUnit4])
 class RegistryBuilderTest:
 
   @Test
   def testRegistrySplitter(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester1 = new TestUtils.Tester[Int]()
     val tester2 = new TestUtils.Tester[Int]()
@@ -24,8 +28,7 @@ class RegistryBuilderTest:
     // App 1
     ////////////////////////////////////////////////////////////////////////////
     {
-      val builder = ApplicationBuilders
-        .application("app1")
+      val builder = ApplicationBuilder("app1")
 
       val generator = builder.generators.fromRange(0, 100, 5)
 
@@ -41,8 +44,7 @@ class RegistryBuilderTest:
     ////////////////////////////////////////////////////////////////////////////
 
     {
-      val builder = ApplicationBuilders
-        .application("app2")
+      val builder = ApplicationBuilder("app2")
 
       // REGISTRY
       val extSplitter = builder.registry.splitters.get[Int]("/app1/splitters/splitter")
@@ -106,7 +108,7 @@ class RegistryBuilderTest:
 
   @Test
   def testRegistrySequencer(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
@@ -116,8 +118,7 @@ class RegistryBuilderTest:
     // App 1
     ////////////////////////////////////////////////////////////////////////////
     {
-      val builder = ApplicationBuilders
-        .application("app1")
+      val builder = ApplicationBuilder("app1")
 
       val sequencer = builder.sequencers("sequencer").random[Int]()
 
@@ -140,8 +141,7 @@ class RegistryBuilderTest:
     ////////////////////////////////////////////////////////////////////////////
 
     {
-      val builder = ApplicationBuilders
-        .application("app2")
+      val builder = ApplicationBuilder("app2")
 
       val generator = builder.generators.fromRange(0, 100, 5)
 
@@ -185,7 +185,7 @@ class RegistryBuilderTest:
 
   @Test
   def testRegistryStream(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
@@ -195,8 +195,7 @@ class RegistryBuilderTest:
     // App 1
     ////////////////////////////////////////////////////////////////////////////
     {
-      val builder = ApplicationBuilders
-        .application("app1")
+      val builder = ApplicationBuilder("app1")
 
       val sequencer = builder.sequencers("sequencer").random[Int]()
 
@@ -218,8 +217,7 @@ class RegistryBuilderTest:
     ////////////////////////////////////////////////////////////////////////////
 
     {
-      val builder = ApplicationBuilders
-        .application("app2")
+      val builder = ApplicationBuilder("app2")
 
       // REGISTRY
       val extStream = builder.registry.streams.get[Int]("/app1/workflows/workflow/stream")
@@ -239,8 +237,7 @@ class RegistryBuilderTest:
     }
 
     {
-      val builder = ApplicationBuilders
-        .application("data")
+      val builder = ApplicationBuilder("data")
 
       val generator = builder.generators.fromRange(0, 100, 5)
 

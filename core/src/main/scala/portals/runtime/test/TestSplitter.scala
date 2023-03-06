@@ -1,7 +1,7 @@
 package portals
 
 import portals.*
-import portals.Splitter.SplitterEvent
+import portals.application.AtomicSplitter
 
 /** Internal API. Test Runtime wrapper around the Splitter. */
 private[portals] class TestSplitter(splitter: AtomicSplitter[_])(using rctx: TestRuntimeContext):
@@ -27,31 +27,18 @@ private[portals] class TestSplitter(splitter: AtomicSplitter[_])(using rctx: Tes
   def removeOutput(path: String): Unit = splitter.splitter.removeOutput(path)
 
   /** Create a list representation using the splitter events. */
-  def toSplitterAtom(atom: TestAtom): List[SplitterEvent[Any]] =
+  def toSplitterAtom(atom: TestAtom): List[WrappedEvent[Any]] =
     atom match
       case TestAtomBatch(path, list) =>
-        list.map {
-          case Event(key, t) => Splitter.Event(key, t)
-          case Error(t) => Splitter.Error(t)
-          case Atom => Splitter.Atom
-          case Seal => Splitter.Seal
-          case _ => ??? // should not happen
-        }
-      case _ => ??? // should not happen
+        list
+      case _ => ???
 
   /** Create an atom representation from the splitter representation. */
-  def fromSplitterAtom(path: String, satom: List[SplitterEvent[Any]]): TestAtom =
-    TestAtomBatch(
-      path,
-      satom.map {
-        case Splitter.Event(key, t) => Event(key, t)
-        case Splitter.Error(t) => Error(t)
-        case Splitter.Atom => Atom
-        case Splitter.Seal => Seal
-      }.toList
-    )
+  def fromSplitterAtom(path: String, satom: List[WrappedEvent[Any]]): TestAtom =
+    TestAtomBatch(path, satom)
 
-  /** Process an atom on the test splitter. This will produce a list of new atoms, one for each nonempty output.
+  /** Process an atom on the test splitter. This will produce a list of new
+    * atoms, one for each nonempty output.
     *
     * @param atom
     *   the atom to process.

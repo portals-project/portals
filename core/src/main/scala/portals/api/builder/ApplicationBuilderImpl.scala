@@ -1,18 +1,24 @@
-package portals
+package portals.api.builder
 
+import portals.*
+import portals.application.*
 import portals.compiler.*
 
 /** Application Builder Implementation. */
-class ApplicationBuilderImpl(using bctx: ApplicationBuilderContext) extends ApplicationBuilder:
+private[portals] class ApplicationBuilderImpl(using bctx: ApplicationBuilderContext) extends ApplicationBuilder:
   override def build(): Application =
     bctx.freeze()
     CompilerBuilder.preCompiler().compile(bctx.app) // may throw exception
 
   override def registry: RegistryBuilder = RegistryBuilder()
 
+  override def workflows[T, U]: WorkflowBuilder[T, U] = this.workflows(null)
+
   override def workflows[T, U](name: String = null): WorkflowBuilder[T, U] =
     val _name = bctx.name_or_id(name)
     val wfb = WorkflowBuilder[T, U](_name)
+    // added to the context, so that we later can check if it was frozen or not,
+    // if it wasn't frozen, then we try to freeze it when the application is built
     bctx._workflowBuilders = bctx._workflowBuilders :+ wfb
     wfb
 

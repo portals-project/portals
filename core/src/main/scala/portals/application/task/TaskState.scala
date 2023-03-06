@@ -1,4 +1,7 @@
-package portals
+package portals.application.task
+
+import portals.*
+import portals.application.task.TaskStateImpl
 
 private[portals] trait TaskState[K, V]:
   /** get the value of the key, scoped by the dynamic invocation context */
@@ -10,10 +13,13 @@ private[portals] trait TaskState[K, V]:
   /** delete the key, scoped by the dynamic invocation context */
   def del(k: K): Unit
 
-  /** iterate over all key-value pairs, **NOT** scoped by the dynamic invocation context */
+  /** iterate over all key-value pairs, **NOT** scoped by the dynamic context
+    */
   def iterator: Iterator[(K, V)]
 
-  /** clear the state of the current instance, **NOT** scoped by the dynamic invocation context */
+  /** clear the state of the current instance, **NOT** scoped by the dynamic
+    * context
+    */
   def clear(): Unit
 
   //////////////////////////////////////////////////////////////////////////////
@@ -22,8 +28,7 @@ private[portals] trait TaskState[K, V]:
 
   /** Path of the task */
   // has to be var so that it can be swapped at runtime
-  // TODO: this will be used once we are sharing state on some state backend, such as RocksDB
-  private[portals] var path: String // TODO: make this set by the runtime
+  private[portals] var path: String
 
   /** Contextual key for per-key execution */
   // has to be var so that it can be swapped at runtime

@@ -1,6 +1,7 @@
-package portals
+package portals.api.builder
 
-import scala.annotation.targetName
+import portals.*
+import portals.application.*
 
 trait WorkflowBuilder[T, U]:
   private[portals] def complete(): Unit
@@ -8,15 +9,11 @@ trait WorkflowBuilder[T, U]:
   def freeze(): Workflow[T, U]
 
   def source[TT >: T <: T](ref: AtomicStreamRefKind[T]): FlowBuilder[T, U, TT, TT]
-
-  // check if workflow is well-formed
-  def check(): Boolean
 end WorkflowBuilder // trait
 
 object WorkflowBuilder:
   def apply[T, U](name: String)(using bctx: ApplicationBuilderContext): WorkflowBuilder[T, U] =
     val _path = bctx.app.path + "/workflows/" + name
-    val _name = name
-    given wbctx: WorkflowBuilderContext[T, U] = new WorkflowBuilderContext[T, U](_path = _path, _name = _name)
+    given wbctx: WorkflowBuilderContext[T, U] = new WorkflowBuilderContext[T, U](_path = _path)
     new WorkflowBuilderImpl[T, U]()
 end WorkflowBuilder // object

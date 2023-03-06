@@ -1,10 +1,13 @@
 package portals.compiler.phases
 
 import portals.*
+import portals.application.Application
 
 // phases to be executed at runtime
 private[portals] object RuntimeCompilerPhases:
-  /** Check if the application is well-formed with respect to the dynamic runtime. Throws exception. */
+  /** Check if the application is well-formed with respect to the dynamic
+    * runtime. Throws exception.
+    */
   def wellFormedCheck(application: Application)(using rctx: TestRuntimeContext): Unit =
     // 1. Check naming collision with other applications
     if rctx.applications.contains(application.path) then ???

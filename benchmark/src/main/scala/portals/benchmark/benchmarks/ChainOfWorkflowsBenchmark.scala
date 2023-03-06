@@ -1,10 +1,13 @@
 package portals.benchmark.benchmarks
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL.*
+import portals.application.AtomicStreamRef
+import portals.application.Workflow
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
 
 object ChainOfWorkflowsBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
@@ -28,7 +31,7 @@ object ChainOfWorkflowsBenchmark extends Benchmark:
 
     val system = Systems.local()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, nEvents, stepSize)
 

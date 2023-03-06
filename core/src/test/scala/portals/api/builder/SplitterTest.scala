@@ -1,4 +1,4 @@
-package portals
+package portals.api.builder
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -6,7 +6,10 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.api.builder.ApplicationBuilder
 import portals.test.*
+import portals.test.TestUtils
+import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class SplitterTest:
@@ -16,8 +19,7 @@ class SplitterTest:
     val tester1 = new TestUtils.Tester[Int]()
     val tester2 = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     // producer
     val generator = builder.generators.fromRange(0, 256, 5)

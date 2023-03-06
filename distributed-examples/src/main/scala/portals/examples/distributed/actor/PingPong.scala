@@ -3,6 +3,8 @@ package portals.examples.distributed.actor
 import scala.annotation.experimental
 
 import portals.*
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 
 @experimental
 object PingPong:
@@ -37,9 +39,8 @@ object PingPong:
 
 @experimental
 object PingPongMain extends App:
-  import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   import ActorEvents.*
   import PingPong.PingPongActors.*

@@ -1,10 +1,11 @@
 package portals.benchmark.benchmarks
 
 import portals.*
+import portals.api.builder.*
+import portals.api.dsl.DSL.*
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
 
 object AtomAlignmentBenchmark extends Benchmark:
 
@@ -35,7 +36,7 @@ object AtomAlignmentBenchmark extends Benchmark:
       case "sync" => Systems.test()
       case _ => ???
 
-    val builder = ApplicationBuilders.application("runOneIteration")
+    val builder = ApplicationBuilder("runOneIteration")
 
     // generator
     val generator = builder.generators.fromRange(0, nEvents, nAtomSize)
@@ -58,10 +59,10 @@ object AtomAlignmentBenchmark extends Benchmark:
     val p12 = source.task(silent)
     val p13 = source.task(silent)
     // TODO: change here so we can use wfb instead of `source`, or other options
-    val p21 = source.from(p11, p12, p13)(forwarder)
-    val p22 = source.from(p11, p12, p13)(silent)
-    val p23 = source.from(p11, p12, p13)(silent)
-    val compl = source.from(p21, p22, p23)(completer.task { _ == nEvents - 1 })
+    val p21 = source.combineAllFrom(p11, p12, p13)(forwarder)
+    val p22 = source.combineAllFrom(p11, p12, p13)(silent)
+    val p23 = source.combineAllFrom(p11, p12, p13)(silent)
+    val compl = source.combineAllFrom(p21, p22, p23)(completer.task { _ == nEvents - 1 })
     val sink = compl.sink()
     val workflow = sink.freeze()
     val app = builder.build()

@@ -1,4 +1,7 @@
-package portals
+package portals.api.builder
+
+import portals.*
+import portals.application.*
 
 trait SplitBuilder:
   def split[T](splitter: AtomicSplitterRefKind[T], filter: T => Boolean): AtomicStreamRef[T]

@@ -1,6 +1,8 @@
 package portals.benchmark
 
-/** the benchmark grid will span all combinations of the entries of the parameter lists */
+/** the benchmark grid will span all combinations of the entries of the
+  * parameter lists
+  */
 class BenchmarkGrid:
   // TODO: consider adding option to add a List of Lists of params, so that we can
   // have some form of nested grouping, allowing for grouping specific param combinations together.

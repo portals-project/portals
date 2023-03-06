@@ -1,4 +1,4 @@
-package portals
+package portals.api.builder
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -6,19 +6,22 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL
 import portals.test.*
+import portals.test.TestUtils
+import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class SequencerTest:
 
   @Test
   def randomTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     val sequencer = builder.sequencers
       .random[Int]()

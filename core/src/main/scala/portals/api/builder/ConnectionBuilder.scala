@@ -1,4 +1,7 @@
-package portals
+package portals.api.builder
+
+import portals.*
+import portals.application.*
 
 trait ConnectionBuilder:
   def connect[T](aStream: AtomicStreamRefKind[T], sequencer: AtomicSequencerRefKind[T]): AtomicConnection[T]

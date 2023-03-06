@@ -1,21 +1,26 @@
 package portals.examples
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.TaskBuilder
+import portals.api.dsl.DSL
+import portals.application.task.PerKeyState
 
 /** Incremental Word Count
   *
-  * Streaming Dataflow is straight-forward to implement in our model. We build a streaming pipeline from sources, apply
-  * transformations on the data through the processor abstraction, and end in a sink. The processor abstraction can then
-  * be used to implement all higher-level operators that are common in streaming dataflow, such as Map, FlatMap,
-  * Windowing, etc.
+  * Streaming Dataflow is straight-forward to implement in our model. We build a
+  * streaming pipeline from sources, apply transformations on the data through
+  * the processor abstraction, and end in a sink. The processor abstraction can
+  * then be used to implement all higher-level operators that are common in
+  * streaming dataflow, such as Map, FlatMap, Windowing, etc.
   *
-  * The incremental word count example computes the wordcount of a stream of lines of text. For each new ingested word,
-  * the updated wordcount is emitted.
+  * The incremental word count example computes the wordcount of a stream of
+  * lines of text. For each new ingested word, the updated wordcount is emitted.
   */
 @main def IncrementalWordCount(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
-  val builder = ApplicationBuilders.application("application")
+  val builder = ApplicationBuilder("application")
 
   val input = List("the quick brown fox jumps over the lazy dog")
   val generator = builder.generators.fromList(input)
@@ -55,7 +60,7 @@ import portals.*
   system.shutdown()
 
 @main def IncrementalWordCountWithMapperReducer(): Unit =
-  import portals.DSL.*
+  import portals.api.dsl.DSL.*
 
   // our map function takes an string and splits it to produce a list of words
   val mapper: String => Seq[(String, Int)] =
@@ -65,7 +70,7 @@ import portals.*
   val reducer: String => Int => Int => (String, Int) =
     s => x => y => (s, x + y)
 
-  val builder = ApplicationBuilders.application("application")
+  val builder = ApplicationBuilder("application")
 
   val input = List("the quick brown fox jumps over the lazy dog")
   val generator = builder.generators.fromList(input)

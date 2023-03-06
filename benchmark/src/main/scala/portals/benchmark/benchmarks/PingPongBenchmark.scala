@@ -1,10 +1,12 @@
 package portals.benchmark.benchmarks
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL.*
+import portals.application.Application
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
 
 object PingPongBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
@@ -15,7 +17,7 @@ object PingPongBenchmark extends Benchmark:
 
   // creates a pingerponger application instance
   private def pinger(appName: String, completer: CompletionWatcher): Application =
-    val builder = ApplicationBuilders.application(appName)
+    val builder = ApplicationBuilder(appName)
 
     val sequencer = builder.sequencers("sequencer").random[Ping]()
 
@@ -58,7 +60,7 @@ object PingPongBenchmark extends Benchmark:
     val pongerApp = pinger("ponger", completer)
 
     // connect pinger to ponger and data generator
-    val builder = ApplicationBuilders.application("runOneIteration")
+    val builder = ApplicationBuilder("runOneIteration")
     val pingerStream = builder.registry.streams.get[Ping]("/pinger/workflows/workflow/stream")
     val pongerStream = builder.registry.streams.get[Ping]("/ponger/workflows/workflow/stream")
     val pingerSequencer = builder.registry.sequencers.get[Ping]("/pinger/sequencers/sequencer")

@@ -5,8 +5,15 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
 import portals.*
+import portals.application.generator.Generator
+import portals.application.sequencer.Sequencer
+import portals.application.task.GenericTask
+import portals.application.task.OutputCollector
+import portals.application.task.TaskContextImpl
+import portals.application.task.TaskExecution
 import portals.runtime.local.AkkaLocalRuntime
 import portals.runtime.local.AkkaRunner
+
 class NoGuaranteesSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*
   override val runner: AkkaRunner = NoGuaranteesRunner
@@ -64,17 +71,19 @@ object NoGuaranteesRunner extends AkkaRunner:
           var stop = false
           while cont && generator.hasNext() do
             generator.generate() match
-              case Generator.Event(key, event) =>
+              case portals.Event(key, event) =>
                 stream ! Event(path, portals.Event[T](key, event))
                 Behaviors.same
-              case Generator.Atom =>
+              case portals.Atom =>
                 cont = false
-              case Generator.Seal =>
-                cont = false
-                stop = true
-              case Generator.Error(t) =>
+              case portals.Seal =>
                 cont = false
                 stop = true
+              case portals.Error(t) =>
+                cont = false
+                stop = true
+              case portals.Ask(_, _, _) => ???
+              case portals.Reply(_, _, _) => ???
           if stop == true then Behaviors.stopped
           else
             ctx.self ! Next

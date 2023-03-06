@@ -3,6 +3,9 @@ package portals
 import scala.util.Random
 
 import portals.*
+import portals.application.*
+import portals.application.task.AskerTask
+import portals.application.task.ReplierTask
 import portals.compiler.phases.RuntimeCompilerPhases
 
 /** Internal API. Holds runtime information of the executed applications. */
@@ -32,7 +35,8 @@ private[portals] class TestRuntimeContext():
   def addGenerator(genr: AtomicGenerator[_]): Unit = _generators += genr.path -> TestGenerator(genr)(using this)
   def addConnection(conn: AtomicConnection[_]): Unit = _connections += conn.path -> TestConnection(conn)(using this)
 
-/** Internal API. Tracks the progress for a path with respect to other streams. */
+/** Internal API. Tracks the progress for a path with respect to other streams.
+  */
 private[portals] class TestProgressTracker:
   // progress tracker for each Path;
   // for a Path (String) this gives the progress w.r.t. all input dependencies (Map[String, Long])
@@ -50,7 +54,8 @@ private[portals] class TestProgressTracker:
       path ->
         (progress(path) + (dependency -> (progress(path)(dependency) + 1)))
 
-  /** Initialize the progress tracker for a certain path and dependency to -1. */
+  /** Initialize the progress tracker for a certain path and dependency to -1.
+    */
   def initProgress(path: String, dependency: String): Unit =
     progress += path -> (progress.getOrElse(path, Map.empty) + (dependency -> -1L))
 
@@ -62,7 +67,9 @@ private[portals] class TestProgressTracker:
   def getProgress(path: String): Option[Map[String, Long]] =
     progress.get(path)
 
-/** Internal API. Tracks the graph which is spanned by all applications in Portals. */
+/** Internal API. Tracks the graph which is spanned by all applications in
+  * Portals.
+  */
 class TestGraphTracker:
   /** Set of all pairs <from, to> edges. */
   private var _edges: Set[(String, String)] = Set.empty
@@ -78,27 +85,34 @@ class TestGraphTracker:
 
 /** Internal API. Tracks all streams of all applications.
   *
-  * The stream tracker is used to track the progress of the streams, i.e. what range of indices of the stream that can
-  * be read. The smallest index may be incremented due to garbage collection over time.
+  * The stream tracker is used to track the progress of the streams, i.e. what
+  * range of indices of the stream that can be read. The smallest index may be
+  * incremented due to garbage collection over time.
   */
 private[portals] class TestStreamTracker:
-  /** Maps the progress of a path (String) to a pair [from, to], the range is inclusive and means that all indices
-    * starting from 'from' until (including) 'to' can be read.
+  /** Maps the progress of a path (String) to a pair [from, to], the range is
+    * inclusive and means that all indices starting from 'from' until
+    * (including) 'to' can be read.
     */
   private var _progress: Map[String, (Long, Long)] = Map.empty
 
-  /** Initialize a new stream by settings its progress to <0, -1>, that is it is empty for now. */
+  /** Initialize a new stream by settings its progress to <0, -1>, that is it is
+    * empty for now.
+    */
   def initStream(stream: String): Unit = _progress += stream -> (0, -1)
 
-  /** Set the progress of a stream to <from, to>, for which the range is inclusive. Use this with care, use
-    * incrementProgress instead where possible.
+  /** Set the progress of a stream to <from, to>, for which the range is
+    * inclusive. Use this with care, use incrementProgress instead where
+    * possible.
     */
   def setProgress(stream: String, from: Long, to: Long): Unit = _progress += stream -> (from, to)
 
   /** Increments the progress of a stream by 1. */
   def incrementProgress(stream: String): Unit = _progress += stream -> (_progress(stream)._1, _progress(stream)._2 + 1)
 
-  /** Returns the progress of a stream as an optional range <From, To>, for which the range is inclusive. */
+  /** Returns the progress of a stream as an optional range <From, To>, for
+    * which the range is inclusive.
+    */
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
 class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
@@ -288,8 +302,9 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
     distributeAtoms(outputAtoms)
     progressTracker.incrementProgress(path, from)
 
-  /** Take a step. This will cause one of the processing entities (Workflows, Sequencers, etc.) to process one atom and
-    * produce one (or more) atoms. Throws an exception if it cannot take a step.
+  /** Take a step. This will cause one of the processing entities (Workflows,
+    * Sequencers, etc.) to process one atom and produce one (or more) atoms.
+    * Throws an exception if it cannot take a step.
     */
   def step(): Unit =
     choosePortal() match
@@ -314,8 +329,9 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
   def stepUntilComplete(): Unit =
     while canStep() do step()
 
-  /** If the runtime can take another step, returns true if it can process something. It returns false if it has
-    * finished processing, i.e. all atomic streams have been read.
+  /** If the runtime can take another step, returns true if it can process
+    * something. It returns false if it has finished processing, i.e. all atomic
+    * streams have been read.
     */
   def canStep(): Boolean =
     // use || so that we do not evaluate the other options unnecessarily

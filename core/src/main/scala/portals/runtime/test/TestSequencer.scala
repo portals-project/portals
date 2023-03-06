@@ -1,6 +1,8 @@
 package portals
 
 import portals.*
+import portals.application.sequencer.SequencerImpls
+import portals.application.AtomicSequencer
 
 /** Internal API. Test Runtime wrapper around the Sequencer. */
 private[portals] class TestSequencer(sequencer: AtomicSequencer[_])(using rctx: TestRuntimeContext):
@@ -15,7 +17,8 @@ private[portals] class TestSequencer(sequencer: AtomicSequencer[_])(using rctx: 
     case TestAtomBatch(_, list) => List(TestAtomBatch(sequencer.stream.path, list))
     case _ => ??? // should not happen
 
-  /** General method for processing atoms for the sequencer, might use buffers. */
+  /** General method for processing atoms for the sequencer, might use buffers.
+    */
   private inline def process_sequencer(atom: TestAtom): List[TestAtom] = atom match
     case TestAtomBatch(path, list) =>
       streams = streams.updated(path, streams.getOrElse(path, List.empty).appended(list))
@@ -35,7 +38,9 @@ private[portals] class TestSequencer(sequencer: AtomicSequencer[_])(using rctx: 
         case None => ??? // might happen, but we will change things so this won't happen.
     case _ => ???
 
-  /** Process an atom on the test sequencer. Will produce a List with a single atom, for now. */
+  /** Process an atom on the test sequencer. Will produce a List with a single
+    * atom, for now.
+    */
   def process(atom: TestAtom): List[TestAtom] = sequencer.sequencer match
     case SequencerImpls.RandomSequencer() => process_sequencer(atom)
     case _ => process_sequencer(atom)

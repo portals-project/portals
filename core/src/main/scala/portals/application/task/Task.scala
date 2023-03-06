@@ -1,5 +1,9 @@
-// format: off
-package portals
+package portals.application.task
+
+import portals.application.*
+import portals.application.task.ReplierTaskContext
+import portals.application.task.TaskContextImpl
+import portals.application.task.TaskExecution
 
 /** Internal API. For internal use only! Applies to this whole file. */
 private[portals] sealed trait GenericTask[T, U, Req, Rep]:
@@ -8,7 +12,7 @@ private[portals] sealed trait GenericTask[T, U, Req, Rep]:
   def onComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit
   def onAtomComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit
 
-    // we use `_` underscore here, as otherwise copy is overridden by inheriting case classes
+  // we use `_` underscore here, as otherwise copy is overridden by inheriting case classes
   private[portals] def _copy(
       _onNext: TaskContextImpl[T, U, Req, Rep] ?=> T => Unit = onNext,
       _onError: TaskContextImpl[T, U, Req, Rep] ?=> Throwable => Unit = onError,
@@ -37,26 +41,35 @@ private[portals] sealed trait BaseTask[T, U, Req, Rep] extends GenericTask[T, U,
   override def onAtomComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit = ()
 end BaseTask // trait
 
-private[portals] case class MapTask[T, U](f: TaskContextImpl[T, U, _, _] => T => U) extends BaseTask[T, U, Nothing, Nothing]:
+private[portals] case class MapTask[T, U](f: TaskContextImpl[T, U, _, _] => T => U)
+    extends BaseTask[T, U, Nothing, Nothing]:
   override def onNext(using ctx: TaskContextImpl[T, U, Nothing, Nothing])(t: T): Unit = ctx.emit(f(ctx)(t))
 end MapTask // trait
 
-private[portals] case class ProcessorTask[T, U](f: TaskContextImpl[T, U, Nothing, Nothing] => T => Unit) extends BaseTask[T, U, Nothing, Nothing]:
+private[portals] case class ProcessorTask[T, U](f: TaskContextImpl[T, U, Nothing, Nothing] => T => Unit)
+    extends BaseTask[T, U, Nothing, Nothing]:
   override def onNext(using ctx: TaskContextImpl[T, U, Nothing, Nothing])(t: T): Unit = f(ctx)(t)
 end ProcessorTask // trait
 
-private[portals] case class ShuffleTask[T, U](f: TaskContextImpl[T, U, Nothing, Nothing] => T => Unit) extends BaseTask[T, U, Nothing, Nothing]:
+private[portals] case class ShuffleTask[T, U](f: TaskContextImpl[T, U, Nothing, Nothing] => T => Unit)
+    extends BaseTask[T, U, Nothing, Nothing]:
   override def onNext(using ctx: TaskContextImpl[T, U, Nothing, Nothing])(t: T): Unit = f(ctx)(t)
 end ShuffleTask // trait
 
 private[portals] trait ExtensibleTask[T, U, Req, Rep] extends GenericTask[T, U, Req, Rep]
 end ExtensibleTask // trait
 
-private[portals] case class AskerTask[T, U, Req, Rep](f: TaskContextImpl[T, U, Req, Rep] => T => Unit)(val portals: AtomicPortalRefType[Req, Rep]*) extends BaseTask[T, U, Req, Rep]:
+private[portals] case class AskerTask[T, U, Req, Rep](f: TaskContextImpl[T, U, Req, Rep] => T => Unit)(
+    val portals: AtomicPortalRefKind[Req, Rep]*
+) extends BaseTask[T, U, Req, Rep]:
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f(ctx)(t)
 end AskerTask // trait
 
-private[portals] case class ReplierTask[T, U, Req, Rep](f1: TaskContextImpl[T, U, Req, Rep] => T => Unit, f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit)(val portals: AtomicPortalRefType[Req, Rep]*) extends BaseTask[T, U, Req, Rep]:
+private[portals] case class ReplierTask[T, U, Req, Rep](
+    f1: TaskContextImpl[T, U, Req, Rep] => T => Unit,
+    f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit
+)(val portals: AtomicPortalRefKind[Req, Rep]*)
+    extends BaseTask[T, U, Req, Rep]:
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f1(ctx)(t)
 end ReplierTask // trait
 
@@ -65,7 +78,9 @@ private[portals] case class IdentityTask[T]() extends BaseTask[T, T, Nothing, No
 end IdentityTask // case class
 
 // TODO: initialization should happen automatically using the initfactory
-private[portals] case class InitTask[T, U, Req, Rep](initFactory: TaskContextImpl[T, U, Req, Rep] => GenericTask[T, U, Req, Rep]) extends BaseTask[T, U, Req, Rep]:
+private[portals] case class InitTask[T, U, Req, Rep](
+    initFactory: TaskContextImpl[T, U, Req, Rep] => GenericTask[T, U, Req, Rep]
+) extends BaseTask[T, U, Req, Rep]:
   // wrapped initialized task
   var _task: Option[GenericTask[T, U, Req, Rep]] = None
 
@@ -83,6 +98,5 @@ private[portals] case class InitTask[T, U, Req, Rep](initFactory: TaskContextImp
   override def onAtomComplete(using ctx: TaskContextImpl[T, U, Req, Rep]): Unit = this.prepOrGet.onAtomComplete
 end InitTask // case class
 
-// shorthand
+// shorthand, consider removing :p
 type Task[T, U] = GenericTask[T, U, Nothing, Nothing]
-// format: on

@@ -1,8 +1,10 @@
-package portals
+package portals.api.builder
 
-import scala.compiletime.ops.boolean
+import portals.*
+import portals.application.*
+import portals.application.task.GenericTask
 
-class WorkflowBuilderContext[T, U](_path: String, _name: String)(using val bctx: ApplicationBuilderContext):
+class WorkflowBuilderContext[T, U](_path: String)(using val bctx: ApplicationBuilderContext):
   self =>
   val path: String = _path
 

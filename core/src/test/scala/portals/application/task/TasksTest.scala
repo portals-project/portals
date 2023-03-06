@@ -1,4 +1,4 @@
-package portals
+package portals.application.task
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -6,7 +6,21 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.api.builder.filter
+import portals.api.builder.vsm
+import portals.api.builder.withAndThen
+import portals.api.builder.withLoop
+import portals.api.builder.withStep
+import portals.api.builder.withWrapper
+import portals.api.builder.TaskBuilder
+import portals.api.builder.VSMTask
+import portals.api.builder.VSMTasks
+import portals.api.dsl.DSL
+import portals.application.task.PerKeyState
+import portals.application.task.PerTaskState
 import portals.test.*
+import portals.test.TestUtils
+import portals.Key
 
 @RunWith(classOf[JUnit4])
 class TasksTest:
@@ -58,7 +72,7 @@ class TasksTest:
   @Test
   def testWithAndThen(): Unit =
     val testData = List.range(0, 4).grouped(1).toList
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
     val task = TaskBuilder
       .filter[Int](_ >= 1)
       .withAndThen(TaskBuilder.map { _ + 1 })
@@ -75,7 +89,7 @@ class TasksTest:
 
   @Test
   def testVSM(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List.range(0, 3).grouped(1).toList
     val testDataKeys = List.fill(3)(0).map(Key[Long](_)).grouped(1).toList
@@ -111,7 +125,7 @@ class TasksTest:
 
   @Test
   def testPerKeyState(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2, 3), List(1, 2, 3))
 
@@ -136,7 +150,7 @@ class TasksTest:
 
   @Test
   def testPerTaskState(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val testData = List(List(1, 2, 3), List(1, 2, 3))
 

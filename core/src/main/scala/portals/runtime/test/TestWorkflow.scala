@@ -1,6 +1,8 @@
 package portals
 
 import portals.*
+import portals.application.*
+import portals.application.task.*
 
 object TestWorkflow:
   enum ExecutionMode:
@@ -56,8 +58,9 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Processes the atom, and produces a new list of atoms.
     *
-    * The produced list of atoms may either be a regular atom for an output atomic stream, or an atom for a portal. See
-    * the `TestAtom` trait for the distinction.
+    * The produced list of atoms may either be a regular atom for an output
+    * atomic stream, or an atom for a portal. See the `TestAtom` trait for the
+    * distinction.
     */
   def process(atom: TestAtom): List[TestAtom] =
     atom match
@@ -160,11 +163,14 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
 
   /** Internal API. Processes the Workflow on some events.
     *
-    * The provided _outputs parameter provides a mapping of task-names to their output. The tasks in the workflow are
-    * then executed according to topographical order to process their inputs. An example use of this function is to
-    * provide the workflow input as a mapping from the source name to the workflow input. This will in turn process the
-    * input on the workflow, and produce a list of the produced atoms, typically this will be a single TestAtomBatch. If
-    * there are asker tasks, or replyer tasks, then it may also produce several AskBatches and RepBatches.
+    * The provided _outputs parameter provides a mapping of task-names to their
+    * output. The tasks in the workflow are then executed according to
+    * topographical order to process their inputs. An example use of this
+    * function is to provide the workflow input as a mapping from the source
+    * name to the workflow input. This will in turn process the input on the
+    * workflow, and produce a list of the produced atoms, typically this will be
+    * a single TestAtomBatch. If there are asker tasks, or replyer tasks, then
+    * it may also produce several AskBatches and RepBatches.
     */
   private def processAtomHelper(_outputs: Map[String, TestAtomBatch[_]]): List[TestAtom] =
     // A mapping from task/source/sink name to their output
@@ -254,7 +260,9 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     outputs2
   }
 
-  /** Internal API. Process a TestReplyBatch. Will process matched continuations. */
+  /** Internal API. Process a TestReplyBatch. Will process matched
+    * continuations.
+    */
   private def processAskerTask(path: String, atom: TestRepBatch[_]): TestAtomBatch[_] = {
     atom.list.foreach { event =>
       event match

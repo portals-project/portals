@@ -1,4 +1,19 @@
-package portals
+package portals.api.builder
+
+import portals.*
+import portals.application.*
+import portals.application.task.AskerTask
+import portals.application.task.AskerTaskContext
+import portals.application.task.GenericTask
+import portals.application.task.IdentityTask
+import portals.application.task.InitTask
+import portals.application.task.MapTask
+import portals.application.task.MapTaskContext
+import portals.application.task.ProcessorTask
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.ReplierTask
+import portals.application.task.ReplierTaskContext
+import portals.application.task.ShuffleTask
 
 private sealed trait TaskBuilder
 
@@ -7,6 +22,7 @@ object TaskBuilder extends TaskBuilder:
   //////////////////////////////////////////////////////////////////////////////
   // Task Factories
   //////////////////////////////////////////////////////////////////////////////
+
   /** Behavior factory for handling incoming event and context. */
   def processor[T, U](onNext: ProcessorTaskContext[T, U] ?=> T => Unit): GenericTask[T, U, Nothing, Nothing] =
     ProcessorTask[T, U](ctx => onNext(using ctx))
@@ -17,7 +33,8 @@ object TaskBuilder extends TaskBuilder:
 
   /** Behavior factory for initializing the task before any events.
     *
-    * Note: this may be **re-executed** more than once, every time that the task is restarted (e.g. after a failure).
+    * Note: this may be **re-executed** more than once, every time that the task
+    * is restarted (e.g. after a failure).
     */
   def init[T, U](
       initFactory: ProcessorTaskContext[T, U] ?=> GenericTask[T, U, Nothing, Nothing]
@@ -39,7 +56,8 @@ object TaskBuilder extends TaskBuilder:
   // Portals Task Factories
   //////////////////////////////////////////////////////////////////////////////
 
-  class PortalsTasks[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*):
+  // TODO: deprecate, or move to extensions
+  class PortalsTasks[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*):
     def asker[T, U](f: AskerTaskContext[T, U, Req, Rep] ?=> T => Unit): GenericTask[T, U, Req, Rep] =
       AskerTask[T, U, Req, Rep](ctx => f(using ctx))(portals: _*)
 
@@ -48,9 +66,22 @@ object TaskBuilder extends TaskBuilder:
     ): GenericTask[T, U, Req, Rep] =
       ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))(portals: _*)
 
+  // TODO: deprecate, or move to extensions
   extension (t: TaskBuilder) {
+    // TODO: deprecate, or move to extensions
     /* Note: the reason we have this extra step via `portal` is to avoid the user having to specify the Req and Rep types. */
-    def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) =
+    def portal[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*) =
       new PortalsTasks[Req, Rep](portals: _*)
   }
+
+  def asker[T, U, Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
+      f: AskerTaskContext[T, U, Req, Rep] ?=> T => Unit
+  ): GenericTask[T, U, Req, Rep] =
+    AskerTask[T, U, Req, Rep](ctx => f(using ctx))(portals: _*)
+
+  def replier[T, U, Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(f1: ProcessorTaskContext[T, U] ?=> T => Unit)(
+      f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => Unit
+  ): GenericTask[T, U, Req, Rep] =
+    ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))(portals: _*)
+
 end TaskBuilder // object

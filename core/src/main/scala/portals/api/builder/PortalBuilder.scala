@@ -1,4 +1,7 @@
-package portals
+package portals.api.builder
+
+import portals.*
+import portals.application.*
 
 trait PortalBuilder:
   def portal[T, R](name: String): AtomicPortalRef[T, R]
@@ -10,13 +13,13 @@ object PortalBuilder:
     new PortalBuilderImpl(_name)
 
 class PortalBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) extends PortalBuilder:
-  def portal[T, R](name: String): AtomicPortalRef[T, R] =
+  override def portal[T, R](name: String): AtomicPortalRef[T, R] =
     val path = bctx.app.path + "/portals/" + name
     val portal = AtomicPortal[T, R](path)
     bctx.addToContext(portal)
     AtomicPortalRef[T, R](portal)
 
-  def portal[T, R](name: String, f: T => Long): AtomicPortalRef[T, R] =
+  override def portal[T, R](name: String, f: T => Long): AtomicPortalRef[T, R] =
     val path = bctx.app.path + "/portals/" + name
     val portal = AtomicPortal[T, R](path, Some(f))
     bctx.addToContext(portal)

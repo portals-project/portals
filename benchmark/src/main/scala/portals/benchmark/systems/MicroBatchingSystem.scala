@@ -12,9 +12,17 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
 import portals.*
+import portals.application.generator.Generator
+import portals.application.sequencer.Sequencer
+import portals.application.task.GenericTask
+import portals.application.task.OutputCollector
+import portals.application.task.TaskContextImpl
+import portals.application.task.TaskExecution
+import portals.application.Workflow
 import portals.runtime.local.AkkaLocalRuntime
 import portals.runtime.local.AkkaRunner
 import portals.runtime.local.AkkaRunnerImpl
+
 class MicroBatchingSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*
   override val runner: AkkaRunner = MicroBatchingRunner

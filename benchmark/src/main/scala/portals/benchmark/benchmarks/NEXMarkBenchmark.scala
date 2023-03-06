@@ -1,10 +1,15 @@
 package portals.benchmark.benchmarks
 
 import portals.*
+import portals.api.builder.*
+import portals.api.dsl.DSL.*
+import portals.application.*
+import portals.application.generator.Generators
+import portals.application.task.PerKeyState
+import portals.application.task.PerTaskState
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
 
 object NEXMarkBenchmarkUtil:
   import org.apache.beam.sdk.nexmark.*
@@ -13,11 +18,11 @@ object NEXMarkBenchmarkUtil:
   import org.apache.beam.sdk.values.*
 
   // use `portals.Generator` here instead of `Generator` to avoid name conflicts
-  def NEXMarkGenerator(nAtomSize: Int, nEvents: Int): portals.Generator[TimestampedValue[Event]] =
+  def NEXMarkGenerator(nAtomSize: Int, nEvents: Int): portals.application.generator.Generator[TimestampedValue[Event]] =
     // TODO: consider setting the query in the config, and consider splitting the sources
     val nexmarkConfig = NexmarkConfiguration.DEFAULT
     val config = new GeneratorConfig(nexmarkConfig, 0, 0, nEvents, 0)
-    portals.Generators.fromIteratorOfIterators(
+    Generators.fromIteratorOfIterators(
       new Iterator[TimestampedValue[Event]] {
         val _generator = new Generator(config)
         def hasNext = _generator.hasNext()
@@ -245,7 +250,7 @@ object NEXMarkBenchmark extends Benchmark:
 
     val completer = CountingCompletionWatcher(nEvents / nAtomSize) // number of atoms :)
 
-    val builder = ApplicationBuilders.application("runOneIteration")
+    val builder = ApplicationBuilder("runOneIteration")
 
     val generator = builder.generators.generator(NEXMarkBenchmarkUtil.NEXMarkGenerator(nAtomSize, nEvents))
 

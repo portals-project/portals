@@ -1,5 +1,8 @@
-// format: off
-package portals
+package portals.application.task
+
+import portals.*
+import portals.application.*
+import portals.application.task.TaskState
 
 private[portals] sealed trait GenericGenericTaskContext
 
@@ -19,7 +22,7 @@ private[portals] trait LoggingTaskContext[T, U] extends GenericTaskContext[T, U,
 
 private[portals] trait AskingTaskContext[T, U, Req, Rep] extends GenericTaskContext[T, U, Req, Rep]:
   /** Ask the `portal` with `msg`, returns a future of the reply. */
-  def ask(portal: AtomicPortalRefType[Req, Rep])(msg: Req): Future[Rep]
+  def ask(portal: AtomicPortalRefKind[Req, Rep])(msg: Req): Future[Rep]
 
 private[portals] trait AwaitingTaskContext[T, U, Req, Rep] extends GenericTaskContext[T, U, Req, Rep]:
   /** Await for the completion of the `future`. */
@@ -30,7 +33,9 @@ private[portals] trait ReplyingTaskContext[T, U, Req, Rep] extends GenericTaskCo
   def reply(msg: Rep): Unit
 
 private[portals] trait KeyTaskContext[T, U, Req, Rep] extends GenericTaskContext[T, U, Req, Rep]:
-  /** Internal API. Access and modify the key of a task. WARNING: can break the system. */
+  /** Internal API. Access and modify the key of a task. WARNING: can break the
+    * system.
+    */
   private[portals] var key: Key[Long]
 
 private[portals] trait ProcessorTaskContext[T, U]
@@ -65,5 +70,3 @@ private[portals] trait TaskContext[T, U, Req, Rep]
     with MapTaskContext[T, U]
     with AskerTaskContext[T, U, Req, Rep]
     with ReplierTaskContext[T, U, Req, Rep]
-
-// format: on

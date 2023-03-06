@@ -10,7 +10,10 @@ import scala.util.hashing.MurmurHash3
 import scala.util.Random
 
 import portals.*
-import portals.DSL.*
+import portals.api.builder.*
+import portals.api.dsl.DSL.*
+import portals.application.AtomicStreamRef
+import portals.application.Workflow
 
 object BenchmarkUtils:
   class CompletionWatcher():

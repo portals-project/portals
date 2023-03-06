@@ -1,4 +1,7 @@
-package portals
+package portals.api.builder
+
+import portals.*
+import portals.application.*
 
 trait RegistryBuilder:
   def sequencers: Registry[ExtAtomicSequencerRef]

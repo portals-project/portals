@@ -9,6 +9,12 @@ import org.junit.Ignore
 import org.junit.Test
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.TaskBuilder
+import portals.api.dsl.DSL
+import portals.application.task.PerTaskState
+import portals.application.AtomicStreamRef
+import portals.application.Workflow
 import portals.test.*
 import portals.test.AsyncTestUtils
 import portals.test.AsyncTestUtils.Asserter
@@ -17,13 +23,13 @@ import portals.test.AsyncTestUtils.Asserter
 class AsyncTest:
   @Test
   def lotsOfEventsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
     val to = 1024 * 1024
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, to, 128)
 
@@ -47,13 +53,13 @@ class AsyncTest:
 
   @Test
   def largeAtomsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
     val to = 1024 * 1024
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, to, to / 4)
 
@@ -77,11 +83,11 @@ class AsyncTest:
 
   @Test
   def chainOfWorkflowsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val from = 0
     val to = 1024 * 8
@@ -122,11 +128,11 @@ class AsyncTest:
 
   @Test
   def chainOfTasksTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val from = 0
     val to = 1024 * 8
@@ -162,7 +168,7 @@ class AsyncTest:
 
   @Test
   def taskFanOutInTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -172,7 +178,7 @@ class AsyncTest:
 
     val assertOutput = Range(0, to).flatMap { x => List.fill(fanWidth)(x) }.iterator
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, to, 1)
 
@@ -201,7 +207,7 @@ class AsyncTest:
 
   @Test
   def manyGeneratorsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -209,7 +215,7 @@ class AsyncTest:
 
     val fanWidth = 128
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val sequencer = builder.sequencers.random[Int]()
 
@@ -246,7 +252,7 @@ class AsyncTest:
 
   @Test
   def manySequencersTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
@@ -254,7 +260,7 @@ class AsyncTest:
 
     val chainLength = 32
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, to, 128)
 

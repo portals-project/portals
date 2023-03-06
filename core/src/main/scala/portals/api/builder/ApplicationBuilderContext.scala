@@ -1,4 +1,7 @@
-package portals
+package portals.api.builder
+
+import portals.*
+import portals.application.*
 
 /** Application Builder Context. */
 class ApplicationBuilderContext(_path: String):
@@ -41,7 +44,8 @@ class ApplicationBuilderContext(_path: String):
 
   def name_or_id(): String = this.next_id()
 
-  // TODO: get rid of this anomaly
+  // added to the context, so that we later can check if it was frozen or not,
+  // if it wasn't frozen, then we try to freeze it when the application is built
   var _workflowBuilders: List[WorkflowBuilder[_, _]] = List.empty
   def freeze(): Unit =
     _workflowBuilders.foreach { _.complete() }

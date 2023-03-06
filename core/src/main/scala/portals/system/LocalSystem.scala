@@ -1,5 +1,6 @@
 package portals
 
+import portals.application.Application
 import portals.runtime.local.LocalRuntime
 
 class LocalSystem extends PortalsSystem:

@@ -1,20 +1,10 @@
-package portals
+package portals.application.splitter
 
-import Common.Types.*
-
-object Splitter:
-  // TODO: refactor to common events, should be the same as used for the Event types in other parts
-  /** Events that are known by the splitter. */
-  sealed trait SplitterEvent[+T]
-  case class Event[T](key: Key[Long], t: T) extends SplitterEvent[T]
-  case class Error[T](t: Throwable) extends SplitterEvent[T]
-  case object Atom extends SplitterEvent[Nothing]
-  case object Seal extends SplitterEvent[Nothing]
+import portals.*
+import portals.application.Common.Types.*
 
 /** Splitter, can split atoms with filters to the corresponding paths. */
 trait Splitter[T]:
-  import Splitter.*
-
   /** Split to a new output.
     *
     * @param path
@@ -38,12 +28,11 @@ trait Splitter[T]:
     * @return
     *   list of (path, atom) pairs of the split atom
     */
-  def split(atom: List[SplitterEvent[T]]): List[(Path, List[SplitterEvent[T]])]
+  def split(atom: List[WrappedEvent[T]]): List[(Path, List[WrappedEvent[T]])]
 
 object Splitters:
-  import Splitter.*
-
-  /** Creates an empty splitter, one that does not have any splits yet, to be used for adding new output splits.
+  /** Creates an empty splitter, one that does not have any splits yet, to be
+    * used for adding new output splits.
     *
     * @tparam T
     *   event type of the splitter
@@ -60,7 +49,7 @@ object Splitters:
       outputs = outputs - path
 
     /** The suffix common to all split atoms. */
-    private def suffix(atom: List[SplitterEvent[T]]): List[SplitterEvent[T]] =
+    private def suffix(atom: List[WrappedEvent[T]]): List[WrappedEvent[T]] =
       if atom.exists { case Error(t) => true; case _ => false } then
         val error = atom.find { case Error(t) => true; case _ => false }
         List(error.get, Atom, Seal)
@@ -68,7 +57,7 @@ object Splitters:
       else if atom.exists { case Atom => true; case _ => false } then List(Atom)
       else ??? // should give error
 
-    override def split(atom: List[SplitterEvent[T]]): List[(Path, List[SplitterEvent[T]])] =
+    override def split(atom: List[WrappedEvent[T]]): List[(Path, List[WrappedEvent[T]])] =
       // special case if it is an empty atom with a seal event, then output seal on all outputs
       if atom == List(Seal) then outputs.map { case (path, _) => path -> List(Seal) }.toList
       else

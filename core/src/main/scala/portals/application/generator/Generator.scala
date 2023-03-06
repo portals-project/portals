@@ -1,21 +1,13 @@
-package portals
+package portals.application.generator
 
-import scala.annotation.targetName
+import scala.annotation.experimental
 
-/** Events to be produced by the generator. */
-object Generator:
-  sealed trait GeneratorEvent[+T]
-  case class Event[T](key: Key[Long], t: T) extends GeneratorEvent[T]
-  case class Error[T](t: Throwable) extends GeneratorEvent[T]
-  case object Atom extends GeneratorEvent[Nothing]
-  case object Seal extends GeneratorEvent[Nothing]
+import portals.*
 
 /** Generator. */
 trait Generator[T]:
-  import Generator.*
-
   /** Generates events for the atomic stream. */
-  def generate(): GeneratorEvent[T]
+  def generate(): WrappedEvent[T]
 
   /** If the generator can produce more events. */
   def hasNext(): Boolean
@@ -23,21 +15,24 @@ end Generator
 
 /** Generator implementations */
 private[portals] object GeneratorImpls:
-  import Generator.*
-
   /** FromIteratorOfIterators */
   case class FromIteratorOfIterators[T](
       itit: Iterator[Iterator[T]],
       keys: Iterator[Iterator[Key[Long]]],
   ) extends Generator[T]:
-    def generate(): GeneratorEvent[T] = _iter.next()
+    def generate(): WrappedEvent[T] = _iter.next()
 
     def hasNext(): Boolean = _iter.hasNext
 
-    private val _iter: Iterator[GeneratorEvent[T]] =
+    private val _iter: Iterator[WrappedEvent[T]] =
       itit
         .zip(keys)
-        .map { x => x._1.zip(x._2).map { case (x, key) => Event[T](key, x) }.concat(Iterator.single(Atom)) }
+        .map { x =>
+          x._1
+            .zip(x._2)
+            .map { case (x, key) => Event[T](key, x) }
+            .concat(Iterator.single(Atom))
+        }
         .concat(Iterator.single(Iterator.single(Seal)))
         .flatten
   end FromIteratorOfIterators // case class
@@ -47,39 +42,45 @@ private[portals] object GeneratorImpls:
       itit: Iterator[Iterator[T]],
       keyExtractor: T => Key[Long] = (x: T) => Key(x.hashCode()),
   ) extends Generator[T]:
-    private val _iter: Iterator[GeneratorEvent[T]] = itit
-      .map {
-        _.map { x => Event[T](keyExtractor(x), x) }
-          .concat(Iterator.single(Atom))
-      }
-      .concat(Iterator.single(Iterator.single(Seal)))
-      .flatten
-
-    def generate(): GeneratorEvent[T] = _iter.next()
+    def generate(): WrappedEvent[T] = _iter.next()
 
     def hasNext(): Boolean = _iter.hasNext
+
+    private val _iter: Iterator[WrappedEvent[T]] =
+      itit
+        .map {
+          _.map { x =>
+            Event[T](keyExtractor(x), x)
+          }.concat(Iterator.single(Atom))
+        }
+        .concat(Iterator.single(Iterator.single(Seal)))
+        .flatten
   end FromIteratorOfIteratorsWithKeyExtractor // case class
 
   /** External Ref */
+  @experimental
+  @deprecated
   class ExternalRef[T]():
     def submit(t: T): Unit = cb(Event(Key(t.hashCode()), t))
     def submit(t: T, key: Key[Long]): Unit = cb(Event(key, t))
     def error(t: Throwable): Unit = cb(Error(t))
     def fuse(): Unit = cb(Atom)
     def seal(): Unit = cb(Seal)
-    private[portals] var cb: GeneratorEvent[T] => Unit = _
+    private[portals] var cb: WrappedEvent[T] => Unit = _
 
   /** External */
-  case class External[T](ref: ExternalRef[T]) extends Generator[T]:
+  @experimental
+  @deprecated
+  class External[T](ref: ExternalRef[T]) extends Generator[T]:
     // need lock for thread support
     import java.util.concurrent.locks.ReentrantLock
 
-    private var formingAtom: Seq[GeneratorEvent[T]] = Seq.empty
-    private var events: Seq[GeneratorEvent[T]] = Seq.empty
+    private var formingAtom: Seq[WrappedEvent[T]] = Seq.empty
+    private var events: Seq[WrappedEvent[T]] = Seq.empty
 
     private val lock = ReentrantLock()
 
-    val cb = (ge: GeneratorEvent[T]) =>
+    val cb = (ge: WrappedEvent[T]) =>
       lock.lock()
       ge match
         case Event(key, t) =>
@@ -94,12 +95,13 @@ private[portals] object GeneratorImpls:
           formingAtom = formingAtom :+ Seal
           events = events ++ formingAtom
           formingAtom = Seq.empty
+        case _ => ??? // shouldn't happen
       lock.unlock()
     end cb
 
     ref.cb = cb
 
-    def generate(): GeneratorEvent[T] =
+    def generate(): WrappedEvent[T] =
       lock.lock()
       events match
         case head :: tail =>
@@ -115,7 +117,6 @@ private[portals] object GeneratorImpls:
 
 /** Generator factories. */
 object Generators:
-  import Generator.*
   import GeneratorImpls.*
 
   def fromIterator[T](it: Iterator[T]): Generator[T] =
@@ -133,6 +134,8 @@ object Generators:
   def fromRange(start: Int, end: Int, step: Int): Generator[Int] =
     fromIteratorOfIterators(Iterator.range(start, end).grouped(step).map(_.iterator))
 
+  @experimental
+  @deprecated
   def external[T](): (ExternalRef[T], Generator[T]) =
     val extRef = ExternalRef[T]()
     val generator = External[T](extRef)

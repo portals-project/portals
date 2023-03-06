@@ -3,6 +3,9 @@ package portals.examples
 import scala.annotation.experimental
 
 import portals.*
+import portals.api.builder.TaskBuilder
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 
 /** Step By Step
   *
@@ -10,9 +13,9 @@ import portals.*
   */
 @experimental
 @main def StepByStep(): Unit =
-  import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+
+  import portals.api.dsl.ExperimentalDSL.*
 
   val app = PortalsApp("StepByStep") {
 

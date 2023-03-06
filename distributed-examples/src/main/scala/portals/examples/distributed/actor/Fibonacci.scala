@@ -3,11 +3,11 @@ package portals.examples.distributed.actor
 import scala.annotation.experimental
 
 import portals.*
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
 
 @experimental
 object Fibonacci:
-  inline val FIB_N = 21
-
   sealed trait FibCommand
   @experimental case class Fib(replyTo: ActorRef[FibReply], i: Int) extends FibCommand
   @experimental case class FibReply(i: Int) extends FibCommand
@@ -43,8 +43,8 @@ object Fibonacci:
       }
     }
 
-    val initBehavior: ActorBehavior[FibReply] = ActorBehaviors.init[FibReply] { ctx ?=>
-      ctx.send(ctx.create[FibCommand](fibBehavior))(Fib(ctx.self, FIB_N))
+    def initBehavior(fib_n: Int): ActorBehavior[FibReply] = ActorBehaviors.init[FibReply] { ctx ?=>
+      ctx.send(ctx.create[FibCommand](fibBehavior))(Fib(ctx.self, fib_n))
       ActorBehaviors.receive { msg =>
         ctx.log(msg)
         ActorBehaviors.stopped
@@ -53,15 +53,16 @@ object Fibonacci:
 
 @experimental
 object FibonacciMain extends App:
-  import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   import ActorEvents.*
   import Fibonacci.FibActors.initBehavior
 
+  val FIB_N = 21
+
   val app = PortalsApp("Fibonacci") {
-    val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), initBehavior))
+    val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), initBehavior(FIB_N)))
     val wf = ActorWorkflow(generator.stream)
   }
 
@@ -70,9 +71,3 @@ object FibonacciMain extends App:
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()
-
-  // /** parallel runtime */
-  // val system = Systems.parallel()
-  // system.launch(app)
-  // Thread.sleep(1000) // if using parallel
-  // system.shutdown()

@@ -1,10 +1,12 @@
 package portals.benchmark.benchmarks
 
 import portals.*
+import portals.api.builder.*
+import portals.api.dsl.DSL.*
+import portals.application.task.TaskStates
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
 
 object FibonacciBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
@@ -28,7 +30,7 @@ object FibonacciBenchmark extends Benchmark:
 
     val completer = CompletionWatcher()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromList[FibEvent](List(FibRequest(sender = -1, receiver = nFib)))
     val sequencer = builder.sequencers.random[FibEvent]()

@@ -6,21 +6,16 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.*
-import portals.test.*
+import portals.api.builder.ApplicationBuilder
+import portals.test.TestUtils
+import portals.Systems
 
-/** Ping Pong Examples
-  *
-  * This is a collection of Ping Pong examples, and how we can implement Ping Pong in Portals.
-  */
-
-/** Ping Pong Test */
 @RunWith(classOf[JUnit4])
 class PingPongTest:
 
   @Test
   def testPingPong(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     case class Ping(i: Int)
     case class Pong(i: Int)
@@ -30,7 +25,7 @@ class PingPongTest:
     val system = Systems.test()
 
     {
-      val pinger = ApplicationBuilders.application("pinger")
+      val pinger = ApplicationBuilder("pinger")
 
       val sequencer = pinger.sequencers("sequencer").random[Pong]()
 
@@ -47,8 +42,7 @@ class PingPongTest:
     }
 
     {
-      val ponger = ApplicationBuilders
-        .application("ponger")
+      val ponger = ApplicationBuilder("ponger")
 
       val extStream = ponger.registry.streams.get[Ping]("/pinger/workflows/workflow/stream")
 
@@ -71,7 +65,7 @@ class PingPongTest:
     }
 
     {
-      val builder = ApplicationBuilders.application("generator")
+      val builder = ApplicationBuilder("generator")
 
       val generator = builder.generators.fromList(List(Pong(128)))
 

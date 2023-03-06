@@ -1,4 +1,6 @@
-package portals
+package portals.api.builder
+
+import scala.annotation.experimental
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -6,19 +8,22 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL
 import portals.test.*
+import portals.test.TestUtils
+import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class GeneratorTest:
 
   @Test
   def fromIteratorTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators
       .fromIterator[Int](Iterator.range(0, 10))
@@ -48,12 +53,11 @@ class GeneratorTest:
 
   @Test
   def fromIteratorOfIteratorsTest(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators
       .fromIteratorOfIterators[Int](Iterator.from(0).map { x => Iterator.range(0, 5).map(_ + 5 * x) })
@@ -91,13 +95,14 @@ class GeneratorTest:
     system.shutdown()
 
   @Test
+  @experimental
+  @deprecated
   def testExternal(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilders
-      .application("app")
+    val builder = ApplicationBuilder("app")
 
     val (ext_ref, generator) = builder.generators.external[Int]()
 

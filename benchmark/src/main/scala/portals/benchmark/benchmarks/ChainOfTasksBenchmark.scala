@@ -1,10 +1,11 @@
 package portals.benchmark.benchmarks
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.dsl.DSL.*
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
 
 object ChainOfTasksBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
@@ -28,7 +29,7 @@ object ChainOfTasksBenchmark extends Benchmark:
 
     val system = Systems.local()
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator = builder.generators.fromRange(0, nEvents, stepSize)
 

@@ -4,12 +4,15 @@ import scala.annotation.experimental
 import scala.concurrent.Await
 
 import portals.*
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
+import portals.application.task.PerTaskState
 
 @experimental
 @main def DynamicQuery(): Unit =
-  import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+
+  import portals.api.dsl.ExperimentalDSL.*
 
   case class Query()
   case class QueryReply(x: Int)
@@ -25,8 +28,7 @@ import portals.*
 
     val aggregator = Workflows[Int, Nothing]("aggregator")
       .source(generator.stream)
-      .portal(portal)
-      .replier[Nothing] { x =>
+      .replier[Nothing](portal) { x =>
         val sum = PerTaskState("sum", 0)
         sum.set(sum.get() + x) // aggregates sum
       } { case Query() =>
@@ -42,10 +44,9 @@ import portals.*
 
     val queryWorkflow = Workflows[Int, Nothing]("queryWorkflow")
       .source(queryTrigger.stream)
-      .portal(portal)
-      .asker[Nothing] { x =>
+      .asker[Nothing](portal) { x =>
         // query the aggregate
-        val future: Future[QueryReply] = portal.ask(Query())
+        val future: Future[QueryReply] = ask(portal)(Query())
         future.await {
           future.value.get match
             case QueryReply(x) =>

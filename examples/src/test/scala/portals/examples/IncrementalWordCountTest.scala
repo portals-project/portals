@@ -5,35 +5,23 @@ import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Test
 
-import portals.*
-import portals.test.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.TaskBuilder
+import portals.application.task.PerKeyState
+import portals.test.TestUtils
+import portals.Systems
 
-/** Streaming Dataflow tests
-  *
-  * These tests show how we can model Streaming Dataflow in our model.
-  *
-  * Streaming Dataflow is straight-forward to implement in our model, Pods Workflows are a hybrid of dataflow and
-  * actors. We build a streaming pipeline from sources, apply transformations on the data through the processor
-  * abstraction, and end in a sink. The processor abstraction can then be used to implement all higher-level operators
-  * that are common in streaming dataflow, such as Map, FlatMap, Windowing, etc.
-  */
-
-/** Incremental Word Count
-  *
-  * The incremental word count test computes the wordcount of a stream of lines of text. For each new ingested word, the
-  * updated wordcount is emitted.
-  */
 @RunWith(classOf[JUnit4])
 class IncrementalWordCountTest:
 
   @Test
   def testIncrementalWordCount(): Unit =
-    import portals.DSL.*
+    import portals.api.dsl.DSL.*
 
     val tester = new TestUtils.Tester[(String, Int)]()
 
     // one naive implementation is to use local state for storing the counts
-    val builder = ApplicationBuilders.application("application")
+    val builder = ApplicationBuilder("application")
 
     val input = List("the quick brown fox jumps over the lazy dog")
     val generator = builder.generators.fromList(input)

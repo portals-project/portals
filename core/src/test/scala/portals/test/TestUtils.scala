@@ -7,6 +7,14 @@ import scala.util.Try
 import org.junit.Assert._
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.FlowBuilder
+import portals.api.builder.TaskBuilder
+import portals.application.task.ExtensibleTask
+import portals.application.task.GenericTask
+import portals.application.task.TaskContextImpl
+import portals.application.AtomicStreamRef
+import portals.application.Workflow
 
 object TestUtils:
   def executeTask[T, U](
@@ -15,7 +23,7 @@ object TestUtils:
       testDataKeys: List[List[Key[Long]]] = List.empty,
   ): Tester[U] =
     val tester = Tester[U]()
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
     val generator =
       if testDataKeys.isEmpty then builder.generators.fromListOfLists(testData)
       else builder.generators.fromListOfLists(testData, testDataKeys)
@@ -39,7 +47,7 @@ object TestUtils:
       testDataKeys: List[List[Key[Long]]] = List.empty,
   ): Tester[U] =
     val tester = Tester[U]()
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     val generator =
       if testDataKeys.isEmpty then builder.generators.fromListOfLists(testData)

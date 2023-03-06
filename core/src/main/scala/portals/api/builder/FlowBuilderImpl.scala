@@ -1,8 +1,16 @@
-package portals
+package portals.api.builder
 
-import scala.annotation.targetName
+import portals.*
+import portals.application.*
+import portals.application.task.AskerTaskContext
+import portals.application.task.GenericTask
+import portals.application.task.MapTaskContext
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.ReplierTaskContext
 
-class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) extends FlowBuilder[T, U, CT, CU]:
+private[portals] class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U])
+    extends FlowBuilder[T, U, CT, CU]:
+
   given WorkflowBuilderContext[T, U] = fbctx.wbctx // used for creating new FlowBuilder instances
 
   //////////////////////////////////////////////////////////////////////////////
@@ -32,28 +40,13 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     this
 
   // adds connection from latest task to the provided name
-  private[portals] def addConnectionTo(name: String): Unit =
+  private def addConnectionTo(name: String): Unit =
     fbctx.latest match
       case Some(n) =>
         fbctx.wbctx.connections = (n, name) :: fbctx.wbctx.connections
       case None => ???
 
-  private def addTaskFrom[CU1, CU2, CT1, CT2, CCU](
-      behavior: GenericTask[CU1 | CU2, CCU, _, _],
-      from1: FlowBuilder[T, U, CT1, CU1],
-      from2: FlowBuilder[T, U, CT2, CU2]
-  ): FlowBuilder[T, U, CU1 | CU2, CCU] =
-    // create name
-    val name = fbctx.wbctx.bctx.next_id()
-    // add connection
-    from1.asInstanceOf[FlowBuilderImpl[T, U, CT1, CU1]].addConnectionTo(name)
-    from2.asInstanceOf[FlowBuilderImpl[T, U, CT2, CU2]].addConnectionTo(name)
-    // add task
-    fbctx.wbctx.tasks = fbctx.wbctx.tasks + (name -> behavior)
-    // set latest
-    FlowBuilder(Some(name))
-
-  private def addTaskFrom2[CU, CCU](
+  private def addTaskFrom[CU, CCU](
       behavior: GenericTask[CU, CCU, _, _],
       froms: List[FlowBuilder[T, U, _, CU]],
   ): FlowBuilder[T, U, CU, CCU] =
@@ -123,19 +116,9 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
   override def sink[CC >: CU | U <: CU & U](): FlowBuilder[T, U, U, U] =
     addSink()
 
-  // TODO: deprecated
-  // override def union[CCT, CCU](other: FlowBuilder[T, U, CCT, CCU]): FlowBuilder[T, U, CCU | CU, CCU | CU] =
-  //   val behavior = Tasks.identity[CU | CCU]
-  //   addTaskFrom[CU, CCU, CT, CCT, CU | CCU](behavior, this, other)
-
   override def union(others: List[FlowBuilder[T, U, _, CU]]): FlowBuilder[T, U, CU, CU] =
     val behavior = TaskBuilder.identity[CU]
-    addTaskFrom2(behavior, this :: others)
-
-  override def from[CU, CCU](others: FlowBuilder[T, U, _, CU]*)(
-      task: GenericTask[CU, CCU, _, _]
-  ): FlowBuilder[T, U, CU, CCU] =
-    addTaskFrom2[CU, CCU](task, others.toList)
+    addTaskFrom(behavior, this :: others)
 
   override def map[CCU](f: MapTaskContext[CU, CCU] ?=> CU => CCU): FlowBuilder[T, U, CU, CCU] =
     val behavior = TaskBuilder.map[CU, CCU](f)
@@ -158,7 +141,8 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     addTask(behavior)
 
   override def filter(p: CU => Boolean): FlowBuilder[T, U, CU, CU] =
-    flatMap { t => if p(t) then Seq(t) else Seq.empty }
+    val behavior = TaskBuilder.filter[CU](p)
+    addTask(behavior)
 
   override def vsm[CCU](defaultTask: VSMTask[CU, CCU]): FlowBuilder[T, U, CU, CCU] =
     val behavior = TaskBuilder.vsm(defaultTask)
@@ -167,7 +151,7 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
   override def init[CCU](
       initFactory: ProcessorTaskContext[CU, CCU] ?=> GenericTask[CU, CCU, Nothing, Nothing]
   ): FlowBuilder[T, U, CU, CCU] =
-    val behavior = TaskBuilder.init(initFactory)
+    val behavior = TaskBuilder.init[CU, CCU](initFactory)
     addTask(behavior)
 
   override def identity(): FlowBuilder[T, U, CU, CU] =
@@ -175,10 +159,7 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
     addTask(behavior)
 
   override def logger(prefix: String = ""): FlowBuilder[T, U, CU, CU] =
-    val behavior = TaskBuilder.processor[CU, CU] { ctx ?=> e =>
-      ctx.log.info(prefix + e)
-      ctx.emit(e)
-    }
+    val behavior = TaskBuilder.logger[CU](prefix)
     addTask(behavior)
 
   override def checkExpectedType[CCU >: CU <: CU](): FlowBuilder[T, U, CT, CU] = this
@@ -251,7 +232,6 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
       _onNext: ProcessorTaskContext[WT, WU] ?=> (ProcessorTaskContext[WT, WU] ?=> WT => Unit) => WT => Unit
   ): FlowBuilder[T | WT, U | WU, CT, CU] =
     fbctx.wbctx.tasks.foreach { case (name, task) =>
-      // TODO: this is a hack, as the type of the task is not known
       val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[WT, WU, Nothing, Nothing]]
       val newBehavior = behavior.withWrapper(_onNext)
       updateTask(name, newBehavior)
@@ -262,19 +242,16 @@ class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U]) exten
   // Portals
   //////////////////////////////////////////////////////////////////////////////
 
-  class PortalFlowBuilderImpl[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*) extends PortalFlowBuilder[Req, Rep]:
-    def asker[CCU](
-        f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
-    ): FlowBuilder[T, U, CU, CCU] =
-      val behavior = TaskBuilder.portal[Req, Rep](portals: _*).asker[CU, CCU](f)
-      addTask(behavior)
+  override def asker[CCU, Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
+      f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+  ): FlowBuilder[T, U, CU, CCU] =
+    val behavior = TaskBuilder.portal[Req, Rep](portals: _*).asker[CU, CCU](f)
+    addTask(behavior)
 
-    def replier[CCU](f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit)(
-        f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
-    ): FlowBuilder[T, U, CU, CCU] =
-      val behavior = TaskBuilder.portal[Req, Rep](portals: _*).replier[CU, CCU](f1)(f2)
-      addTask(behavior)
+  override def replier[CCU, Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
+      f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
+  )(f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit): FlowBuilder[T, U, CU, CCU] =
+    val behavior = TaskBuilder.portal[Req, Rep](portals: _*).replier[CU, CCU](f1)(f2)
+    addTask(behavior)
 
-  def portal[Req, Rep](portals: AtomicPortalRefType[Req, Rep]*): PortalFlowBuilder[Req, Rep] =
-    new PortalFlowBuilderImpl[Req, Rep](portals: _*)
-end FlowBuilderImpl //
+end FlowBuilderImpl // class

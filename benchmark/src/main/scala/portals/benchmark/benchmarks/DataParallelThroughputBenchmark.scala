@@ -1,10 +1,13 @@
 package portals.benchmark.benchmarks
 
 import portals.*
+import portals.api.builder.*
+import portals.api.dsl.DSL.*
+import portals.application.*
+import portals.application.task.PerTaskState
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.DSL.*
 
 object DataParallelThroughputBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
@@ -70,7 +73,6 @@ object DataParallelThroughputBenchmark extends Benchmark:
 
     val pinger = pingerPonger("pinger", pingersequencer.stream)
     val ponger = pingerPonger("ponger", pongersequencer.stream)
-
     builder.connections.connect(ponger.stream, pingersequencer)
     builder.connections.connect(pinger.stream, pongersequencer)
     builder.connections.connect(generator.stream, pingersequencer)
@@ -122,7 +124,7 @@ object DataParallelThroughputBenchmark extends Benchmark:
 
     val completer = CountingCompletionWatcher(nPartitions)
 
-    val builder = ApplicationBuilders.application("app")
+    val builder = ApplicationBuilder("app")
 
     sWorkload match
       case "countingActor" => countingActorWorkload(builder, completer, config)

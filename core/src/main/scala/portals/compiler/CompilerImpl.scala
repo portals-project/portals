@@ -1,10 +1,13 @@
 package portals.compiler
 
 import portals.*
+import portals.application.Application
 import portals.compiler.phases.*
 import portals.compiler.physicalplan.*
 
-/** Compiler that will run all checks and transform the code to its physical representation. */
+/** Compiler that will run all checks and transform the code to its physical
+  * representation.
+  */
 private[portals] class CompilerImpl extends Compiler[Application, PhysicalPlan[_]]:
   given ctx: CompilerContext = new CompilerContext()
 

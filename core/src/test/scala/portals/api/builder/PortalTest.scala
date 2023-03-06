@@ -1,4 +1,4 @@
-package portals
+package portals.api.builder
 
 import scala.annotation.experimental
 
@@ -8,7 +8,11 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.*
+import portals.application.task.AskerTaskContext
+import portals.application.AtomicPortalRef
 import portals.test.*
+import portals.test.TestUtils
 
 @RunWith(classOf[JUnit4])
 class PortalTest:
@@ -16,9 +20,9 @@ class PortalTest:
   @Test
   @experimental
   def testPingPong(): Unit =
-    import portals.DSL.*
-    import portals.DSL.BuilderDSL.*
-    import portals.DSL.ExperimentalDSL.*
+    import portals.api.dsl.DSL.*
+
+    import portals.api.dsl.ExperimentalDSL.*
 
     val testData = List(List(1024))
 
@@ -36,8 +40,8 @@ class PortalTest:
 
       val replier = Workflows[Nothing, Nothing]("replier")
         .source(Generators.empty.stream)
-        .portal(portal)
-        .replier[Nothing] { _ => () } { case Ping(x) =>
+        // .portal
+        .replier[Nothing](portal) { _ => () } { case Ping(x) =>
           testerReplier.enqueueEvent(x)
           reply(Pong(x - 1))
         }
@@ -46,9 +50,9 @@ class PortalTest:
 
       val asker = Workflows[Int, Int]("asker")
         .source(generator.stream)
-        .portal(portal)
-        .askerRec[Int] { self => x =>
-          val future: Future[Pong] = portal.ask(Ping(x))
+        // .portal
+        .recursiveAsker[Int](portal) { self => x =>
+          val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
@@ -84,9 +88,9 @@ class PortalTest:
   @Test
   @experimental
   def testMultipleAskers(): Unit =
-    import portals.DSL.*
-    import portals.DSL.BuilderDSL.*
-    import portals.DSL.ExperimentalDSL.*
+    import portals.api.dsl.DSL.*
+
+    import portals.api.dsl.ExperimentalDSL.*
 
     sealed trait PingPong
     case class Ping(x: Int) extends PingPong
@@ -105,8 +109,7 @@ class PortalTest:
 
       val replier = Workflows[Nothing, Nothing]("replier")
         .source(Generators.empty.stream)
-        .portal(portal)
-        .replier[Nothing] { _ => () } { case Ping(x) =>
+        .replier[Nothing](portal) { _ => () } { case Ping(x) =>
           testerReplier.enqueueEvent(x)
           reply(Pong(x - 1))
         }
@@ -117,9 +120,8 @@ class PortalTest:
         .source(generator.stream)
 
       val asker1 = askersrc
-        .portal(portal)
-        .askerRec[Int] { self => x =>
-          val future: Future[Pong] = portal.ask(Ping(x))
+        .recursiveAsker[Int](portal) { self => x =>
+          val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker1.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
@@ -131,9 +133,8 @@ class PortalTest:
         .sink()
 
       val asker2 = askersrc
-        .portal(portal)
-        .askerRec[Int] { self => x =>
-          val future: Future[Pong] = portal.ask(Ping(x))
+        .recursiveAsker[Int](portal) { self => x =>
+          val future: Future[Pong] = ask(portal)(Ping(x))
           future.await {
             testerAsker2.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
@@ -174,9 +175,8 @@ class PortalTest:
   @Test
   @experimental
   def testMultiplePortals(): Unit =
-    import portals.DSL.*
-    import portals.DSL.BuilderDSL.*
-    import portals.DSL.ExperimentalDSL.*
+    import portals.api.dsl.DSL.*
+    import portals.api.dsl.ExperimentalDSL.*
 
     sealed trait PingPong
     case class Ping(x: Int) extends PingPong
@@ -199,16 +199,15 @@ class PortalTest:
         .source(Generators.empty.stream)
 
       val _ = repliersrc
-        .portal(portal1)
-        .replier[Nothing] { _ => () } { case Ping(x) =>
+        // .portal(portal1)
+        .replier[Nothing](portal1) { _ => () } { case Ping(x) =>
           testerReplier1.enqueueEvent(x)
           reply(Pong(x - 1))
         }
         .sink()
 
       val _ = repliersrc
-        .portal(portal2)
-        .replier[Nothing] { _ => () } { case Ping(x) =>
+        .replier[Nothing](portal2) { _ => () } { case Ping(x) =>
           testerReplier2.enqueueEvent(x)
           reply(Pong(x - 2))
         }
@@ -217,7 +216,7 @@ class PortalTest:
       def recAwait(x: Int, portal: AtomicPortalRef[Ping, Pong], tester: TestUtils.Tester[Int])(using
           AskerTaskContext[Int, Int, Ping, Pong]
       ): Unit =
-        val future: Future[Pong] = portal.ask(Ping(x))
+        val future: Future[Pong] = ask(portal)(Ping(x))
         future.await {
           tester.enqueueEvent(future.value.get.x)
           ctx.emit(future.value.get.x)
@@ -226,8 +225,7 @@ class PortalTest:
 
       val asker = Workflows[Int, Int]("asker")
         .source(generator.stream)
-        .portal(portal1, portal2)
-        .asker[Int] { x =>
+        .asker[Int](portal1, portal2) { x =>
           recAwait(x, portal1, testerAsker1)
           recAwait(x, portal2, testerAsker2)
         }

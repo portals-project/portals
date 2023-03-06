@@ -3,6 +3,17 @@ package portals.examples.distributed.actor
 import scala.annotation.experimental
 
 import portals.*
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.TaskBuilder
+import portals.api.dsl.DSL
+import portals.api.dsl.ExperimentalDSL
+import portals.application.task.InitTask
+import portals.application.task.PerKeyState
+import portals.application.task.ProcessorTaskContext
+import portals.application.task.Task
+import portals.application.task.TaskContextImpl
+import portals.application.AtomicStreamRef
+import portals.application.Workflow
 
 @experimental
 sealed trait ActorState:
@@ -162,9 +173,10 @@ end ActorEvents // object
 
 @experimental
 private[portals] object ActorRuntime:
+  import portals.api.builder.StashExtension.*
+
   import ActorBehaviors.*
   import ActorEvents.*
-  import StashExtension.*
 
   def apply(): Task[ActorMessage, ActorMessage] =
     InitTask { ctx =>
@@ -205,9 +217,8 @@ private[portals] object ActorRuntime:
 
 @experimental
 object ActorWorkflow:
-  import portals.DSL.*
-  import portals.DSL.BuilderDSL.*
-  import portals.DSL.ExperimentalDSL.*
+  import portals.api.dsl.DSL.*
+  import portals.api.dsl.ExperimentalDSL.*
 
   import ActorEvents.*
 
