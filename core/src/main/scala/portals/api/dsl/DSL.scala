@@ -1,7 +1,6 @@
 package portals
 
 import scala.annotation.experimental
-import scala.annotation.targetName
 
 /** DSL extensions for Portals, convenient shorthands for building applications.
   *
