@@ -23,7 +23,7 @@ object HelloWorld:
       .workflows[String, String]("hello")
       .source(generator.stream)
       .map { x => x }
-      // .logger()
+      .logger()
       .sink()
       .freeze()
 
