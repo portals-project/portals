@@ -55,7 +55,7 @@ class IncrementalWordCountTest:
 
     // ASTPrinter.println(application)
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(application)
 
     system.stepUntilComplete()

@@ -11,8 +11,10 @@ import portals.application.task.GenericTask
 import portals.application.task.OutputCollector
 import portals.application.task.TaskContextImpl
 import portals.application.task.TaskExecution
+import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.local.AkkaLocalRuntime
 import portals.runtime.local.AkkaRunner
+import portals.runtime.WrappedEvents.*
 
 class NoGuaranteesSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*
@@ -71,19 +73,19 @@ object NoGuaranteesRunner extends AkkaRunner:
           var stop = false
           while cont && generator.hasNext() do
             generator.generate() match
-              case portals.Event(key, event) =>
-                stream ! Event(path, portals.Event[T](key, event))
+              case portals.runtime.WrappedEvents.Event(key, event) =>
+                stream ! Event(path, portals.runtime.WrappedEvents.Event[T](key, event))
                 Behaviors.same
-              case portals.Atom =>
+              case portals.runtime.WrappedEvents.Atom =>
                 cont = false
-              case portals.Seal =>
-                cont = false
-                stop = true
-              case portals.Error(t) =>
+              case portals.runtime.WrappedEvents.Seal =>
                 cont = false
                 stop = true
-              case portals.Ask(_, _, _) => ???
-              case portals.Reply(_, _, _) => ???
+              case portals.runtime.WrappedEvents.Error(t) =>
+                cont = false
+                stop = true
+              case portals.runtime.WrappedEvents.Ask(_, _, _) => ???
+              case portals.runtime.WrappedEvents.Reply(_, _, _) => ???
           if stop == true then Behaviors.stopped
           else
             ctx.self ! Next
@@ -142,18 +144,18 @@ object NoGuaranteesRunner extends AkkaRunner:
 
         Behaviors.receiveMessage { case Event(_, event) =>
           event match
-            case portals.Event(key, event) =>
+            case portals.runtime.WrappedEvents.Event(key, event) =>
               tctx.state.key = key
               tctx.key = key
               preparedTask.onNext(event)
               Behaviors.same
-            case portals.Atom =>
+            case portals.runtime.WrappedEvents.Atom =>
               preparedTask.onAtomComplete
               Behaviors.same
-            case portals.Seal =>
+            case portals.runtime.WrappedEvents.Seal =>
               preparedTask.onComplete
               Behaviors.same
-            case portals.Error(t) =>
+            case portals.runtime.WrappedEvents.Error(t) =>
               preparedTask.onError(t)
               Behaviors.same
             case _ => ???

@@ -53,7 +53,7 @@ import portals.application.task.PerKeyState
 
   // ASTPrinter.println(application)
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
   system.launch(application)
 
   system.stepUntilComplete()
@@ -94,7 +94,7 @@ import portals.application.task.PerKeyState
 
   // ASTPrinter.println(application)
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
   system.launch(application)
 
   system.stepUntilComplete()

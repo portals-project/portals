@@ -64,7 +64,7 @@ import portals.application.task.PerTaskState
   val application = builder
     .build()
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
   system.launch(application)
 
   system.stepUntilComplete()

@@ -15,6 +15,7 @@ import portals.application.task.ProcessorTaskContext
 import portals.application.task.ReplierTaskContext
 import portals.application.task.TaskContext
 import portals.application.task.TaskState
+import portals.runtime.WrappedEvents.*
 
 private[portals] class TaskContextImpl[T, U, Req, Rep]
     extends TaskContext[T, U, Req, Rep]

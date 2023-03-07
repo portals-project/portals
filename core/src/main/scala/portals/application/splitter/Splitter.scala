@@ -2,6 +2,7 @@ package portals.application.splitter
 
 import portals.*
 import portals.application.Common.Types.*
+import portals.runtime.WrappedEvents.*
 
 /** Splitter, can split atoms with filters to the corresponding paths. */
 trait Splitter[T]:

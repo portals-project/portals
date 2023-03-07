@@ -50,7 +50,7 @@ class SplitterTest:
 
     val app = builder.build()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
 

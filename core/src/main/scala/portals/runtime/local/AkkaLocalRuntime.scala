@@ -12,6 +12,7 @@ import com.typesafe.config.ConfigFactory
 import portals.*
 import portals.application.*
 import portals.application.task.GenericTask
+import portals.runtime.PortalsRuntime
 
 abstract class AkkaLocalRuntime extends PortalsRuntime:
   import AkkaRunner.Events.*

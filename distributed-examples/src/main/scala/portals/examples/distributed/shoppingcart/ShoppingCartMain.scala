@@ -10,7 +10,7 @@ object ShoppingCartMain extends App:
 
   // ASTPrinter.println(app)
 
-  val system = Systems.test(2)
+  val system = Systems.interpreter(2)
 
   val _ = system.launch(app)
 

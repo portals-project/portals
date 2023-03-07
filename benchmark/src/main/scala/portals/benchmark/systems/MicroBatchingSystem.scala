@@ -19,9 +19,11 @@ import portals.application.task.OutputCollector
 import portals.application.task.TaskContextImpl
 import portals.application.task.TaskExecution
 import portals.application.Workflow
+import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.local.AkkaLocalRuntime
 import portals.runtime.local.AkkaRunner
 import portals.runtime.local.AkkaRunnerImpl
+import portals.runtime.WrappedEvents.*
 
 class MicroBatchingSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*
@@ -186,7 +188,7 @@ object MicroBatchingRunner extends AkkaRunner:
     import Events.*
     def apply[T](path: String, subscribers: Set[ActorRef[Event[T]]] = Set.empty): Behavior[SourceCommand[T]] =
       Behaviors.setup { ctx =>
-        val vectorBuilder = VectorBuilder[portals.WrappedEvent[T]]()
+        val vectorBuilder = VectorBuilder[portals.runtime.WrappedEvents.WrappedEvent[T]]()
         val atoms = new ArrayDeque[Vector[WrappedEvent[T]]]()
         var first = true
 
@@ -200,10 +202,10 @@ object MicroBatchingRunner extends AkkaRunner:
             Behaviors.same
           case Event(sender, event) =>
             event match
-              case portals.Event(_, _) =>
+              case portals.runtime.WrappedEvents.Event(_, _) =>
                 vectorBuilder += event
                 Behaviors.same
-              case portals.Atom =>
+              case portals.runtime.WrappedEvents.Atom =>
                 vectorBuilder += event
                 atoms.append(vectorBuilder.result())
                 vectorBuilder.clear()
@@ -211,7 +213,7 @@ object MicroBatchingRunner extends AkkaRunner:
                   ctx.self ! BatchComplete(path)
                   first = false
                 Behaviors.same
-              case portals.Seal =>
+              case portals.runtime.WrappedEvents.Seal =>
                 vectorBuilder += event
                 atoms.append(vectorBuilder.result())
                 vectorBuilder.clear()
@@ -220,7 +222,7 @@ object MicroBatchingRunner extends AkkaRunner:
                   first = false
                 // Behaviors.stopped
                 Behaviors.same // we don't stop here as otherwise we might not finish the previous batch
-              case portals.Error(t) =>
+              case portals.runtime.WrappedEvents.Error(t) =>
                 vectorBuilder += event
                 atoms.append(vectorBuilder.result())
                 vectorBuilder.clear()
@@ -244,25 +246,25 @@ object MicroBatchingRunner extends AkkaRunner:
         var sealedReceived = Set.empty[String]
         Behaviors.receiveMessage { case Event(sender, event) =>
           event match
-            case portals.Event(sender, _) =>
+            case portals.runtime.WrappedEvents.Event(sender, _) =>
               subscribers.foreach(_ ! Event(path, event))
               Behaviors.same
-            case portals.Atom =>
+            case portals.runtime.WrappedEvents.Atom =>
               atomsReceived += sender
               if atomsReceived.size == deps.size then
                 batcher ! BatchComplete(path)
-                subscribers.foreach(_ ! Event(path, portals.Atom))
+                subscribers.foreach(_ ! Event(path, portals.runtime.WrappedEvents.Atom))
                 atomsReceived = Set.empty
               Behaviors.same
-            case portals.Seal =>
+            case portals.runtime.WrappedEvents.Seal =>
               sealedReceived += sender
               if sealedReceived.size == deps.size then
                 batcher ! BatchComplete(path)
-                subscribers.foreach(_ ! Event(path, portals.Seal))
+                subscribers.foreach(_ ! Event(path, portals.runtime.WrappedEvents.Seal))
                 sealedReceived = Set.empty
                 Behaviors.stopped
               else Behaviors.same
-            case portals.Error(t) =>
+            case portals.runtime.WrappedEvents.Error(t) =>
               subscribers.foreach(_ ! Event(path, event))
               throw t
               Behaviors.stopped
@@ -294,28 +296,28 @@ object MicroBatchingRunner extends AkkaRunner:
 
         Behaviors.receiveMessage { case Event(sender, event) =>
           event match
-            case portals.Event(key, event) =>
+            case portals.runtime.WrappedEvents.Event(key, event) =>
               tctx.state.key = key
               tctx.key = key
               preparedTask.onNext(event)
               Behaviors.same
-            case portals.Atom =>
+            case portals.runtime.WrappedEvents.Atom =>
               atomsReceived += sender
               if atomsReceived.size == deps.size then
                 preparedTask.onAtomComplete
-                subscribers.foreach { sub => sub ! Event(path, portals.Atom) }
+                subscribers.foreach { sub => sub ! Event(path, portals.runtime.WrappedEvents.Atom) }
                 atomsReceived = Set.empty
               Behaviors.same
-            case portals.Seal =>
+            case portals.runtime.WrappedEvents.Seal =>
               sealedReceived += sender
               if sealedReceived.size == deps.size then
                 preparedTask.onComplete
-                subscribers.foreach { sub => sub ! Event(path, portals.Seal) }
+                subscribers.foreach { sub => sub ! Event(path, portals.runtime.WrappedEvents.Seal) }
                 Behaviors.stopped
               else Behaviors.same
-            case portals.Error(t) =>
+            case portals.runtime.WrappedEvents.Error(t) =>
               preparedTask.onError(t)
-              subscribers.foreach { sub => sub ! Event(path, portals.Error(t)) }
+              subscribers.foreach { sub => sub ! Event(path, portals.runtime.WrappedEvents.Error(t)) }
               Behaviors.stopped
             case _ => ???
         }

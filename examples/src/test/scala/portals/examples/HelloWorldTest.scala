@@ -15,7 +15,7 @@ class HelloWorldTest:
   @Test
   def testHelloWorld(): Unit =
     val application = HelloWorld.app
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(application)
     system.stepUntilComplete()
     system.shutdown()

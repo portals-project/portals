@@ -25,8 +25,10 @@ import portals.application.AtomicGenerator
 import portals.application.AtomicSequencer
 import portals.application.AtomicStream
 import portals.application.Workflow
+import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.local.AkkaRunner
 import portals.runtime.local.AkkaRunnerImpl
+import portals.runtime.WrappedEvents.*
 
 class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) extends PortalsSystem:
   import AkkaRunner.Events.*

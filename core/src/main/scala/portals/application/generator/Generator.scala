@@ -3,6 +3,7 @@ package portals.application.generator
 import scala.annotation.experimental
 
 import portals.*
+import portals.runtime.WrappedEvents.*
 
 /** Generator. */
 trait Generator[T]:

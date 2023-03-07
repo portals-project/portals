@@ -22,7 +22,7 @@ class PingPongTest:
 
     val tester = new TestUtils.Tester[Pong]()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     {
       val pinger = ApplicationBuilder("pinger")

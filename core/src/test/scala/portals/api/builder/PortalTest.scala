@@ -65,7 +65,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
 
@@ -146,7 +146,7 @@ class PortalTest:
         .sink()
     }
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
 
@@ -234,7 +234,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
 

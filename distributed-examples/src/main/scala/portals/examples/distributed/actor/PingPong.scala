@@ -51,7 +51,7 @@ object PingPongMain extends App:
   }
 
   /** synchronous interpreter */
-  val system = Systems.test()
+  val system = Systems.interpreter()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()

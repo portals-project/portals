@@ -8,6 +8,7 @@ import portals._
 import portals.application.task._
 import portals.application.task.MapTaskStateExtension._
 import portals.runtime.state.MapStateBackendImpl
+import portals.runtime.WrappedEvents.*
 
 /** Internal API. Executor for Tasks.
   *

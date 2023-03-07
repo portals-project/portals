@@ -10,6 +10,7 @@ import portals.application.task.PerTaskState
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.InterpreterSystem
 
 object NEXMarkBenchmarkUtil:
   import org.apache.beam.sdk.nexmark.*
@@ -260,14 +261,14 @@ object NEXMarkBenchmark extends Benchmark:
       case "async" => Systems.local()
       case "noGuarantees" => Systems.asyncLocalNoGuarantees()
       case "microBatching" => Systems.asyncLocalMicroBatching()
-      case "sync" => Systems.test()
+      case "sync" => Systems.interpreter()
       case _ => ???
 
     val app = builder.build()
 
     system.launch(app)
 
-    if sSystem == "sync" then system.asInstanceOf[TestSystem].stepUntilComplete()
+    if sSystem == "sync" then system.asInstanceOf[InterpreterSystem].stepUntilComplete()
 
     completer.waitForCompletion()
 

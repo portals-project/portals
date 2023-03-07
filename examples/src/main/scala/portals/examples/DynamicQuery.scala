@@ -59,7 +59,7 @@ import portals.application.task.PerTaskState
 
   } // end dynamicQueryApp
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
 
   system.launch(dynamicQueryApp)
 

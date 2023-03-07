@@ -1,15 +1,16 @@
-package portals
+package portals.system
 
 import portals.*
 import portals.application.Application
+import portals.runtime.interpreter.InterpreterRuntime
 
-/** Test system and runtime for Portals. This system is single-threaded,
+/** Interpreter system and runtime for Portals. This system is single-threaded,
   * synchronous, and lets the user proceed the computation by taking steps over
   * atoms. Alternatively, the computation can be carried out until the end by
   * stepping until it has completed.
   */
-class TestSystem(seed: Option[Int] = None) extends PortalsSystem:
-  private val runtime = TestRuntime(seed)
+class InterpreterSystem(seed: Option[Int] = None) extends PortalsSystem:
+  private val runtime: InterpreterRuntime = InterpreterRuntime(seed)
 
   /** Launch a Portals application. */
   def launch(application: Application): Unit = runtime.launch(application)

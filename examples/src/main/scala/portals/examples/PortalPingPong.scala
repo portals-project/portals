@@ -44,7 +44,7 @@ import portals.api.dsl.ExperimentalDSL
       .freeze()
   }
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
 
   system.launch(app)
 

@@ -35,7 +35,7 @@ object TestUtils:
       .sink()
       .freeze()
     val app = builder.build()
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()
@@ -66,7 +66,7 @@ object TestUtils:
 
     val app = builder.build()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
     system.stepUntilComplete()
