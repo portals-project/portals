@@ -34,11 +34,13 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   // init
   private val wctx = new TestWorkflowContext()
   private val runner = TaskExecutorImpl()
+
   // topographically sorted according to connections
   private val sortedTasks = wf.tasks.toList.sortWith((t1, t2) => getOrdinal(t1._1, wf) < getOrdinal(t2._1, wf))
   private val initializedTasks = sortedTasks.map { (name, task) =>
     (name, TaskExecution.prepareTask(task, runner.ctx.asInstanceOf))
   }
+
   // clear any strange side-effects that happened during initialization
   runner.oc.clear(); runner.oc.clearAsks(); runner.oc.clearReps()
 
