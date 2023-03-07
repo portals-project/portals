@@ -4,10 +4,10 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import portals.*
-import portals.application.task.*
-import portals.application.task.MapTaskStateExtension.*
-import portals.runtime.state.*
+import portals._
+import portals.application.task._
+import portals.application.task.MapTaskStateExtension._
+import portals.runtime.state.MapStateBackendImpl
 
 /** Internal API. Executor for Tasks.
   *
