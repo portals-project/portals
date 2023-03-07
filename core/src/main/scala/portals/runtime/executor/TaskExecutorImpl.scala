@@ -9,9 +9,16 @@ import portals.application.task.*
 import portals.application.task.MapTaskStateExtension.*
 import portals.runtime.state.*
 
+/** Internal API. Executor for Tasks.
+  *
+  * Executor for executing tasks. The executor is responsible for setting up the
+  * task context and output collector, and executing the task on a batch of
+  * events.
+  */
 private[portals] class TaskExecutorImpl:
+
   // setup
-  val ctx = TaskContextImpl[Any, Any, Any, Any]()
+  private val ctx = TaskContextImpl[Any, Any, Any, Any]()
   val oc = OutputCollectorImpl[Any, Any, Any, Any]()
   ctx.outputCollector = oc
   private val state = MapStateBackendImpl()
@@ -29,13 +36,13 @@ private[portals] class TaskExecutorImpl:
     */
   def setup(path: String, _task: GenericTask[Any, Any, Any, Any]): Unit =
     ctx.path = path
-    ctx.outputCollector = oc
     ctx.state.path = path
     ctx.state.asInstanceOf[TaskStateImpl[Any, Any]].stateBackend = state
     task = _task
     _replierTask = _task match
       case t @ ReplierTask(_, _) => t
       case t @ _ => null
+  end setup
 
   /** Cleanup a batch of events.
     *
@@ -93,15 +100,26 @@ private[portals] class TaskExecutorImpl:
         }
         .appended(Seal)
     else batch
+  end clean_events
 
-  /** run the task on a batch of events, stops processing in case of error, side
-    * effects are collected in `oc`.
+  /** Run the task on a batch of events.
+    *
+    * Stops processing in case of error, side effects are collected in `oc`.
+    *
+    * @note
+    *   Before running this method for a new task, the `setup` method needs to
+    *   be called, and any unwanted side-effects should be cleared.
+    *
+    * @param batch
+    *   batch of wrapped events to be processed
     */
   def run_batch(batch: List[WrappedEvent[Any]]): Unit =
+
+    // prepare
     val iter = batch.iterator
     var errord: Option[Throwable] = None
 
-    // execute event until end or errror
+    // execute event until end or until errror
     while (iter.hasNext && errord.isEmpty) {
       this.run_wrapped_event(iter.next()) match
         case Success(_) => ()
@@ -115,26 +133,87 @@ private[portals] class TaskExecutorImpl:
     if errord.isDefined then
       oc.submit(Atom)
       oc.submit(Seal)
+  end run_batch
 
+  /** Prepare a task behavior at runtime.
+    *
+    * This executes the initialization and returns the initialized task. This
+    * needs to be called internally to initialize the task behavior before
+    * execution.
+    *
+    * @param task
+    *   task to be prepared
+    * @param ctx
+    *   task context
+    * @return
+    *   prepared task
+    */
+  def prepareTask[T, U, Req, Rep](
+      task: GenericTask[T, U, Req, Rep],
+  ): GenericTask[T, U, Req, Rep] =
+    /** internal recursive method */
+    def prepareTaskRec(
+        task: GenericTask[T, U, Req, Rep],
+        ctx: TaskContextImpl[T, U, Req, Rep]
+    ): GenericTask[T, U, Req, Rep] =
+      // FIXME: (low prio) this will fail if we have a init nested inside of a normal behavior
+      task match
+        case InitTask(initFactory) => prepareTaskRec(initFactory(ctx), ctx)
+        case _ => task
+
+    /** prepare the task, recursively performing initialization */
+    prepareTaskRec(task, ctx.asInstanceOf)
+  end prepareTask // def
+
+  /** Run the continuation `id` with the reply `r`.
+    *
+    * This is used to run the continuation of a reply. The continuation is
+    * stored in the task context and is run via this method when the reply is
+    * received. This completes the future.
+    *
+    * @param id
+    *   id of the continuation
+    * @param r
+    *   reply to be executed
+    */
   def run_and_cleanup_reply[T, U, Req, Rep](id: Int, r: Rep)(using
       actx: AskerTaskContext[T, U, Req, Rep]
   ): Unit =
+
+    // setup state
     lazy val _futures: AskerTaskContext[_, _, _, Rep] ?=> PerTaskState[Map[Int, Rep]] =
       PerTaskState[Map[Int, Rep]]("futures", Map.empty)
     lazy val _continuations: AskerTaskContext[T, U, Req, Rep] ?=> PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]] =
       PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]]("continuations", Map.empty)
+
     // set future
     _futures.update(id, r)
+
     // run continuation
     _continuations.get(id) match
       case Some(continuation) => continuation(using actx)
       case None => () // do nothing, no continuation was saved for this future
+
     // cleanup future
     _futures.remove(id)
+
     // cleanup continuation
     _continuations.remove(id)
-  end run_and_cleanup_reply // def
+  end run_and_cleanup_reply
 
+  /** Execute a wrapped event on the task.
+    *
+    * This is used to run a wrapped event. Works for both regular events, as
+    * well as Ask events and Reply events.
+    *
+    * Make sure that the context has been prepared correspondingly before
+    * calling this method, for example via calling `setup`.
+    *
+    * @param event
+    *   wrapped event to be executed
+    * @return
+    *   success if the event was executed successfully, failure otherwise
+    */
   private def run_wrapped_event(event: WrappedEvent[Any]): Try[Unit] = event match
     case Event(key, e) =>
       ctx.key = key
@@ -180,8 +259,3 @@ private[portals] class TaskExecutorImpl:
       run_and_cleanup_reply(meta.id, e)(using ctx)
       Success(())
   end run_wrapped_event // def
-
-  def clear(): Unit =
-    oc.clear()
-    oc.clearAsks()
-    oc.clearReps()

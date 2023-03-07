@@ -27,7 +27,13 @@ private class TestWorkflowContext:
     case ReplyInfo(x, _) => x
     case _ => ???
 
-/** Internal API. TestRuntime wrapper of a Workflow. */
+/** Internal API. TestRuntime wrapper of a Workflow.
+  *
+  * @param wf
+  *   workflow to be wrapped
+  * @param rctx
+  *   runtime context
+  */
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   import TestWorkflow.*
 
@@ -38,7 +44,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   // topographically sorted according to connections
   private val sortedTasks = wf.tasks.toList.sortWith((t1, t2) => getOrdinal(t1._1, wf) < getOrdinal(t2._1, wf))
   private val initializedTasks = sortedTasks.map { (name, task) =>
-    (name, TaskExecution.prepareTask(task, runner.ctx.asInstanceOf))
+    (name, runner.prepareTask(task))
   }
 
   // clear any strange side-effects that happened during initialization

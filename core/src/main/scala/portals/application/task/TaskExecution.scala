@@ -4,6 +4,7 @@ import portals.application.task.GenericTask
 import portals.application.task.InitTask
 import portals.application.task.TaskContextImpl
 
+// TODO: deprecated, remove, it is in TaskExecutorImpl now
 object TaskExecution:
   /** Prepare a task behavior at runtime.
     *
