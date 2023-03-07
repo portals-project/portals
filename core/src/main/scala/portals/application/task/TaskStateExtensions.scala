@@ -1,6 +1,5 @@
 package portals.application.task
 
-import portals.*
 import portals.application.task.StatefulTaskContext
 import portals.application.task.TaskState
 import portals.util.Key

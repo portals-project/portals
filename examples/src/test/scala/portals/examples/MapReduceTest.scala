@@ -8,8 +8,8 @@ import org.junit.Test
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.application.task.PerTaskState
-import portals.test.TestUtils
 import portals.system.Systems
+import portals.test.TestUtils
 
 @RunWith(classOf[JUnit4])
 class WordCountTest:

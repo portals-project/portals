@@ -2,7 +2,6 @@ package portals.api.builder
 
 import scala.annotation.experimental
 
-import portals.*
 import portals.application.*
 import portals.application.generator.Generator
 import portals.application.generator.GeneratorImpls

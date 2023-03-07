@@ -8,7 +8,6 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.*
 import portals.application.task.AskerTaskContext
 import portals.application.AtomicPortalRef
 import portals.system.Systems

@@ -1,6 +1,5 @@
 package portals.runtime.interpreter
 
-import portals.*
 import portals.application.sequencer.SequencerImpls
 import portals.application.AtomicSequencer
 import portals.runtime.interpreter.InterpreterEvents.*

@@ -8,17 +8,16 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.api.dsl.DSL
 import portals.application.task.PerTaskState
 import portals.application.AtomicStreamRef
 import portals.application.Workflow
+import portals.system.Systems
 import portals.test.*
 import portals.test.AsyncTestUtils
 import portals.test.AsyncTestUtils.Asserter
-import portals.system.Systems
 
 @RunWith(classOf[JUnit4])
 class AsyncTest:

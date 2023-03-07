@@ -1,6 +1,5 @@
 package portals.application.task
 
-import portals.*
 import portals.application.task.TaskState
 import portals.runtime.state.MapStateBackendImpl
 import portals.runtime.state.StateBackend

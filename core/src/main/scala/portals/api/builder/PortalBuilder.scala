@@ -1,6 +1,5 @@
 package portals.api.builder
 
-import portals.*
 import portals.application.*
 
 trait PortalBuilder:

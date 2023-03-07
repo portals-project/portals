@@ -15,7 +15,6 @@ import akka.util.Timeout
 
 import com.typesafe.config.ConfigFactory
 
-import portals.*
 import portals.application.generator.Generator
 import portals.application.generator.Generators
 import portals.application.task.GenericTask

@@ -2,7 +2,6 @@ package portals.runtime.interpreter
 
 import scala.util.Random
 
-import portals.*
 import portals.application.*
 import portals.application.task.AskerTask
 import portals.application.task.ReplierTask

@@ -3,7 +3,6 @@ package portals.runtime.interpreter
 import scala.collection.mutable.ArrayDeque
 import scala.util.Try
 
-import portals.*
 import portals.application.AtomicPortal
 import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.interpreter.InterpreterRuntimeContext

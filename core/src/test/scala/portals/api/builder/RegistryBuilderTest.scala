@@ -6,12 +6,11 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.dsl.DSL
+import portals.system.Systems
 import portals.test.*
 import portals.test.TestUtils
-import portals.system.Systems
 
 @RunWith(classOf[JUnit4])
 class RegistryBuilderTest:

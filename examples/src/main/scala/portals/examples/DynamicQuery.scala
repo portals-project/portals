@@ -3,7 +3,6 @@ package portals.examples
 import scala.annotation.experimental
 import scala.concurrent.Await
 
-import portals.*
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL
 import portals.application.task.PerTaskState

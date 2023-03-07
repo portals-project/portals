@@ -2,7 +2,6 @@ package portals.examples.distributed.shoppingcart
 
 import scala.annotation.experimental
 
-import portals.*
 import portals.system.Systems
 
 @experimental

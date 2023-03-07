@@ -1,6 +1,5 @@
 package portals.runtime.interpreter
 
-import portals.*
 import portals.application.*
 import portals.application.task.*
 import portals.runtime.executor.TaskExecutorImpl

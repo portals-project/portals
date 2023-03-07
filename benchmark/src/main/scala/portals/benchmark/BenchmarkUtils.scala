@@ -9,7 +9,6 @@ import scala.concurrent.Promise
 import scala.util.hashing.MurmurHash3
 import scala.util.Random
 
-import portals.*
 import portals.api.builder.*
 import portals.api.dsl.DSL.*
 import portals.application.AtomicStreamRef

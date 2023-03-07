@@ -2,7 +2,6 @@ package portals.examples.distributed.shoppingcart
 
 import scala.annotation.experimental
 
-import portals.*
 import portals.api.dsl.CustomTask
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL

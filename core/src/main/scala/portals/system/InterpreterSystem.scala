@@ -1,6 +1,5 @@
 package portals.system
 
-import portals.*
 import portals.application.Application
 import portals.runtime.interpreter.InterpreterRuntime
 import portals.system.PortalsSystem

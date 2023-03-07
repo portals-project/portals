@@ -1,6 +1,5 @@
 package portals.benchmark.benchmarks
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.dsl.DSL.*
 import portals.application.AtomicStreamRef

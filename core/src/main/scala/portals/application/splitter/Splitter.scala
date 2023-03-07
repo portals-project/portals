@@ -1,6 +1,5 @@
 package portals.application.splitter
 
-import portals.*
 import portals.application.Common.Types.*
 import portals.runtime.WrappedEvents.*
 

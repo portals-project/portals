@@ -6,7 +6,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
-import portals.*
 import portals.api.builder.TaskBuilder
 import portals.application.generator.Generator
 import portals.application.sequencer.Sequencer

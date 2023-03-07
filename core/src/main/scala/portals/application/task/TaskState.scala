@@ -1,6 +1,5 @@
 package portals.application.task
 
-import portals.*
 import portals.application.task.TaskStateImpl
 import portals.util.Key
 

@@ -2,7 +2,6 @@ package portals.examples.distributed.actor
 
 import scala.annotation.experimental
 
-import portals.*
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL
 import portals.system.Systems

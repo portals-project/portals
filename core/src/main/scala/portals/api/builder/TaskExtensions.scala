@@ -2,7 +2,6 @@ package portals.api.builder
 
 import scala.annotation.experimental
 
-import portals.*
 import portals.application.task.ExtensibleTask
 import portals.application.task.GenericTask
 import portals.application.task.InitTask

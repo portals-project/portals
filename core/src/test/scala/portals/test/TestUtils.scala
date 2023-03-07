@@ -6,7 +6,6 @@ import scala.util.Try
 
 import org.junit.Assert._
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.FlowBuilder
 import portals.api.builder.TaskBuilder
@@ -15,8 +14,8 @@ import portals.application.task.GenericTask
 import portals.application.task.TaskContextImpl
 import portals.application.AtomicStreamRef
 import portals.application.Workflow
-import portals.util.Key
 import portals.system.Systems
+import portals.util.Key
 
 object TestUtils:
   def executeTask[T, U](

@@ -1,6 +1,5 @@
 package portals.application.task
 
-import portals.*
 import portals.runtime.WrappedEvents.*
 import portals.util.Future
 import portals.util.Key

@@ -1,6 +1,5 @@
 package portals.runtime.interpreter
 
-import portals.*
 import portals.application.AtomicSplitter
 import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.interpreter.InterpreterRuntimeContext

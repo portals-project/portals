@@ -11,7 +11,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
-import portals.*
 import portals.application.generator.Generator
 import portals.application.sequencer.Sequencer
 import portals.application.task.GenericTask
@@ -24,8 +23,8 @@ import portals.runtime.local.AkkaLocalRuntime
 import portals.runtime.local.AkkaRunner
 import portals.runtime.local.AkkaRunnerImpl
 import portals.runtime.WrappedEvents.*
-import portals.util.Key
 import portals.system.PortalsSystem
+import portals.util.Key
 
 class MicroBatchingSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*

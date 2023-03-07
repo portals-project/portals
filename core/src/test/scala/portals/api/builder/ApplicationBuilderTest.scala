@@ -8,8 +8,8 @@ import org.junit.Test
 
 import portals.application.AtomicStreamRef
 import portals.application.Workflow
-import portals.test.TestUtils
 import portals.system.Systems
+import portals.test.TestUtils
 
 @RunWith(classOf[JUnit4])
 class ApplicationBuilderTest:

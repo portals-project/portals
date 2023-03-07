@@ -2,7 +2,6 @@ package portals.runtime.interpreter
 
 import scala.collection.mutable.ArrayDeque
 
-import portals.*
 import portals.application.AtomicStream
 import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.interpreter.InterpreterRuntimeContext
