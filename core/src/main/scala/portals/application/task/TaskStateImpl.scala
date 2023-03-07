@@ -5,22 +5,22 @@ import portals.application.task.TaskState
 import portals.runtime.state.MapStateBackendImpl
 import portals.runtime.state.StateBackend
 
-private[portals] class TaskStateImpl[K, V] extends TaskState[K, V]:
+private[portals] class TaskStateImpl extends TaskState[Any, Any]:
   private[portals] var stateBackend: StateBackend = new MapStateBackendImpl()
 
-  override def get(k: K): Option[V] = stateBackend.get(keyBuilder(k)).asInstanceOf[Option[V]]
+  override def get(k: Any): Option[Any] = stateBackend.get(keyBuilder(k)).asInstanceOf[Option[Any]]
 
-  override def set(k: K, v: V): Unit = stateBackend.set(keyBuilder(k), v)
+  override def set(k: Any, v: Any): Unit = stateBackend.set(keyBuilder(k), v)
 
-  override def del(k: K): Unit = stateBackend.del(keyBuilder(k))
+  override def del(k: Any): Unit = stateBackend.del(keyBuilder(k))
 
   override def clear(): Unit = stateBackend.clear()
 
-  override def iterator: Iterator[(K, V)] = stateBackend.iterator.asInstanceOf[Iterator[(K, V)]]
+  override def iterator: Iterator[(Any, Any)] = stateBackend.iterator.asInstanceOf[Iterator[(Any, Any)]]
 
   private[portals] var path: String = _
 
   private[portals] var key: Key[Long] = _
 
-  private def keyBuilder(k: K): (String, K) = (path + "$" + key.x.toString(), k)
+  private def keyBuilder(k: Any): (String, Any) = (path + "$" + key.x.toString(), k)
 end TaskStateImpl // class

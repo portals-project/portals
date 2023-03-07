@@ -37,7 +37,7 @@ private[portals] class TaskExecutorImpl:
   def setup(path: String, _task: GenericTask[Any, Any, Any, Any]): Unit =
     ctx.path = path
     ctx.state.path = path
-    ctx.state.asInstanceOf[TaskStateImpl[Any, Any]].stateBackend = state
+    ctx.state.asInstanceOf[TaskStateImpl].stateBackend = state
     task = _task
     _replierTask = _task match
       case t @ ReplierTask(_, _) => t

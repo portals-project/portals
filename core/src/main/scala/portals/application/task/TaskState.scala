@@ -37,7 +37,7 @@ private[portals] trait TaskState[K, V]:
 end TaskState // trait
 
 private[portals] object TaskState:
-  def apply[K, V](): TaskState[K, V] =
-    new TaskStateImpl[K, V]
+  def apply(): TaskState[Any, Any] =
+    new TaskStateImpl
 
 end TaskState // object
