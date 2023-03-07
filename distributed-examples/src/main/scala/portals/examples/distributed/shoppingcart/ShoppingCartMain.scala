@@ -2,7 +2,7 @@ package portals.examples.distributed.shoppingcart
 
 import scala.annotation.experimental
 
-import portals.*
+import portals.system.Systems
 
 @experimental
 object ShoppingCartMain extends App:
@@ -10,7 +10,7 @@ object ShoppingCartMain extends App:
 
   // ASTPrinter.println(app)
 
-  val system = Systems.test(2)
+  val system = Systems.interpreter(2)
 
   val _ = system.launch(app)
 

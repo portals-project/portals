@@ -15,7 +15,6 @@ import akka.util.Timeout
 
 import com.typesafe.config.ConfigFactory
 
-import portals.*
 import portals.application.generator.Generator
 import portals.application.generator.Generators
 import portals.application.task.GenericTask
@@ -25,8 +24,11 @@ import portals.application.AtomicGenerator
 import portals.application.AtomicSequencer
 import portals.application.AtomicStream
 import portals.application.Workflow
+import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.local.AkkaRunner
 import portals.runtime.local.AkkaRunnerImpl
+import portals.runtime.WrappedEvents.*
+import portals.system.PortalsSystem
 
 class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) extends PortalsSystem:
   import AkkaRunner.Events.*
@@ -63,8 +65,6 @@ class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) exte
 
   // for each nuPartitions
   val partitions = (0 until numPartitions).map(i => new PartitionedMetadata(i)).toList
-
-  val registry: GlobalRegistry = null
 
   val akkaRunner = AkkaRunnerImpl
 

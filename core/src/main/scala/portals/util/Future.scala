@@ -1,7 +1,8 @@
-package portals
+package portals.util
 
 import portals.application.task.AskerTaskContext
 import portals.application.task.PerTaskState
+
 trait Future[T]:
   val id: Int
 

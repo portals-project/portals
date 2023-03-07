@@ -6,9 +6,9 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.dsl.DSL
+import portals.system.Systems
 import portals.test.*
 import portals.test.TestUtils
 
@@ -22,7 +22,7 @@ class RegistryBuilderTest:
     val tester1 = new TestUtils.Tester[Int]()
     val tester2 = new TestUtils.Tester[Int]()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     ////////////////////////////////////////////////////////////////////////////
     // App 1
@@ -112,7 +112,7 @@ class RegistryBuilderTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     ////////////////////////////////////////////////////////////////////////////
     // App 1
@@ -189,7 +189,7 @@ class RegistryBuilderTest:
 
     val tester = new TestUtils.Tester[Int]()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     ////////////////////////////////////////////////////////////////////////////
     // App 1

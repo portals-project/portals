@@ -1,4 +1,4 @@
-package portals
+package portals.util
 
 trait Serializer:
   def serialize[T](obj: T): Array[Byte]

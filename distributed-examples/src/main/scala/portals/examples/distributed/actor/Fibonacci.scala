@@ -2,9 +2,9 @@ package portals.examples.distributed.actor
 
 import scala.annotation.experimental
 
-import portals.*
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL
+import portals.system.Systems
 
 @experimental
 object Fibonacci:
@@ -67,7 +67,7 @@ object FibonacciMain extends App:
   }
 
   /** synchronous interpreter */
-  val system = Systems.test()
+  val system = Systems.interpreter()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()

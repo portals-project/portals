@@ -8,8 +8,8 @@ import org.junit.Test
 
 import portals.application.AtomicStreamRef
 import portals.application.Workflow
+import portals.system.Systems
 import portals.test.TestUtils
-import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class ApplicationBuilderTest:
@@ -45,7 +45,7 @@ class ApplicationBuilderTest:
 
     val application = builder.build()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(application)
 
@@ -93,7 +93,7 @@ class ApplicationBuilderTest:
 
     val application = builder.build()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(application)
 
     system.stepUntilComplete()
@@ -134,7 +134,7 @@ class ApplicationBuilderTest:
 
     val application = builder.build()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(application)
 
     system.stepUntilComplete()

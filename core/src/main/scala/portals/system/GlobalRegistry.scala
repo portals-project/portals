@@ -1,3 +1,0 @@
-package portals
-
-class GlobalRegistry

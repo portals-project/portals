@@ -1,43 +1,46 @@
-package portals
+package portals.runtime.interpreter
 
 import scala.util.Random
 
-import portals.*
 import portals.application.*
 import portals.application.task.AskerTask
 import portals.application.task.ReplierTask
 import portals.compiler.phases.RuntimeCompilerPhases
+import portals.runtime.interpreter.InterpreterEvents.*
+import portals.runtime.PortalsRuntime
+import portals.runtime.WrappedEvents.*
 
 /** Internal API. Holds runtime information of the executed applications. */
-private[portals] class TestRuntimeContext():
+private[portals] class InterpreterRuntimeContext():
   private var _applications: Map[String, Application] = Map.empty
-  private var _streams: Map[String, TestStream] = Map.empty
-  private var _portals: Map[String, TestPortal] = Map.empty
-  private var _workflows: Map[String, TestWorkflow] = Map.empty
-  private var _sequencers: Map[String, TestSequencer] = Map.empty
-  private var _splitters: Map[String, TestSplitter] = Map.empty
-  private var _generators: Map[String, TestGenerator] = Map.empty
-  private var _connections: Map[String, TestConnection] = Map.empty
+  private var _streams: Map[String, InterpreterStream] = Map.empty
+  private var _portals: Map[String, InterpreterPortal] = Map.empty
+  private var _workflows: Map[String, InterpreterWorkflow] = Map.empty
+  private var _sequencers: Map[String, InterpreterSequencer] = Map.empty
+  private var _splitters: Map[String, InterpreterSplitter] = Map.empty
+  private var _generators: Map[String, InterpreterGenerator] = Map.empty
+  private var _connections: Map[String, InterpreterConnection] = Map.empty
   def applications: Map[String, Application] = _applications
-  def streams: Map[String, TestStream] = _streams
-  def portals: Map[String, TestPortal] = _portals
-  def workflows: Map[String, TestWorkflow] = _workflows
-  def sequencers: Map[String, TestSequencer] = _sequencers
-  def splitters: Map[String, TestSplitter] = _splitters
-  def generators: Map[String, TestGenerator] = _generators
-  def connections: Map[String, TestConnection] = _connections
+  def streams: Map[String, InterpreterStream] = _streams
+  def portals: Map[String, InterpreterPortal] = _portals
+  def workflows: Map[String, InterpreterWorkflow] = _workflows
+  def sequencers: Map[String, InterpreterSequencer] = _sequencers
+  def splitters: Map[String, InterpreterSplitter] = _splitters
+  def generators: Map[String, InterpreterGenerator] = _generators
+  def connections: Map[String, InterpreterConnection] = _connections
   def addApplication(application: Application): Unit = _applications += application.path -> application
-  def addStream(stream: AtomicStream[_]): Unit = _streams += stream.path -> TestStream(stream)(using this)
-  def addPortal(portal: AtomicPortal[_, _]): Unit = _portals += portal.path -> TestPortal(portal)(using this)
-  def addWorkflow(wf: Workflow[_, _]): Unit = _workflows += wf.path -> TestWorkflow(wf)(using this)
-  def addSequencer(seqr: AtomicSequencer[_]): Unit = _sequencers += seqr.path -> TestSequencer(seqr)(using this)
-  def addSplitter(spltr: AtomicSplitter[_]): Unit = _splitters += spltr.path -> TestSplitter(spltr)(using this)
-  def addGenerator(genr: AtomicGenerator[_]): Unit = _generators += genr.path -> TestGenerator(genr)(using this)
-  def addConnection(conn: AtomicConnection[_]): Unit = _connections += conn.path -> TestConnection(conn)(using this)
+  def addStream(stream: AtomicStream[_]): Unit = _streams += stream.path -> InterpreterStream(stream)(using this)
+  def addPortal(portal: AtomicPortal[_, _]): Unit = _portals += portal.path -> InterpreterPortal(portal)(using this)
+  def addWorkflow(wf: Workflow[_, _]): Unit = _workflows += wf.path -> InterpreterWorkflow(wf)(using this)
+  def addSequencer(seqr: AtomicSequencer[_]): Unit = _sequencers += seqr.path -> InterpreterSequencer(seqr)(using this)
+  def addSplitter(spltr: AtomicSplitter[_]): Unit = _splitters += spltr.path -> InterpreterSplitter(spltr)(using this)
+  def addGenerator(genr: AtomicGenerator[_]): Unit = _generators += genr.path -> InterpreterGenerator(genr)(using this)
+  def addConnection(conn: AtomicConnection[_]): Unit =
+    _connections += conn.path -> InterpreterConnection(conn)(using this)
 
 /** Internal API. Tracks the progress for a path with respect to other streams.
   */
-private[portals] class TestProgressTracker:
+private[portals] class InterpreterProgressTracker:
   // progress tracker for each Path;
   // for a Path (String) this gives the progress w.r.t. all input dependencies (Map[String, Long])
   private var progress: Map[String, Map[String, Long]] = Map.empty
@@ -70,7 +73,7 @@ private[portals] class TestProgressTracker:
 /** Internal API. Tracks the graph which is spanned by all applications in
   * Portals.
   */
-class TestGraphTracker:
+private[portals] class InterpreterGraphTracker:
   /** Set of all pairs <from, to> edges. */
   private var _edges: Set[(String, String)] = Set.empty
 
@@ -89,7 +92,7 @@ class TestGraphTracker:
   * range of indices of the stream that can be read. The smallest index may be
   * incremented due to garbage collection over time.
   */
-private[portals] class TestStreamTracker:
+private[portals] class InterpreterStreamTracker:
   /** Maps the progress of a path (String) to a pair [from, to], the range is
     * inclusive and means that all indices starting from 'from' until
     * (including) 'to' can be read.
@@ -115,11 +118,11 @@ private[portals] class TestStreamTracker:
     */
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
-class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
-  private val rctx = new TestRuntimeContext()
-  private val progressTracker = TestProgressTracker()
-  private val streamTracker = TestStreamTracker()
-  private val graphTracker = TestGraphTracker()
+private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
+  private val rctx = new InterpreterRuntimeContext()
+  private val progressTracker = InterpreterProgressTracker()
+  private val streamTracker = InterpreterStreamTracker()
+  private val graphTracker = InterpreterGraphTracker()
   private val rnd = seed.map(new Random(_)).getOrElse(new Random())
 
   /** The current step number of the execution. */
@@ -233,48 +236,48 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
             case x @ Some(v) => x
             case None => None
 
-  private def choosePortal(): Option[(String, TestPortal)] =
+  private def choosePortal(): Option[(String, InterpreterPortal)] =
     randomSelection(rctx.portals, (path, portal) => !portal.isEmpty)
 
-  private def chooseWorkflow(): Option[(String, TestWorkflow)] =
+  private def chooseWorkflow(): Option[(String, InterpreterWorkflow)] =
     randomSelection(rctx.workflows, (path, wf) => hasInput(path))
 
-  private def chooseSequencer(): Option[(String, TestSequencer)] =
+  private def chooseSequencer(): Option[(String, InterpreterSequencer)] =
     randomSelection(rctx.sequencers, (path, seqr) => hasInput(path))
 
-  private def chooseSplitter(): Option[(String, TestSplitter)] =
+  private def chooseSplitter(): Option[(String, InterpreterSplitter)] =
     randomSelection(rctx.splitters, (path, spltr) => hasInput(path))
 
-  private def chooseGenerator(): Option[(String, TestGenerator)] =
+  private def chooseGenerator(): Option[(String, InterpreterGenerator)] =
     randomSelection(rctx.generators, (path, genr) => genr.generator.generator.hasNext())
 
-  private def distributeAtoms(listOfAtoms: List[TestAtom]): Unit =
+  private def distributeAtoms(listOfAtoms: List[InterpreterAtom]): Unit =
     listOfAtoms.foreach {
-      case ta @ TestAtomBatch(path, list) =>
+      case ta @ InterpreterAtomBatch(path, list) =>
         rctx.streams(path).enqueue(ta)
         streamTracker.incrementProgress(path)
-      case tpa @ TestAskBatch(meta, _) =>
+      case tpa @ InterpreterAskBatch(meta, _) =>
         rctx.portals(meta.portal).enqueue(tpa)
-      case tpr @ TestRepBatch(meta, _) =>
+      case tpr @ InterpreterRepBatch(meta, _) =>
         rctx.portals(meta.portal).enqueue(tpr)
     }
 
-  private def stepPortal(path: String, portal: TestPortal): Unit =
+  private def stepPortal(path: String, portal: InterpreterPortal): Unit =
     // dequeue the head event of the Portal
     portal.dequeue().get match
       // 1) if it is a TestAskBatch, then execute the replying workflow
-      case tpa @ TestAskBatch(meta, _) =>
+      case tpa @ InterpreterAskBatch(meta, _) =>
         val wf = rctx.workflows(portal.replier)
         val outputAtoms = wf.process(tpa)
         distributeAtoms(outputAtoms)
       // 2) if it is a TestRepBatch, then execute the asking workflow
-      case tpr @ TestRepBatch(meta, _) =>
+      case tpr @ InterpreterRepBatch(meta, _) =>
         val wf = rctx.workflows(meta.askingWF)
         val outputAtoms = wf.process(tpr)
         distributeAtoms(outputAtoms)
       case _ => ??? // should not happen
 
-  private def stepWorkflow(path: String, wf: TestWorkflow): Unit =
+  private def stepWorkflow(path: String, wf: InterpreterWorkflow): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
@@ -282,7 +285,7 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
     distributeAtoms(outputAtoms)
     progressTracker.incrementProgress(path, from)
 
-  private def stepSequencer(path: String, seqr: TestSequencer): Unit =
+  private def stepSequencer(path: String, seqr: InterpreterSequencer): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
@@ -290,11 +293,11 @@ class TestRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
     distributeAtoms(outputAtoms)
     progressTracker.incrementProgress(path, from)
 
-  private def stepGenerator(path: String, genr: TestGenerator): Unit =
+  private def stepGenerator(path: String, genr: InterpreterGenerator): Unit =
     val outputAtoms = genr.process()
     distributeAtoms(outputAtoms)
 
-  private def stepSplitter(path: String, spltr: TestSplitter): Unit =
+  private def stepSplitter(path: String, spltr: InterpreterSplitter): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)

@@ -2,7 +2,6 @@ package portals.api.dsl
 
 import scala.annotation.experimental
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.ConnectionBuilder
 import portals.api.builder.FlowBuilder
@@ -20,6 +19,7 @@ import portals.application.task.LoggingTaskContext
 import portals.application.task.ProcessorTaskContext
 import portals.application.task.ReplierTaskContext
 import portals.application.task.StatefulTaskContext
+import portals.util.Future
 
 /** DSL extensions for Portals, convenient shorthands for building applications.
   *

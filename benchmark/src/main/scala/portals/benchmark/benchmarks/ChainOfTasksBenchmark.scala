@@ -1,11 +1,11 @@
 package portals.benchmark.benchmarks
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.dsl.DSL.*
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.Systems
 
 object ChainOfTasksBenchmark extends Benchmark:
   private val config = BenchmarkConfig()

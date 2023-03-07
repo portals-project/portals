@@ -1,13 +1,16 @@
-package portals
+package portals.system
 
 trait Systems
 
+import portals.system.InterpreterSystem
+import portals.system.PortalsSystem
+
 object Systems extends Systems:
-  def default(): PortalsSystem = test()
+  def default(): PortalsSystem = interpreter()
 
-  def test(): TestSystem = new TestSystem()
+  def interpreter(): InterpreterSystem = new InterpreterSystem()
 
-  def test(seed: Int): TestSystem = new TestSystem(Some(seed))
+  def interpreter(seed: Int): InterpreterSystem = new InterpreterSystem(Some(seed))
 
   // TODO: create test utilities to test both runtimes at the same time.
   // def test(): TestSystem =

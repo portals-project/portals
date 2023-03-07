@@ -1,4 +1,4 @@
-package portals
+package portals.runtime
 
 import portals.application.Application
 

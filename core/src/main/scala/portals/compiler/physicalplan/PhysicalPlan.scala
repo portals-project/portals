@@ -1,6 +1,5 @@
 package portals.compiler.physicalplan
 
-import portals.*
 import portals.application.Application
 
 /** Physical plan representation of an application.

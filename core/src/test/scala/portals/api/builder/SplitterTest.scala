@@ -7,9 +7,9 @@ import org.junit.Ignore
 import org.junit.Test
 
 import portals.api.builder.ApplicationBuilder
+import portals.system.Systems
 import portals.test.*
 import portals.test.TestUtils
-import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class SplitterTest:
@@ -50,7 +50,7 @@ class SplitterTest:
 
     val app = builder.build()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
 

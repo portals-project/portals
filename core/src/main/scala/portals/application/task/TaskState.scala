@@ -1,7 +1,7 @@
 package portals.application.task
 
-import portals.*
 import portals.application.task.TaskStateImpl
+import portals.util.Key
 
 private[portals] trait TaskState[K, V]:
   /** get the value of the key, scoped by the dynamic invocation context */
@@ -37,7 +37,7 @@ private[portals] trait TaskState[K, V]:
 end TaskState // trait
 
 private[portals] object TaskState:
-  def apply[K, V](): TaskState[K, V] =
-    new TaskStateImpl[K, V]
+  def apply(): TaskState[Any, Any] =
+    new TaskStateImpl
 
 end TaskState // object

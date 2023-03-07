@@ -1,6 +1,5 @@
 package portals.compiler
 
-import portals.*
 import portals.application.Application
 import portals.compiler.phases.*
 import portals.compiler.physicalplan.*

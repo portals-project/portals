@@ -2,10 +2,10 @@ package portals.examples
 
 import scala.annotation.experimental
 
-import portals.*
 import portals.api.builder.TaskBuilder
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL
+import portals.system.Systems
 
 /** Step By Step
   *
@@ -51,7 +51,7 @@ import portals.api.dsl.ExperimentalDSL
       .freeze()
   }
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
 
   system.launch(app)
 

@@ -6,7 +6,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 
-import portals.*
 import portals.api.builder.TaskBuilder
 import portals.application.generator.Generator
 import portals.application.sequencer.Sequencer
@@ -14,6 +13,9 @@ import portals.application.task.GenericTask
 import portals.application.task.OutputCollector
 import portals.application.task.TaskContextImpl
 import portals.application.task.TaskExecution
+import portals.runtime.interpreter.InterpreterEvents.*
+import portals.runtime.WrappedEvents.*
+import portals.util.Key
 
 object AkkaRunnerImpl extends AkkaRunner:
   import AkkaRunner.Events.*
@@ -74,7 +76,7 @@ object AkkaRunnerImpl extends AkkaRunner:
     def apply[T](path: String, generator: Generator[T], stream: ActorRef[Event[T]]): Behavior[GeneratorCommand] =
       Behaviors.setup { ctx =>
 
-        val vectorBuilder = VectorBuilder[portals.WrappedEvent[T]]()
+        val vectorBuilder = VectorBuilder[portals.runtime.WrappedEvents.WrappedEvent[T]]()
         var atom = false
         var error = false
         var seal = false
@@ -85,18 +87,18 @@ object AkkaRunnerImpl extends AkkaRunner:
         Behaviors.receiveMessage { case Next =>
           while go && generator.hasNext() do
             generator.generate() match
-              case portals.Event(key, event) =>
-                vectorBuilder += portals.Event(key, event)
-              case portals.Atom =>
-                vectorBuilder += portals.Atom
+              case portals.runtime.WrappedEvents.Event(key, event) =>
+                vectorBuilder += portals.runtime.WrappedEvents.Event(key, event)
+              case portals.runtime.WrappedEvents.Atom =>
+                vectorBuilder += portals.runtime.WrappedEvents.Atom
                 atom = true
-              case portals.Seal =>
+              case portals.runtime.WrappedEvents.Seal =>
                 vectorBuilder.clear()
-                vectorBuilder += portals.Seal
+                vectorBuilder += portals.runtime.WrappedEvents.Seal
                 seal = true
-              case portals.Error(t) =>
+              case portals.runtime.WrappedEvents.Error(t) =>
                 vectorBuilder.clear()
-                vectorBuilder += portals.Error(t)
+                vectorBuilder += portals.runtime.WrappedEvents.Error(t)
                 error = true
               case _ => ???
 
@@ -245,16 +247,16 @@ object AkkaRunnerImpl extends AkkaRunner:
           // used to execute a wrapped event on the task
           def execute(event: WrappedEvent[T]): Unit =
             event match
-              case portals.Event(key, event) =>
+              case portals.runtime.WrappedEvents.Event(key, event) =>
                 tctx.state.key = key
                 tctx.key = key
                 tctx.task = preparedTask
                 preparedTask.onNext(event)
-              case portals.Atom =>
+              case portals.runtime.WrappedEvents.Atom =>
                 preparedTask.onAtomComplete
-              case portals.Seal =>
+              case portals.runtime.WrappedEvents.Seal =>
                 preparedTask.onComplete
-              case portals.Error(t) =>
+              case portals.runtime.WrappedEvents.Error(t) =>
                 preparedTask.onError(t)
               case _ => ???
 
@@ -264,9 +266,9 @@ object AkkaRunnerImpl extends AkkaRunner:
           ////////////////////////////////////////////////////////////////////////
           // Atom Stash
           ////////////////////////////////////////////////////////////////////////
-          var _atom_stash = Map.empty[String, List[List[portals.WrappedEvent[T]]]]
+          var _atom_stash = Map.empty[String, List[List[portals.runtime.WrappedEvents.WrappedEvent[T]]]]
 
-          def atom_stash(subscriptionId: String, atom: List[portals.WrappedEvent[T]]) =
+          def atom_stash(subscriptionId: String, atom: List[portals.runtime.WrappedEvents.WrappedEvent[T]]) =
             _atom_stash = _atom_stash.updated(subscriptionId, _atom_stash(subscriptionId) :+ atom)
 
           // unstash one atom for each subscriptionId
@@ -288,10 +290,10 @@ object AkkaRunnerImpl extends AkkaRunner:
           // Event Stash
           ////////////////////////////////////////////////////////////////////////
           /** Stash, for stashing a building atom (unfinished atom) */
-          var _stash = Map.empty[String, List[portals.WrappedEvent[T]]]
+          var _stash = Map.empty[String, List[portals.runtime.WrappedEvents.WrappedEvent[T]]]
 
           // add item to building stash
-          def stash(subscriptionId: String, item: portals.WrappedEvent[T]): Unit =
+          def stash(subscriptionId: String, item: portals.runtime.WrappedEvents.WrappedEvent[T]): Unit =
             _stash = _stash.updated(subscriptionId, _stash(subscriptionId) :+ item) // is fine because initialized
 
           // fuse the stashed atom for the subscriptionId
@@ -313,37 +315,37 @@ object AkkaRunnerImpl extends AkkaRunner:
             else
               event match
                 // when receiving an event, if blocking then stash, else execute it.
-                case portals.Event(_, _) =>
+                case portals.runtime.WrappedEvents.Event(_, _) =>
                   if blocking.contains(sender) then stash(sender, event.asInstanceOf)
                   else execute(event.asInstanceOf)
                   Behaviors.same
                 // when receiving an atom,
                 // turn into blocking, all are blocking, then the atom has been aligned
                 // and we can continue by unstashing the latest atom.
-                case portals.Atom =>
+                case portals.runtime.WrappedEvents.Atom =>
                   stash_fuse(sender)
                   blocking = blocking + sender
                   nonBlocking = nonBlocking - sender
                   if (nonBlocking.isEmpty) then
                     atom_unstash_one()
-                    execute(portals.Atom)
-                    subscribers.foreach { _ ! Event(path, portals.Atom) }
+                    execute(portals.runtime.WrappedEvents.Atom)
+                    subscribers.foreach { _ ! Event(path, portals.runtime.WrappedEvents.Atom) }
                     nonBlocking = blocking
                     blocking = Set.empty
                     // TODO: try out this shouldn't be necessary AFAIK.
                     blocking = atom_stash_get_blocking()
                     nonBlocking = nonBlocking.diff(blocking)
                   Behaviors.same
-                case portals.Seal =>
+                case portals.runtime.WrappedEvents.Seal =>
                   seald += sender
                   nonSeald -= sender
                   if nonSeald.isEmpty then
-                    subscribers.foreach { _ ! Event(path, portals.Seal) }
+                    subscribers.foreach { _ ! Event(path, portals.runtime.WrappedEvents.Seal) }
                     preparedTask.onComplete
                     Behaviors.stopped
                   else Behaviors.same
-                case portals.Error(t) =>
-                  subscribers.foreach { _ ! Event(path, portals.Error(t)) }
+                case portals.runtime.WrappedEvents.Error(t) =>
+                  subscribers.foreach { _ ! Event(path, portals.runtime.WrappedEvents.Error(t)) }
                   preparedTask.onError(t)
                   throw t
                   Behaviors.stopped
