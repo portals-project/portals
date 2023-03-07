@@ -3,19 +3,18 @@ package portals
 import portals.*
 import portals.application.*
 import portals.application.task.*
+import portals.runtime.executor.TaskExecutorImpl
 
+// TODO: remove this
 object TestWorkflow:
-  enum ExecutionMode:
-    case EventMode, AskMode, ReplyMode
-
   sealed trait ExecutionInfo
   case class AskInfo(portal: String, askingWF: String) extends ExecutionInfo
   case class ReplyInfo(portal: String, askingWF: String) extends ExecutionInfo
   case object EventInfo extends ExecutionInfo
 
+// TODO: remove this
 private class TestWorkflowContext:
   import TestWorkflow.*
-  var mode: ExecutionMode = _
   var info: ExecutionInfo = _
 
   def getAskingWF(): String = info match
@@ -32,41 +31,44 @@ private class TestWorkflowContext:
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   import TestWorkflow.*
   private val wctx = new TestWorkflowContext()
-  private val tcb = OutputCollectorImpl[Any, Any, Any, Any]()
-  private val tctx = TaskContextImpl[Any, Any, Any, Any]()
-  // val actx = AskerTaskContext.fromTaskContext(tctx, tcb)
-  // val rectx = ReplierTaskContext.fromTaskContext(tctx, tcb)
-  tctx.outputCollector = tcb
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Initialize the workflow
-  /////////////////////////////////////////////////////////////////////////////
-  // Gets the ordinal of a path with respect to the topology of the graph.
-  // To be used to sort the graph in topological order.
-  private def getOrdinal(path: String): Int =
-    val idx = wf.connections.reverse.map(_._1).indexOf(path)
-    if idx == -1 then wf.connections.reverse.size else idx
-
+  private val runner = TaskExecutorImpl()
   // topographically sorted according to connections
-  private val sortedTasks = wf.tasks.toList.sortWith((t1, t2) => getOrdinal(t1._1) < getOrdinal(t2._1))
-  // and initialized / prepared
+  private val sortedTasks = wf.tasks.toList.sortWith((t1, t2) => getOrdinal(t1._1, wf) < getOrdinal(t2._1, wf))
   private val initializedTasks = sortedTasks.map { (name, task) =>
-    (name, TaskExecution.prepareTask(task, tctx.asInstanceOf))
+    (name, TaskExecution.prepareTask(task, runner.ctx.asInstanceOf))
   }
   // clear any strange side-effects that happened during initialization
-  tcb.clear(); tcb.clearAsks(); tcb.clearReps()
+  runner.oc.clear(); runner.oc.clearAsks(); runner.oc.clearReps()
 
   /** Processes the atom, and produces a new list of atoms.
     *
     * The produced list of atoms may either be a regular atom for an output
     * atomic stream, or an atom for a portal. See the `TestAtom` trait for the
     * distinction.
+    *
+    * @param atom
+    *   atom to be processed
+    * @return
+    *   list of produced atoms
     */
   def process(atom: TestAtom): List[TestAtom] =
     atom match
       case x @ TestAtomBatch(_, _) => processAtomBatch(x)
       case x @ TestAskBatch(_, _) => processAskBatch(x)
       case x @ TestRepBatch(_, _) => processReplyBatch(x)
+
+  /** Internal API. Get the ordinal of a path in a workflow.
+    *
+    * @param path
+    *   path to get the ordinal of in the workflow
+    * @param workflow
+    *   workflow to get the ordinal of the path in
+    * @return
+    *   ordinal of the path in the workflow
+    */
+  private def getOrdinal(path: String, workflow: Workflow[_, _]): Int =
+    val idx = workflow.connections.reverse.map(_._1).indexOf(path)
+    if idx == -1 then workflow.connections.reverse.size else idx
 
   /** Internal API. Process a task with inputs on the previous outputs. */
   private def processTask(
@@ -76,54 +78,15 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
       outputs: Map[String, TestAtomBatch[_]],
   ): TestAtomBatch[_] = {
 
-    // if the task has sealed, errored, or processed a full atom.
-    var seald = false
-    var errord = false
-    var atomd = false
+    runner.setup(path, task.asInstanceOf)
+    runner.run_batch(
+      runner.clean_events(
+        inputs.filter(input => outputs.contains(input)).map(input => outputs(input)).flatMap(x => x.list)
+      )
+    )
 
-    inputs.foreach { input =>
-      if outputs.contains(input) then
-        val atom = outputs.get(input).get
-        atom.list.foreach { event =>
-          event match
-            case Event(key, e) =>
-              task match {
-                case _: AskerTask[_, _, _, _] =>
-                  tctx.state.key = key
-                  tctx.key = key
-                  tctx.path = path
-                  tctx.task = task.asInstanceOf
-                  task.asInstanceOf[GenericTask[Any, Any, Any, Any]].onNext(using tctx)(e)
-                case _: GenericTask[_, _, _, _] =>
-                  tctx.state.key = key
-                  tctx.key = key
-                  tctx.path = path
-                  tctx.task = task.asInstanceOf
-                  task.onNext(using tctx.asInstanceOf)(e.asInstanceOf)
-              }
-            case Atom =>
-              // Here we don't simply emit the atom, as a task may have multiple
-              // inputs which would then send one atom-marker each.
-              // This is why we have this intermediate step here, same for seald.
-              atomd = true
-            case Seal =>
-              seald = true
-            case Error(t) =>
-              errord = true
-              task.onError(using tctx.asInstanceOf)(t)
-            case _ => ???
-        }
-    }
-    if errord then ???
-    else if seald then
-      task.onComplete(using tctx.asInstanceOf)
-      tcb.submit(Seal)
-    else if atomd then
-      task.onAtomComplete(using tctx.asInstanceOf)
-      tcb.submit(Atom)
-
-    val output = tcb.getOutput()
-    tcb.clear()
+    val output = runner.oc.getOutput()
+    runner.oc.clear()
     TestAtomBatch(null, output)
   }
 
@@ -133,32 +96,17 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
       inputs: List[String],
       outputs: Map[String, TestAtomBatch[_]]
   ): TestAtomBatch[_] = {
-    // Processing a sink will concatenate all outputs, and deduplicate any Atom, Seal, Error events.
 
-    var _output = List.empty[WrappedEvent[_]]
-    var atomd = false
-    var seald = false
-    var errord = false
+    // all the outputs of the sink
+    val allOutputs = inputs
+      .map(x => outputs.get(x))
+      .filter(_.isDefined)
+      .flatMap(x => x.get.list)
 
-    inputs.foreach { input =>
-      if outputs.contains(input) then
-        val atom = outputs(input)
-        atom.list.foreach { event =>
-          event match
-            case Event(key, e) => _output = Event(key, e) :: _output
-            case Atom => atomd = true
-            case Seal => seald = true
-            case Error(t) => errord = true
-            case _ => ???
-        }
-    }
+    // cleaned outputs, with duplicate Atom markers removed, etc.
+    val cleanedAllOutputs = runner.clean_events(allOutputs)
 
-    if errord then ??? // TODO: how to handle errors?
-    else if seald then _output = Seal :: _output
-    else if atomd then _output = Atom :: _output
-    else Atom :: _output // if no events...
-
-    TestAtomBatch(wf.stream.path, _output.reverse)
+    TestAtomBatch(wf.stream.path, cleanedAllOutputs)
   }
 
   /** Internal API. Processes the Workflow on some events.
@@ -200,14 +148,14 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     ////////////////////////////////////////////////////////////////////////////
     val askAndReplyOutputs = {
       val askoutputs =
-        tcb
+        runner.oc
           .getAskOutput()
           // here we could also omit grouping by askingTask...
           .groupBy { case Ask(_, portalMeta, _) => (portalMeta.portal) }
           .map { (k, v) => TestAskBatch(PortalBatchMeta(k, wf.path), v) }
           .toList
       val repoutputs =
-        tcb
+        runner.oc
           .getRepOutput()
           .groupBy { case Reply(_, portalMeta, _) => (portalMeta.portal) }
           .map { (k, v) => TestRepBatch(PortalBatchMeta(k, wctx.getAskingWF()), v) }
@@ -218,9 +166,9 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     ////////////////////////////////////////////////////////////////////////////
     // 4. Cleanup and Return
     ////////////////////////////////////////////////////////////////////////////
-    tcb.clear()
-    tcb.clearAsks()
-    tcb.clearReps()
+    runner.oc.clear()
+    runner.oc.clearAsks()
+    runner.oc.clearReps()
     outputs(wf.sink) :: askAndReplyOutputs
   end processAtomHelper
 
@@ -233,19 +181,19 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     input.list.foreach { event =>
       event match
         case Ask(key, meta, e) =>
-          tctx.state.key = key
-          tctx.key = key
-          tctx.id = meta.id
-          tctx.asker = meta.askingTask
-          tctx.portal = meta.portal
-          tctx.path = path
-          tctx.task = task.asInstanceOf
-          tctx.askerKey = meta.askingKey
-          task.f2(tctx.asInstanceOf)(e.asInstanceOf)
+          runner.ctx.state.key = key
+          runner.ctx.key = key
+          runner.ctx.id = meta.id
+          runner.ctx.asker = meta.askingTask
+          runner.ctx.portal = meta.portal
+          runner.ctx.path = path
+          runner.ctx.task = task.asInstanceOf
+          runner.ctx.askerKey = meta.askingKey
+          task.f2(runner.ctx.asInstanceOf)(e.asInstanceOf)
         case _ => ???
     }
-    val output = tcb.getOutput()
-    tcb.clear()
+    val output = runner.oc.getOutput()
+    runner.oc.clear()
     TestAtomBatch(null, output)
   }
 
@@ -267,16 +215,17 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     atom.list.foreach { event =>
       event match
         case Reply(key, meta, e) =>
-          tctx.state.key = key
-          tctx.key = key
-          tctx.path = path
-          tctx.task = null
-          TaskExecution.run_and_cleanup_reply(meta.id, e)(using tctx)
+          runner.ctx.state.key = key
+          runner.ctx.key = key
+          runner.ctx.path = path
+          runner.ctx.state.path = path
+          runner.ctx.task = null
+          runner.run_and_cleanup_reply(meta.id, e)(using runner.ctx)
         case _ => ??? // NOPE
     }
 
-    val output = tcb.getOutput()
-    tcb.clear()
+    val output = runner.oc.getOutput()
+    runner.oc.clear()
     TestAtomBatch(null, output)
   }
 
