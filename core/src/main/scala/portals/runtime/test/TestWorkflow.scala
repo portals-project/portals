@@ -281,7 +281,10 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     TestAtomBatch(null, cleanedOutput)
   end processAskerTask
 
-  /** Internal API. Processes the Workflow on some events.
+  /** Internal API. Process the workflow on the provided events in `_outputs`.
+    *
+    * To be used internally to process the workflow on previous `_outpouts` in
+    * topological order.
     *
     * The provided _outputs parameter provides a mapping of task-names to their
     * output. The tasks in the workflow are then executed according to
@@ -291,6 +294,11 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     * workflow, and produce a list of the produced atoms, typically this will be
     * a single TestAtomBatch. If there are asker tasks, or replyer tasks, then
     * it may also produce several AskBatches and RepBatches.
+    *
+    * @param _outputs
+    *   mapping of task names to their output
+    * @return
+    *   list of produced atoms by the workflow
     */
   private def processAtomBatchHelper(_outputs: Map[String, TestAtomBatch[_]]): List[TestAtom] =
     // A mapping from task/source/sink name to their output
@@ -302,13 +310,14 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     sortedTasks.foreach { (path, task) =>
       // all inputs to the task
       val inputs = wf.connections.filter((from, to) => to == path).map(_._1)
-      // process the task, add the produce events to outputs
+
+      // process the task, add the produced events to the outputs
       val output = processTask(path, task, inputs, outputs)
       if output.list.nonEmpty then outputs += (path -> output)
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    // 2. Execute the sink.
+    // 2. Execute the sink
     ////////////////////////////////////////////////////////////////////////////
     {
       val inputs = wf.connections.filter((from, to) => to == wf.sink).map(_._1)
@@ -316,30 +325,42 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    // 3. Collect AskBatches and RepBatches from the CallBack
+    // 3. Collect AskBatches and RepBatches from the OutputCollector
     ////////////////////////////////////////////////////////////////////////////
     val askAndReplyOutputs = {
+      // collect ask outputs
       val askoutputs =
         runner.oc
           .getAskOutput()
-          // here we could also omit grouping by askingTask...
+          // group by portal
           .groupBy { case Ask(_, portalMeta, _) => (portalMeta.portal) }
+          // map grouping to ask batches
           .map { (k, v) => TestAskBatch(PortalBatchMeta(k, wf.path), v) }
           .toList
+
+      // collect reply outputs
       val repoutputs =
         runner.oc
           .getRepOutput()
+          // group by portal
           .groupBy { case Reply(_, portalMeta, _) => (portalMeta.portal) }
+          // map grouping to reply batches
           .map { (k, v) => TestRepBatch(PortalBatchMeta(k, wctx.getAskingWF()), v) }
           .toList
+
+      // concatenate list of atom batches
       askoutputs ::: repoutputs
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    // 4. Cleanup and Return
+    // 4. Cleanup
     ////////////////////////////////////////////////////////////////////////////
     runner.oc.clear()
     runner.oc.clearAsks()
     runner.oc.clearReps()
+
+    ////////////////////////////////////////////////////////////////////////////
+    // 5. Return
+    ////////////////////////////////////////////////////////////////////////////
     outputs(wf.sink) :: askAndReplyOutputs
   end processAtomBatchHelper
