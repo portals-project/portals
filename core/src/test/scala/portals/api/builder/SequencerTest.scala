@@ -8,9 +8,9 @@ import org.junit.Test
 
 import portals.api.builder.ApplicationBuilder
 import portals.api.dsl.DSL
+import portals.system.Systems
 import portals.test.*
 import portals.test.TestUtils
-import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class SequencerTest:

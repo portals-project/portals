@@ -29,6 +29,7 @@ import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.local.AkkaRunner
 import portals.runtime.local.AkkaRunnerImpl
 import portals.runtime.WrappedEvents.*
+import portals.system.PortalsSystem
 
 class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) extends PortalsSystem:
   import AkkaRunner.Events.*
@@ -65,8 +66,6 @@ class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) exte
 
   // for each nuPartitions
   val partitions = (0 until numPartitions).map(i => new PartitionedMetadata(i)).toList
-
-  val registry: GlobalRegistry = null
 
   val akkaRunner = AkkaRunnerImpl
 

@@ -25,6 +25,7 @@ import portals.runtime.local.AkkaRunner
 import portals.runtime.local.AkkaRunnerImpl
 import portals.runtime.WrappedEvents.*
 import portals.util.Key
+import portals.system.PortalsSystem
 
 class MicroBatchingSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*

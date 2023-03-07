@@ -18,6 +18,7 @@ import portals.application.Workflow
 import portals.test.*
 import portals.test.AsyncTestUtils
 import portals.test.AsyncTestUtils.Asserter
+import portals.system.Systems
 
 @RunWith(classOf[JUnit4])
 class AsyncTest:

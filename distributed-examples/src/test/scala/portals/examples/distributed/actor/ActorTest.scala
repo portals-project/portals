@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Test
 
-import portals.*
+import portals.system.Systems
 
 @RunWith(classOf[JUnit4])
 class ActorTest:

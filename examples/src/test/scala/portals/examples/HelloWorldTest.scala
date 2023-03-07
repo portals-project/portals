@@ -7,7 +7,7 @@ import org.junit.Test
 
 import portals.api.builder.ApplicationBuilder
 import portals.test.TestUtils
-import portals.Systems
+import portals.system.Systems
 
 @RunWith(classOf[JUnit4])
 class HelloWorldTest:

@@ -8,6 +8,7 @@ import portals.application.task.PerTaskState
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.Systems
 
 object DataParallelThroughputBenchmark extends Benchmark:
   private val config = BenchmarkConfig()

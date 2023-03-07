@@ -3,6 +3,7 @@ package portals.system
 import portals.*
 import portals.application.Application
 import portals.runtime.interpreter.InterpreterRuntime
+import portals.system.PortalsSystem
 
 /** Interpreter system and runtime for Portals. This system is single-threaded,
   * synchronous, and lets the user proceed the computation by taking steps over

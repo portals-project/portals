@@ -7,6 +7,7 @@ import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
 import portals.system.InterpreterSystem
+import portals.system.Systems
 
 object CountingActorBenchmark extends Benchmark:
   private val config = BenchmarkConfig()

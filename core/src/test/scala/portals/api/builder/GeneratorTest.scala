@@ -12,7 +12,7 @@ import portals.api.builder.ApplicationBuilder
 import portals.api.dsl.DSL
 import portals.test.*
 import portals.test.TestUtils
-import portals.Systems
+import portals.system.Systems
 
 @RunWith(classOf[JUnit4])
 class GeneratorTest:

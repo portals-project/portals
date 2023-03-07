@@ -16,6 +16,7 @@ import portals.runtime.local.AkkaLocalRuntime
 import portals.runtime.local.AkkaRunner
 import portals.runtime.WrappedEvents.*
 import portals.util.Key
+import portals.system.PortalsSystem
 
 class NoGuaranteesSystem extends AkkaLocalRuntime with PortalsSystem:
   import AkkaRunner.Events.*

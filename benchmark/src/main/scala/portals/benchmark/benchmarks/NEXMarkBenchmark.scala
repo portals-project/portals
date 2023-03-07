@@ -11,6 +11,7 @@ import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
 import portals.system.InterpreterSystem
+import portals.system.Systems
 
 object NEXMarkBenchmarkUtil:
   import org.apache.beam.sdk.nexmark.*

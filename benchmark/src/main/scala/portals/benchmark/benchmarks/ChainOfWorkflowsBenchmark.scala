@@ -8,6 +8,7 @@ import portals.application.Workflow
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.Systems
 
 object ChainOfWorkflowsBenchmark extends Benchmark:
   private val config = BenchmarkConfig()

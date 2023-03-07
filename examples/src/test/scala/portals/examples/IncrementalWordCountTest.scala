@@ -9,7 +9,7 @@ import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.application.task.PerKeyState
 import portals.test.TestUtils
-import portals.Systems
+import portals.system.Systems
 
 @RunWith(classOf[JUnit4])
 class IncrementalWordCountTest:
