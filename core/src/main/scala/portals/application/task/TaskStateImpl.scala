@@ -2,19 +2,21 @@ package portals.application.task
 
 import portals.*
 import portals.application.task.TaskState
+import portals.runtime.state.MapStateBackendImpl
+import portals.runtime.state.StateBackend
 
 private[portals] class TaskStateImpl[K, V] extends TaskState[K, V]:
-  private var map: Map[(String, K), V] = Map.empty
+  private[portals] var stateBackend: StateBackend = new MapStateBackendImpl()
 
-  override def get(k: K): Option[V] = map.get(keyBuilder(k))
+  override def get(k: K): Option[V] = stateBackend.get(keyBuilder(k)).asInstanceOf[Option[V]]
 
-  override def set(k: K, v: V): Unit = map += (keyBuilder(k) -> v)
+  override def set(k: K, v: V): Unit = stateBackend.set(keyBuilder(k), v)
 
-  override def del(k: K): Unit = map -= keyBuilder(k)
+  override def del(k: K): Unit = stateBackend.del(keyBuilder(k))
 
-  override def clear(): Unit = map = Map.empty
+  override def clear(): Unit = stateBackend.clear()
 
-  override def iterator: Iterator[(K, V)] = map.iterator.map(kv => (kv._1._2, kv._2))
+  override def iterator: Iterator[(K, V)] = stateBackend.iterator.asInstanceOf[Iterator[(K, V)]]
 
   private[portals] var path: String = _
 
