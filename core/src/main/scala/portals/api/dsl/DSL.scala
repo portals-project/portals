@@ -23,6 +23,9 @@ import portals.application.task.StatefulTaskContext
 
 /** DSL extensions for Portals, convenient shorthands for building applications.
   *
+  * The preferred way of building Portals applications is via the `PortalsApp`
+  * in [[portals.api.dsl.DSL.PortalsApp]].
+  *
   * @see
   *   [[portals.api.dsl.DSL.PortalsApp]]
   */
