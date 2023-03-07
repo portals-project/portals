@@ -1,4 +1,4 @@
-package portals.system.async
+package portals.system
 
 import scala.concurrent.Promise
 
@@ -20,7 +20,7 @@ import portals.test.AsyncTestUtils
 import portals.test.AsyncTestUtils.Asserter
 
 @RunWith(classOf[JUnit4])
-class AsyncTest:
+class LocalSystemTest:
   @Test
   def lotsOfEventsTest(): Unit =
     import portals.api.dsl.DSL.*
