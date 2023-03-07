@@ -142,7 +142,9 @@ private[portals] class TaskExecutorImpl:
       ctx.state.key = key
       scala.util.Try {
         task.onNext(using ctx)(e)
-      }
+      } match
+        case Success(_) => Success(())
+        case Failure(t) => Failure(t)
     case Atom =>
       ctx.task = task
       task.onAtomComplete(using ctx)
@@ -158,9 +160,23 @@ private[portals] class TaskExecutorImpl:
       task.onError(using ctx)(t)
       Failure(t)
     case Ask(key, meta, e) =>
+      // task
+      ctx.key = key
+      ctx.task = task
+      ctx.state.key = key
+      // ask
+      ctx.id = meta.id
+      ctx.asker = meta.askingTask
+      ctx.portal = meta.portal
+      ctx.askerKey = meta.askingKey
       _replierTask.f2(ctx)(e)
       Success(())
     case Reply(key, meta, e) =>
+      // task
+      ctx.key = key
+      ctx.task = null // this.task is already null, but we set it to null to be sure
+      ctx.state.key = key
+      // reply
       run_and_cleanup_reply(meta.id, e)(using ctx)
       Success(())
   end run_wrapped_event // def

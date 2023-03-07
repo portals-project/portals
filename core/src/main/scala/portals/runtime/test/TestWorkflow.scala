@@ -30,6 +30,8 @@ private class TestWorkflowContext:
 /** Internal API. TestRuntime wrapper of a Workflow. */
 private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeContext):
   import TestWorkflow.*
+
+  // init
   private val wctx = new TestWorkflowContext()
   private val runner = TaskExecutorImpl()
   // topographically sorted according to connections
@@ -56,6 +58,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
       case x @ TestAtomBatch(_, _) => processAtomBatch(x)
       case x @ TestAskBatch(_, _) => processAskBatch(x)
       case x @ TestRepBatch(_, _) => processReplyBatch(x)
+  end process
 
   /** Internal API. Get the ordinal of a path in a workflow.
     *
@@ -69,8 +72,93 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
   private def getOrdinal(path: String, workflow: Workflow[_, _]): Int =
     val idx = workflow.connections.reverse.map(_._1).indexOf(path)
     if idx == -1 then workflow.connections.reverse.size else idx
+  end getOrdinal
 
-  /** Internal API. Process a task with inputs on the previous outputs. */
+  /** Internal API. Processes a TestAtomBatch on the workflow.
+    *
+    * @param atom
+    *   atom batch to be processed
+    * @return
+    *   list of produced atoms
+    */
+  private def processAtomBatch(atom: TestAtomBatch[_]): List[TestAtom] =
+    // set the source output to be the input atom
+    val outputs = Map[String, TestAtomBatch[_]](wf.source -> atom)
+
+    // process the atom batch on the outputs with the source set to the input
+    processAtomBatchHelper(outputs)
+  end processAtomBatch
+
+  /** Internal API. Process a TestAskBatch.
+    *
+    * @param atom
+    *   ask batch to be processed
+    * @return
+    *   list of produced atoms
+    */
+  private def processAskBatch(atom: TestAskBatch[_]): List[TestAtom] = {
+    // setup info
+    wctx.info = AskInfo(atom.meta.portal, atom.meta.askingWF)
+    val taskName = rctx.portals(atom.meta.portal).replierTask
+    val task = initializedTasks.toMap.get(taskName).get.asInstanceOf[ReplierTask[_, _, _, _]]
+
+    // execute ask batch
+    val outputs1 = processReplierTask(taskName, task, atom)
+
+    // execute resulting events
+    val outputs2 = processAtomBatchHelper(Map(taskName -> outputs1))
+
+    // reset, has to be after the execute (for now...)
+    wctx.info = null
+
+    // return
+    outputs2
+  }
+  end processAskBatch
+
+  /** Internal API. Process a TestReplyBatch.
+    *
+    * @param atom
+    *   reply batch to be processed
+    * @return
+    *   list of produced atoms
+    */
+  private def processReplyBatch(atom: TestRepBatch[_]): List[TestAtom] =
+    // setup info
+    wctx.info = ReplyInfo(atom.meta.portal, atom.meta.askingWF)
+
+    // execute reply batch
+    val outputs1 = atom.list
+      .groupBy(_.asInstanceOf[Reply[_]].meta.askingTask)
+      .map { (asker, batch) =>
+        (asker, processAskerTask(asker, TestRepBatch(atom.meta, batch)))
+      }
+      .toMap
+
+    // reset
+    wctx.info = null
+
+    // execute resulting events
+    val outputs2 = processAtomBatchHelper(outputs1)
+
+    // return
+    outputs2
+  end processReplyBatch
+
+  /** Internal API. Process a task with inputs on the previous outputs.
+    *
+    * Ask and Reply events are captured by the output collector `oc`, and not
+    * returned here.
+    *
+    * @param path
+    *   path to the task
+    * @param task
+    *   task to be processed
+    * @param inputs
+    *   list of inputs (as names, Strings) of the workflow to be processed
+    * @param outputs
+    *   map of previous outputs, which will be used as inputs to this task
+    */
   private def processTask(
       path: String,
       task: GenericTask[_, _, _, _],
@@ -78,19 +166,35 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
       outputs: Map[String, TestAtomBatch[_]],
   ): TestAtomBatch[_] = {
 
+    // setup runner for task
     runner.setup(path, task.asInstanceOf)
+
+    // execute task on batch
     runner.run_batch(
       runner.clean_events(
         inputs.filter(input => outputs.contains(input)).map(input => outputs(input)).flatMap(x => x.list)
       )
     )
 
-    val output = runner.oc.getOutput()
+    // get, clean, return outputs
+    val allOutputs = runner.oc.getOutput()
+    val cleanedAllOutputs = runner.clean_events(allOutputs)
     runner.oc.clear()
-    TestAtomBatch(null, output)
+    TestAtomBatch(null, cleanedAllOutputs)
   }
 
-  /** Internal API. Process a sink with inputs on the previous outputs. */
+  /** Internal API. Process a sink with inputs on the previous outputs.
+    *
+    * Ask and Reply events are captured by the output collector `oc`, and not
+    * returned here.
+    *
+    * @param path
+    *   path of the sink
+    * @param inputs
+    *   list of inputs (from the workflow, Strings) to the sink
+    * @param outputs
+    *   map of the previous outputs, which will partly be used as inputs
+    */
   private def processSink(
       path: String,
       inputs: List[String],
@@ -109,6 +213,72 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     TestAtomBatch(wf.stream.path, cleanedAllOutputs)
   }
 
+  /** Internal API. Process the ReplierTask on a batch of asks.
+    *
+    * Ask and Reply events are captured by the runner output collector
+    * `runner.oc`. Regular events are returned and cleared from the collector.
+    *
+    * @param path
+    *   path of the replier task
+    * @param task
+    *   replier task to be processed
+    * @param batch
+    *   batch of asks to be processed
+    * @return
+    *   batch of regular events produced by the replier task
+    */
+  private def processReplierTask(
+      path: String,
+      task: ReplierTask[_, _, _, _],
+      batch: TestAskBatch[_]
+  ): TestAtomBatch[_] =
+
+    // setup runner for task
+    runner.setup(path, task.asInstanceOf)
+
+    // execute replier task on ask batch
+    runner.run_batch(batch.list)
+
+    // get, clean, clear output
+    val output = runner.oc.getOutput()
+    runner.oc.clear()
+    val cleanedOutput = runner.clean_events(output)
+
+    // return
+    TestAtomBatch(null, cleanedOutput)
+  end processReplierTask
+
+  /** Internal API. Process a TestReplyBatch.
+    *
+    * Will process matched continuations.
+    *
+    * Ask and Reply events are captured by the runner output collector
+    * `runner.oc`. Regular events are returned and cleared from the collector.
+    *
+    * @param path
+    *   path of the replier task
+    * @param atom
+    *   reply batch to be processed
+    * @return
+    *   batch of regular events produced by the replier task
+    */
+  private def processAskerTask(path: String, atom: TestRepBatch[_]): TestAtomBatch[_] =
+
+    // setup runner for task
+    runner.setup(path, null)
+
+    // execute asker task on reply batch
+    runner.run_batch(atom.list)
+
+    // get, clean, clear output
+    val output = runner.oc.getOutput()
+    runner.oc.clear()
+    val cleanedOutput = runner.clean_events(output)
+
+    // return
+    TestAtomBatch(null, cleanedOutput)
+  end processAskerTask
+
   /** Internal API. Processes the Workflow on some events.
     *
     * The provided _outputs parameter provides a mapping of task-names to their
@@ -120,7 +290,7 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     * a single TestAtomBatch. If there are asker tasks, or replyer tasks, then
     * it may also produce several AskBatches and RepBatches.
     */
-  private def processAtomHelper(_outputs: Map[String, TestAtomBatch[_]]): List[TestAtom] =
+  private def processAtomBatchHelper(_outputs: Map[String, TestAtomBatch[_]]): List[TestAtom] =
     // A mapping from task/source/sink name to their output
     var outputs: Map[String, TestAtomBatch[_]] = _outputs
 
@@ -170,85 +340,4 @@ private[portals] class TestWorkflow(wf: Workflow[_, _])(using rctx: TestRuntimeC
     runner.oc.clearAsks()
     runner.oc.clearReps()
     outputs(wf.sink) :: askAndReplyOutputs
-  end processAtomHelper
-
-  /** Internal API. Process the ReplierTask on a batch of asks. */
-  private def processReplierTask(
-      path: String,
-      task: ReplierTask[_, _, _, _],
-      input: TestAskBatch[_]
-  ): TestAtomBatch[_] = {
-    input.list.foreach { event =>
-      event match
-        case Ask(key, meta, e) =>
-          runner.ctx.state.key = key
-          runner.ctx.key = key
-          runner.ctx.id = meta.id
-          runner.ctx.asker = meta.askingTask
-          runner.ctx.portal = meta.portal
-          runner.ctx.path = path
-          runner.ctx.task = task.asInstanceOf
-          runner.ctx.askerKey = meta.askingKey
-          task.f2(runner.ctx.asInstanceOf)(e.asInstanceOf)
-        case _ => ???
-    }
-    val output = runner.oc.getOutput()
-    runner.oc.clear()
-    TestAtomBatch(null, output)
-  }
-
-  /** Internal API. Process a TestAskBatch. */
-  private def processAskBatch(atom: TestAskBatch[_]): List[TestAtom] = {
-    wctx.info = AskInfo(atom.meta.portal, atom.meta.askingWF)
-    val taskName = rctx.portals(atom.meta.portal).replierTask
-    val task = initializedTasks.toMap.get(taskName).get
-    val outputs1 = processReplierTask(taskName, task.asInstanceOf, atom)
-    val outputs2 = processAtomHelper(Map(taskName -> outputs1))
-    wctx.info = null
-    outputs2
-  }
-
-  /** Internal API. Process a TestReplyBatch. Will process matched
-    * continuations.
-    */
-  private def processAskerTask(path: String, atom: TestRepBatch[_]): TestAtomBatch[_] = {
-    atom.list.foreach { event =>
-      event match
-        case Reply(key, meta, e) =>
-          runner.ctx.state.key = key
-          runner.ctx.key = key
-          runner.ctx.path = path
-          runner.ctx.state.path = path
-          runner.ctx.task = null
-          runner.run_and_cleanup_reply(meta.id, e)(using runner.ctx)
-        case _ => ??? // NOPE
-    }
-
-    val output = runner.oc.getOutput()
-    runner.oc.clear()
-    TestAtomBatch(null, output)
-  }
-
-  /** Internal API. Process a TestReplyBatch. */
-  private def processReplyBatch(atom: TestRepBatch[_]): List[TestAtom] = {
-    wctx.info = ReplyInfo(atom.meta.portal, atom.meta.askingWF)
-    val outputs = atom.list
-      .groupBy(_.asInstanceOf[Reply[_]].meta.askingTask)
-      .map { (asker, batch) =>
-        (asker, processAskerTask(asker, TestRepBatch(atom.meta, batch)))
-      }
-      .toMap
-    wctx.info = null
-    processAtomHelper(outputs)
-  }
-
-  /** Internal API. Processes a TestAtomBatch on the workflow. */
-  private def processAtomBatch(atom: TestAtomBatch[_]): List[TestAtom] =
-    var outputs: Map[String, TestAtomBatch[_]] = Map.empty
-
-    // set the source output to be the input atom
-    outputs += wf.source -> atom
-
-    // process the atom batch on the outputs with the source set to the input
-    processAtomHelper(outputs)
-  end processAtomBatch
+  end processAtomBatchHelper
