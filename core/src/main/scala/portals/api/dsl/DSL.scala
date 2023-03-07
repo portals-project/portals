@@ -20,6 +20,7 @@ import portals.application.task.LoggingTaskContext
 import portals.application.task.ProcessorTaskContext
 import portals.application.task.ReplierTaskContext
 import portals.application.task.StatefulTaskContext
+import portals.util.Future
 
 /** DSL extensions for Portals, convenient shorthands for building applications.
   *

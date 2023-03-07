@@ -14,6 +14,7 @@ import portals.application.task.ProcessorTaskContext
 import portals.application.task.ReplierTask
 import portals.application.task.ReplierTaskContext
 import portals.application.task.ShuffleTask
+import portals.util.Key
 
 private sealed trait TaskBuilder
 

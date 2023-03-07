@@ -2,6 +2,9 @@ package portals.application.task
 
 import portals.*
 import portals.runtime.WrappedEvents.*
+import portals.util.Future
+import portals.util.Key
+import portals.util.Logger
 
 /** Internal API. OutputCollector to collect submitted events as side effects.
   * Works for all kinds of tasks.

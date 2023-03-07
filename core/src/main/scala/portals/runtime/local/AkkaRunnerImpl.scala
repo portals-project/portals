@@ -16,6 +16,7 @@ import portals.application.task.TaskContextImpl
 import portals.application.task.TaskExecution
 import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.WrappedEvents.*
+import portals.util.Key
 
 object AkkaRunnerImpl extends AkkaRunner:
   import AkkaRunner.Events.*

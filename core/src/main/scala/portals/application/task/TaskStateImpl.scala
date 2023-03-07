@@ -4,6 +4,7 @@ import portals.*
 import portals.application.task.TaskState
 import portals.runtime.state.MapStateBackendImpl
 import portals.runtime.state.StateBackend
+import portals.util.Key
 
 private[portals] class TaskStateImpl extends TaskState[Any, Any]:
   private[portals] var stateBackend: StateBackend = new MapStateBackendImpl()

@@ -15,6 +15,7 @@ import portals.application.task.GenericTask
 import portals.application.task.TaskContextImpl
 import portals.application.AtomicStreamRef
 import portals.application.Workflow
+import portals.util.Key
 
 object TestUtils:
   def executeTask[T, U](

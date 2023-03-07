@@ -1,4 +1,4 @@
-package portals
+package portals.util
 
 trait Key[T]:
   val x: T

@@ -8,6 +8,7 @@ import portals.api.builder.FlowBuilder
 import portals.api.builder.GeneratorBuilder
 import portals.application.*
 import portals.application.task.AskerTaskContext
+import portals.util.Future
 
 ////////////////////////////////////////////////////////////////////////////////
 // Experimental DSL

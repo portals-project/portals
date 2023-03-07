@@ -8,6 +8,7 @@ import portals.application.AtomicPortal
 import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.interpreter.InterpreterRuntimeContext
 import portals.runtime.WrappedEvents.*
+import portals.util.Key
 
 /** Internal API. The TestPortal connects the askers with the replier. The
   * replier needs to be set dynamically by the replying workflow.

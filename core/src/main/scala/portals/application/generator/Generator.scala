@@ -4,6 +4,7 @@ import scala.annotation.experimental
 
 import portals.*
 import portals.runtime.WrappedEvents.*
+import portals.util.Key
 
 /** Generator. */
 trait Generator[T]:

@@ -8,6 +8,7 @@ import portals.application.generator.Generator
 import portals.application.generator.GeneratorImpls
 import portals.application.generator.GeneratorImpls.ExternalRef
 import portals.application.generator.Generators
+import portals.util.Key
 
 trait GeneratorBuilder:
   def fromIterator[T](it: Iterator[T]): AtomicGeneratorRef[T]

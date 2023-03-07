@@ -20,7 +20,7 @@ import portals.application.task.PerKeyState
 import portals.application.task.PerTaskState
 import portals.test.*
 import portals.test.TestUtils
-import portals.Key
+import portals.util.Key
 
 @RunWith(classOf[JUnit4])
 class TasksTest:

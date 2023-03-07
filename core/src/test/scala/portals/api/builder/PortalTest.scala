@@ -13,6 +13,7 @@ import portals.application.task.AskerTaskContext
 import portals.application.AtomicPortalRef
 import portals.test.*
 import portals.test.TestUtils
+import portals.util.Future
 
 @RunWith(classOf[JUnit4])
 class PortalTest:

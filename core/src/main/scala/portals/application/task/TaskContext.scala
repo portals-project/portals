@@ -3,6 +3,9 @@ package portals.application.task
 import portals.*
 import portals.application.*
 import portals.application.task.TaskState
+import portals.util.Future
+import portals.util.Logger
+import portals.util.Key
 
 private[portals] sealed trait GenericGenericTaskContext
 

@@ -1,6 +1,6 @@
 package portals.runtime
 
-import portals.Key
+import portals.util.Key
 
 // Warning: if WrappedEvents is private[portals] then the tests will fail, not sure why
 object WrappedEvents:
