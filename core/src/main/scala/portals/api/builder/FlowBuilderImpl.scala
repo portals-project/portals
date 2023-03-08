@@ -8,6 +8,7 @@ import portals.application.task.MapTaskContext
 import portals.application.task.ProcessorTaskContext
 import portals.application.task.ReplierTaskContext
 
+/** Internal API. Implementation of the FlowBuilder. */
 private[portals] class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderContext[T, U])
     extends FlowBuilder[T, U, CT, CU]:
 

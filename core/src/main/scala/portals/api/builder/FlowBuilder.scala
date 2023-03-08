@@ -442,6 +442,9 @@ trait FlowBuilder[T, U, CT, CU]:
 end FlowBuilder // trait
 
 object FlowBuilder:
+  /** Internal API. Create a FlowBuilder from a workflow context, with `name`
+    * being the latest modified task.
+    */
   def apply[T, U, CT, CU](name: Option[String] = None)(using WorkflowBuilderContext[T, U]): FlowBuilder[T, U, CT, CU] =
     given FlowBuilderContext[T, U] = FlowBuilderContext[T, U](name)
     new FlowBuilderImpl[T, U, CT, CU]()
