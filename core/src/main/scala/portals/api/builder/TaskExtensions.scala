@@ -27,17 +27,32 @@ import portals.application.task.TaskState
 // object TaskExtensions:
 extension (t: TaskBuilder) {
 
-  /** behavior factory for flatMap */
+  /** Behavior factory for flatMap.
+    *
+    * Map and flatten events of type `T` to events of type `U`.
+    *
+    * @example
+    *   {{{TaskBuilder.flatMap[String, Int]( event => event.split(" ") )}}}
+    *
+    * @tparam T
+    *   type of the input events
+    * @tparam U
+    *   type of the output events
+    * @param f
+    *   the flatMap function
+    * @return
+    *   the flatMap task
+    */
   def flatMap[T, U](f: MapTaskContext[T, U] ?=> T => TraversableOnce[U]): GenericTask[T, U, Nothing, Nothing] =
     ProcessorTask[T, U] { ctx => x => f(using ctx)(x).iterator.foreach(ctx.emit) }
 
-  /** behavior factory for filter */
+  /** Filter events using the predicate `p`. */
   def filter[T](p: T => Boolean): GenericTask[T, T, Nothing, Nothing] =
     ProcessorTask[T, T] { ctx => event =>
       if (p(event)) ctx.emit(event)
     }
 
-  /** behavior factory for logger */
+  /** Log all events with the optional `prefix`. */
   def logger[T](prefix: String = ""): GenericTask[T, T, Nothing, Nothing] =
     ProcessorTask[T, T] { ctx => event =>
       ctx.log.info(prefix + event)
@@ -54,15 +69,20 @@ extension (t: TaskBuilder) {
 /** Task Behavior Combinators. */
 // object TaskBehaviorCombinators:
 extension [T, U, Req, Rep](task: GenericTask[T, U, Req, Rep]) {
+
+  /** Replace the onNext method of the task by `f`. */
   def withOnNext(f: ProcessorTaskContext[T, U] ?=> T => Unit): GenericTask[T, U, Req, Rep] =
     task._copy(_onNext = f)
 
+  /** Replace the onError method of the task by `f`. */
   def withOnError(f: ProcessorTaskContext[T, U] ?=> Throwable => Unit): GenericTask[T, U, Req, Rep] =
     task._copy(_onError = f)
 
+  /** Replace the onComplete method of the task by `f`. */
   def withOnComplete(f: ProcessorTaskContext[T, U] ?=> Unit): GenericTask[T, U, Req, Rep] =
     task._copy(_onComplete = f)
 
+  /** Replace the onAtomComplete method of the task by `f`. */
   def withOnAtomComplete(f: ProcessorTaskContext[T, U] ?=> Unit): GenericTask[T, U, Req, Rep] =
     task._copy(_onAtomComplete = f)
 }
@@ -75,17 +95,54 @@ extension [T, U, Req, Rep](task: GenericTask[T, U, Req, Rep]) {
 
 /** VSM Extension. */
 // object VSMExtension:
+/** Virtual State Machine Task.
+  *
+  * A VSMTask is a task that can be in one of several states. A state is a
+  * VSMTask instance. The methods of the VSMTask return the next VSMTask
+  * behavior to execute.
+  *
+  * Is used in a workflow by using the surrounding `TaskBuilder.vsm` behavior.
+  *
+  * @tparam T
+  *   type of the input events
+  * @tparam U
+  *   type of the output events
+  *
+  * @see
+  *   [[VSMTasks]]
+  */
 private[portals] trait VSMTask[T, U]:
   def onNext(using ctx: ProcessorTaskContext[T, U])(t: T): VSMTask[T, U]
   def onError(using ctx: ProcessorTaskContext[T, U])(t: Throwable): VSMTask[T, U]
   def onComplete(using ctx: ProcessorTaskContext[T, U]): VSMTask[T, U]
   def onAtomComplete(using ctx: ProcessorTaskContext[T, U]): VSMTask[T, U]
 
+/** Behavior factories for VSM Tasks.
+  *
+  * A VSMTask is a task that can be in one of several states. A state is a
+  * VSMTask instance. The methods of the VSMTask return the next VSMTask
+  * behavior to execute.
+  *
+  * The VSM Tasks are used in a context with using the surrounding
+  * `TaskBuilder.vsm` behavior.
+  *
+  * @example
+  *   {{{
+  * val init = VSMExtension.processor { event => started }
+  * val started = VSMExtension.processor { event => init }
+  * val vsm = TaskBuilder.vsm[Int, Int] { init }
+  *   }}}
+  *
+  * @see
+  *   [[VSMTask]]
+  * @see
+  *   [[TaskBuilder.vsm]]
+  */
 object VSMTasks:
-  /** Behavior factory for using the same behavior as previous behavior.
-    */
+  /** Behavior factory for using the same behavior as previous behavior. */
   def same[T, S]: VSMTask[T, S] = Same.asInstanceOf[VSMTask[T, S]]
 
+  /** Behavior factory for using a processor task. */
   def processor[T, U](f: ProcessorTaskContext[T, U] ?=> T => VSMTask[T, U]): VSMTask[T, U] =
     VSMProcessor(ctx => f(using ctx))
 
@@ -192,7 +249,20 @@ private[portals] case class Loop[T, U](override val task: GenericTask[T, U, Noth
 extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 
   /** Behavior factory for taking steps over atoms. This will execute the
-    * provided `_task` for the following atom.
+    * provided `_task` for the following atom subsequently to the current
+    * `task`.
+    *
+    * @example
+    *   {{{
+    * val task = TaskBuilder
+    *   .map[String, String]{ event => event }
+    *   .withStep(TaskBuilder.map[String, String]{ event => event.reverse })
+    *   }}}
+    *
+    * @param _task
+    *   the task to execute for the next atom
+    * @return
+    *   a stepping task executing first the prvious `task` and then `_task`
     */
   def withStep(_task: GenericTask[T, U, Nothing, Nothing]): GenericTask[T, U, Nothing, Nothing] = task match
     case stepper: Stepper[T, U] => stepper.copy(steppers = stepper.steppers :+ Step(_task))
@@ -200,6 +270,21 @@ extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 
   /** Behavior factory for looping behaviors over atoms. This will execute the
     * provided `_task` for the following `count` atoms.
+    *
+    * @example
+    *   {{{
+    * val task = TaskBuilder
+    *   .map[String, String]{ event => event }
+    *   .withLoop(2)(TaskBuilder.map[String, String]{ event => event.reverse })
+    *   }}}
+    *
+    * @param count
+    *   the number of loops/atoms to execute the `_task` for
+    * @param _task
+    *   the task to execute for the next `count` atoms
+    * @return
+    *   a looping task executing first the previous `task` and then `_task` for
+    *   `count` iterations
     */
   def withLoop(count: Int)(_task: GenericTask[T, U, Nothing, Nothing]): GenericTask[T, U, Nothing, Nothing] =
     task match
@@ -231,7 +316,22 @@ end fromTaskContext // def
 
 extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 
-  /** Chaining a task with another `_task`, the tasks will share state. */
+  /** Chain a task with another `_task`, the tasks will share state.
+    *
+    * @example
+    *   {{{
+    * val task = TaskBuilder
+    *   .map[String, String]{ event => event }
+    *   .withAndThen(TaskBuilder.map[String, String]{ event => event.reverse })
+    *   }}}
+    *
+    * @tparam TT
+    *   the type of the output of the chained `_task`
+    * @param _task
+    *   the task to execute after the current `task`
+    * @return
+    *   a task executing first the previous `task` and then `_task`
+    */
   def withAndThen[TT](_task: GenericTask[U, TT, Nothing, Nothing]): GenericTask[T, TT, Nothing, Nothing] =
     InitTask[T, TT, Nothing, Nothing] { ctx =>
       val _ctx = fromTaskContext(ctx).asInstanceOf[WithAndThenContext[T, U]]
@@ -275,6 +375,11 @@ extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
     *     if event < 3 then ctx.emit(0) else wrapped(event)
     *   }
     * }}}
+    *
+    * @param f
+    *   the wrapping function to wrap around the behavior of the task
+    * @return
+    *   a task with the wrapped behavior
     */
   def withWrapper(
       f: ProcessorTaskContext[T, U] ?=> (ProcessorTaskContext[T, U] ?=> T => Unit) => T => Unit
@@ -296,26 +401,56 @@ extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 @experimental
 object StashExtension:
   extension (t: TaskBuilder) {
+
+    /** Behavior factory to build a task that can stash messages, and unstash
+      * them later.
+      *
+      * @note
+      *   Can only be used from an internal context with an instance of
+      *   TaskContextImpl.
+      *
+      * @example
+      *   {{{
+      * InitTask { ctx =>
+      *   given TaskContextImpl[Int, Int, _, _] = ctx
+      *   TaskBuilder.stash { stash =>
+      *     // Stash messages
+      *     TaskBuilder.processor[Int, Int] { event =>
+      *       // example, stash all events until we receive a 0, then unstash all
+      *       if event == 0 then stash.unstashAll()
+      *       else stash.stash(event)
+      *     }
+      *   }
+      * }
+      *   }}}
+      * @see
+      *   [[portals.examples.distributed.actor.Actor]]
+      */
     def stash[T, U](f: TaskStash[T, U] => GenericTask[T, U, Nothing, Nothing]): GenericTask[T, U, Nothing, Nothing] =
       InitTask { ctx =>
         f(TaskStash[T, U]())
       }
   }
 
-  /** FIXME: we should really provide a more efficient state interface for lists
-    * or similar.
-    */
-  class TaskStash[T, U]():
+  /** Internal API. Implementation of the stash. */
+  private[portals] class TaskStash[T, U]():
+    // FIXME: we should really provide a more efficient state interface for lists or similar.
     private lazy val _stash: TaskContextImpl[T, U, Nothing, Nothing] ?=> PerKeyState[List[T]] =
       PerKeyState[List[T]]("_stash", List.empty)
+
+    /** Stash the `msg` to be handled later. */
     def stash(msg: T): TaskContextImpl[T, U, Nothing, Nothing] ?=> Unit =
       _stash.set(msg :: _stash.get())
+
+    /** Unstash all stashed messages, and handle them with the task behavior. */
     def unstashAll(): TaskContextImpl[T, U, Nothing, Nothing] ?=> Unit =
       _stash
         .get()
         .reverse
         .foreach { msg => summon[TaskContextImpl[T, U, Nothing, Nothing]].task.onNext(msg) }
       _stash.del()
+
+    /** Get the number of events in the stash. */
     def size(): TaskContextImpl[T, U, Nothing, Nothing] ?=> Int =
       _stash.get().size
 end StashExtension // object
