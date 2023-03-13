@@ -136,7 +136,7 @@ private[portals] trait VSMTask[T, U]:
   * @see
   *   [[VSMTask]]
   * @see
-  *   [[TaskBuilder.vsm]]
+  *   `TaskBuilder.vsm` wrapping initializing behavior.
   */
 object VSMTasks:
   /** Behavior factory for using the same behavior as previous behavior. */
@@ -423,8 +423,9 @@ object StashExtension:
       *   }
       * }
       *   }}}
+      *
       * @see
-      *   [[portals.examples.distributed.actor.Actor]]
+      *   `portals.examples.distributed.actor.ActorRuntime` for example of use.
       */
     def stash[T, U](f: TaskStash[T, U] => GenericTask[T, U, Nothing, Nothing]): GenericTask[T, U, Nothing, Nothing] =
       InitTask { ctx =>

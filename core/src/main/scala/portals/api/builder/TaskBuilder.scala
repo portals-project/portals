@@ -45,7 +45,7 @@ private sealed trait TaskBuilder
   *   }}}
   *
   * @see
-  *   [[portals.api.builder.TaskExtensions]]
+  *   `portals.api.builder.TaskExtensions` for more extensions.
   */
 object TaskBuilder extends TaskBuilder:
   //////////////////////////////////////////////////////////////////////////////
