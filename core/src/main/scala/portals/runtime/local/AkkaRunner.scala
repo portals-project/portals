@@ -9,10 +9,11 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Scheduler
 import akka.util.Timeout
 
-import portals.*
 import portals.application.generator.Generator
 import portals.application.sequencer.Sequencer
 import portals.application.task.GenericTask
+import portals.runtime.interpreter.InterpreterEvents.*
+import portals.runtime.WrappedEvents.*
 
 object AkkaRunner:
   object Events:

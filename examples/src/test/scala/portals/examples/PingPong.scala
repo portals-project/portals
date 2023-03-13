@@ -7,8 +7,8 @@ import org.junit.Ignore
 import org.junit.Test
 
 import portals.api.builder.ApplicationBuilder
+import portals.system.Systems
 import portals.test.TestUtils
-import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class PingPongTest:
@@ -22,7 +22,7 @@ class PingPongTest:
 
     val tester = new TestUtils.Tester[Pong]()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     {
       val pinger = ApplicationBuilder("pinger")

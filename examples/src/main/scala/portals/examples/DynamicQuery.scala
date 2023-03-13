@@ -3,10 +3,11 @@ package portals.examples
 import scala.annotation.experimental
 import scala.concurrent.Await
 
-import portals.*
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL
 import portals.application.task.PerTaskState
+import portals.system.Systems
+import portals.util.Future
 
 @experimental
 @main def DynamicQuery(): Unit =
@@ -59,7 +60,7 @@ import portals.application.task.PerTaskState
 
   } // end dynamicQueryApp
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
 
   system.launch(dynamicQueryApp)
 

@@ -8,11 +8,12 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.*
 import portals.application.task.AskerTaskContext
 import portals.application.AtomicPortalRef
+import portals.system.Systems
 import portals.test.*
 import portals.test.TestUtils
+import portals.util.Future
 
 @RunWith(classOf[JUnit4])
 class PortalTest:
@@ -65,7 +66,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
 
@@ -146,7 +147,7 @@ class PortalTest:
         .sink()
     }
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
 
@@ -234,7 +235,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
 
     system.launch(app)
 

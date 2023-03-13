@@ -1,6 +1,7 @@
 package portals.application.task
 
-import portals.*
+import portals.runtime.WrappedEvents.*
+import portals.util.Key
 
 trait OutputCollector[T, U, Req, Rep]:
   //////////////////////////////////////////////////////////////////////////////

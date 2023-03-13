@@ -8,8 +8,8 @@ import org.junit.Test
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.application.task.PerKeyState
+import portals.system.Systems
 import portals.test.TestUtils
-import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class IncrementalWordCountTest:
@@ -55,7 +55,7 @@ class IncrementalWordCountTest:
 
     // ASTPrinter.println(application)
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(application)
 
     system.stepUntilComplete()

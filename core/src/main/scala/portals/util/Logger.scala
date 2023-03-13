@@ -1,4 +1,4 @@
-package portals
+package portals.util
 
 import org.slf4j.{Logger => SLLogger}
 import org.slf4j.{LoggerFactory => SLLoggerFactory}

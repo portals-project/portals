@@ -3,9 +3,11 @@ package portals.examples
 import scala.annotation.experimental
 import scala.concurrent.Await
 
-import portals.*
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL
+import portals.system.Systems
+import portals.util.Future
+
 @experimental
 @main def PortalPingPong(): Unit =
   import portals.api.dsl.DSL.*
@@ -17,7 +19,7 @@ import portals.api.dsl.ExperimentalDSL
     case class Ping(x: Int) extends PingPong
     case class Pong(x: Int) extends PingPong
 
-    val generator = Generators.fromList(List(1024 * 1024))
+    val generator = Generators.fromList(List(1024 * 128))
 
     val portal = Portal[Ping, Pong]("portal")
 
@@ -44,7 +46,7 @@ import portals.api.dsl.ExperimentalDSL
       .freeze()
   }
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
 
   system.launch(app)
 

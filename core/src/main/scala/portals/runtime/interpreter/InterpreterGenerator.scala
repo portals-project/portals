@@ -1,11 +1,13 @@
-package portals
+package portals.runtime.interpreter
 
-import portals.*
 import portals.application.AtomicGenerator
+import portals.runtime.interpreter.InterpreterEvents.*
+import portals.runtime.WrappedEvents.*
+// import portals.Key
 
 /** Internal API. TestGenerator. */
-private[portals] class TestGenerator(val generator: AtomicGenerator[_])(using rctx: TestRuntimeContext):
-  def process(): List[TestAtom] =
+private[portals] class InterpreterGenerator(val generator: AtomicGenerator[_])(using rctx: InterpreterRuntimeContext):
+  def process(): List[InterpreterAtom] =
     var atom = List.empty[WrappedEvent[_]]
     var stop = false
     while generator.generator.hasNext() && !stop do
@@ -25,4 +27,4 @@ private[portals] class TestGenerator(val generator: AtomicGenerator[_])(using rc
           ???
         case Reply(_, _, _) =>
           ???
-    List(TestAtomBatch(generator.stream.path, atom.reverse))
+    List(InterpreterAtomBatch(generator.stream.path, atom.reverse))

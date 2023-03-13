@@ -1,6 +1,5 @@
 package portals.api.builder
 
-import portals.*
 import portals.application.*
 
 /** Builder for splitting an atomic stream into multiple atomic streams.

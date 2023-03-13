@@ -1,10 +1,10 @@
 package portals.examples
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.api.dsl.DSL
 import portals.application.task.PerKeyState
+import portals.system.Systems
 
 /** Incremental Word Count
   *
@@ -53,7 +53,7 @@ import portals.application.task.PerKeyState
 
   // ASTPrinter.println(application)
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
   system.launch(application)
 
   system.stepUntilComplete()
@@ -94,7 +94,7 @@ import portals.application.task.PerKeyState
 
   // ASTPrinter.println(application)
 
-  val system = Systems.test()
+  val system = Systems.interpreter()
   system.launch(application)
 
   system.stepUntilComplete()

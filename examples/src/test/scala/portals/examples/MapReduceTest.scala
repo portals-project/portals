@@ -8,8 +8,8 @@ import org.junit.Test
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.application.task.PerTaskState
+import portals.system.Systems
 import portals.test.TestUtils
-import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class WordCountTest:
@@ -56,7 +56,7 @@ class WordCountTest:
     val application = builder
       .build()
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(application)
 
     system.stepUntilComplete()

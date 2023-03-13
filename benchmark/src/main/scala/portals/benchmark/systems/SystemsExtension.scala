@@ -1,7 +1,7 @@
 package portals.benchmark.systems
 
-import portals.PortalsSystem
-import portals.Systems
+import portals.system.PortalsSystem
+import portals.system.Systems
 
 extension (systems: Systems) {
   def asyncLocalNoGuarantees(): PortalsSystem = new NoGuaranteesSystem()

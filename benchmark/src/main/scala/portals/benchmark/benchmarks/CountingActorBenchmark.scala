@@ -1,11 +1,12 @@
 package portals.benchmark.benchmarks
 
-import portals.*
 import portals.api.builder.*
 import portals.api.dsl.DSL.*
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.InterpreterSystem
+import portals.system.Systems
 
 object CountingActorBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
@@ -30,7 +31,7 @@ object CountingActorBenchmark extends Benchmark:
       case "async" => Systems.local()
       case "noGuarantees" => Systems.asyncLocalNoGuarantees()
       case "microBatching" => Systems.asyncLocalMicroBatching()
-      case "sync" => Systems.test()
+      case "sync" => Systems.interpreter()
       case _ => ???
 
     val builder = ApplicationBuilder("app")
@@ -55,7 +56,7 @@ object CountingActorBenchmark extends Benchmark:
 
     system.launch(application)
 
-    if sSystem == "sync" then system.asInstanceOf[TestSystem].stepUntilComplete()
+    if sSystem == "sync" then system.asInstanceOf[InterpreterSystem].stepUntilComplete()
 
     completer.waitForCompletion()
 

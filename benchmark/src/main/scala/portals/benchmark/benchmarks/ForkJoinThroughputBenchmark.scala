@@ -1,12 +1,13 @@
 package portals.benchmark.benchmarks
 
-import portals.*
 import portals.api.builder.ApplicationBuilder
 import portals.api.dsl.DSL.*
 import portals.application.*
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
+import portals.system.InterpreterSystem
+import portals.system.Systems
 
 object ForkJoinThroughputBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
@@ -88,7 +89,7 @@ object ForkJoinThroughputBenchmark extends Benchmark:
 
     system.launch(application)
 
-    if sSystem == "sync" then system.asInstanceOf[TestSystem].stepUntilComplete()
+    if sSystem == "sync" then system.asInstanceOf[InterpreterSystem].stepUntilComplete()
 
     completer.waitForCompletion()
 

@@ -2,7 +2,7 @@ package portals.examples
 
 import portals.api.builder.ApplicationBuilder
 import portals.application.Application
-import portals.Systems
+import portals.system.Systems
 
 /** Hello World
   *
@@ -23,7 +23,7 @@ object HelloWorld:
       .workflows[String, String]("hello")
       .source(generator.stream)
       .map { x => x }
-      // .logger()
+      .logger()
       .sink()
       .freeze()
 
@@ -35,7 +35,7 @@ object HelloWorld:
 @main def HelloWorldMain(): Unit =
   val application = HelloWorld.app
   // ASTPrinter.println(application) // print the application AST
-  val system = Systems.test()
+  val system = Systems.interpreter()
   system.launch(application)
   system.stepUntilComplete()
   system.shutdown()

@@ -2,7 +2,6 @@ package portals.api.builder
 
 import scala.annotation.targetName
 
-import portals.*
 import portals.application.*
 import portals.application.task.AskerTaskContext
 import portals.application.task.GenericTask

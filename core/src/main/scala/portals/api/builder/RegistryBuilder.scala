@@ -1,6 +1,5 @@
 package portals.api.builder
 
-import portals.*
 import portals.application.*
 
 /** Build the registry to fetch references from the registry.
