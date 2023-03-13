@@ -8,8 +8,8 @@ import org.junit.Test
 
 import portals.api.builder.TaskBuilder
 import portals.api.dsl.DSL.*
+import portals.system.Systems
 import portals.test.TestUtils
-import portals.Systems
 
 @RunWith(classOf[JUnit4])
 class DSLTest:
@@ -95,7 +95,7 @@ class DSLTest:
         .freeze()
     }
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()
@@ -124,7 +124,7 @@ class DSLTest:
       Connections.connect(generator.stream, sequencer)
     }
 
-    val system = Systems.test()
+    val system = Systems.interpreter()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()

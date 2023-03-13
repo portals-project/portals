@@ -14,6 +14,7 @@ import portals.application.task.ReplierTask
 import portals.application.task.ReplierTaskContext
 import portals.application.task.ShuffleTask
 import portals.application.AtomicPortalRefKind
+import portals.util.Key
 
 // The TaskBuilder is a trait so that we can extend it, and add extension methods to it.
 private sealed trait TaskBuilder
