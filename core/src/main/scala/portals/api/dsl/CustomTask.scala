@@ -38,8 +38,8 @@ import portals.application.task.ReplierTaskContext
   def onComplete(using ctx: ProcessorTaskContext[T, U]): Unit = ()
   def onAtomComplete(using ctx: ProcessorTaskContext[T, U]): Unit = ()
 
-@experimental
-trait CustomAskerReplierTask[T, U, Req, Rep] extends CustomTask[T, U, Req, Rep]:
+/** Custom task for writing asker-replier tasks in object oriented style. */
+@experimental trait CustomAskerReplierTask[T, U, Req, Rep] extends CustomTask[T, U, Req, Rep]:
   def onAsk(using ctx: AskerReplierTaskContext[T, U, Req, Rep])(t: Req): Unit = ()
   def onNext(using ctx: AskerTaskContext[T, U, Req, Rep])(t: T): Unit = ()
   def onError(using ctx: ProcessorTaskContext[T, U])(t: Throwable): Unit = ()

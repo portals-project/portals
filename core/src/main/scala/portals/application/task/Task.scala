@@ -1,5 +1,7 @@
 package portals.application.task
 
+import scala.annotation.experimental
+
 import portals.application.*
 import portals.application.task.ReplierTaskContext
 import portals.application.task.TaskContextImpl
@@ -77,7 +79,7 @@ private[portals] case class ReplierTask[T, U, Req, Rep](
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f1(ctx)(t)
 end ReplierTask // trait
 
-private[portals] case class AskerReplierTask[T, U, Req, Rep](
+@experimental private[portals] case class AskerReplierTask[T, U, Req, Rep](
     f1: TaskContextImpl[T, U, Req, Rep] => T => Unit,
     f2: TaskContextImpl[T, U, Req, Rep] => Req => Unit
 )(
