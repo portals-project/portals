@@ -121,7 +121,7 @@ object DSL:
     * @tparam U
     *   The Task's type of the output value.
     */
-  def log[T, U](using LoggingTaskContext[T, U]) = summon[LoggingTaskContext[T, U]].log
+  def log[T, U](using LoggingTaskContext) = summon[LoggingTaskContext].log
 
   //////////////////////////////////////////////////////////////////////////////
   // Builder DSL

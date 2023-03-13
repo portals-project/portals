@@ -1,5 +1,7 @@
 package portals.application.task
 
+import scala.annotation.experimental
+
 import portals.application.*
 import portals.application.task.ReplierTaskContext
 import portals.application.task.TaskContextImpl
@@ -59,19 +61,35 @@ end ShuffleTask // trait
 private[portals] trait ExtensibleTask[T, U, Req, Rep] extends GenericTask[T, U, Req, Rep]
 end ExtensibleTask // trait
 
+private[portals] sealed trait AskerTaskKind[T, U, Req, Rep] extends BaseTask[T, U, Req, Rep]
+
 private[portals] case class AskerTask[T, U, Req, Rep](f: TaskContextImpl[T, U, Req, Rep] => T => Unit)(
     val portals: AtomicPortalRefKind[Req, Rep]*
-) extends BaseTask[T, U, Req, Rep]:
+) extends AskerTaskKind[T, U, Req, Rep]:
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f(ctx)(t)
 end AskerTask // trait
 
+private[portals] sealed trait ReplierTaskKind[T, U, Req, Rep] extends BaseTask[T, U, Req, Rep]
+
 private[portals] case class ReplierTask[T, U, Req, Rep](
     f1: TaskContextImpl[T, U, Req, Rep] => T => Unit,
-    f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit
+    f2: TaskContextImpl[T, U, Req, Rep] => Req => Unit
 )(val portals: AtomicPortalRefKind[Req, Rep]*)
-    extends BaseTask[T, U, Req, Rep]:
+    extends ReplierTaskKind[T, U, Req, Rep]:
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f1(ctx)(t)
 end ReplierTask // trait
+
+private[portals] case class AskerReplierTask[T, U, Req, Rep](
+    f1: TaskContextImpl[T, U, Req, Rep] => T => Unit,
+    f2: TaskContextImpl[T, U, Req, Rep] => Req => Unit
+)(
+    val askerportals: AtomicPortalRefKind[Req, Rep]*
+)(
+    val replyerportals: AtomicPortalRefKind[Req, Rep]*
+) extends AskerTaskKind[T, U, Req, Rep]
+    with ReplierTaskKind[T, U, Req, Rep]:
+  override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f1(ctx)(t)
+end AskerReplierTask // trait
 
 private[portals] case class IdentityTask[T]() extends BaseTask[T, T, Nothing, Nothing]:
   override def onNext(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(event: T): Unit = ctx.emit(event)

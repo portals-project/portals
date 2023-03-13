@@ -24,7 +24,7 @@ private[portals] class TaskExecutorImpl:
   ctx.outputCollector = oc
   private val state = MapStateBackendImpl()
   private var task: GenericTask[Any, Any, Any, Any] = _
-  private var _replierTask: ReplierTask[Any, Any, Any, Any] = _
+  private var _replierTask: ReplierTaskKind[Any, Any, Any, Any] = _
 
   /** Setup the task executor for a specific task.
     *
@@ -35,13 +35,15 @@ private[portals] class TaskExecutorImpl:
     * @param _task
     *   task to be executed
     */
-  def setup(path: String, _task: GenericTask[Any, Any, Any, Any]): Unit =
+  def setup(path: String, wfpath: String, _task: GenericTask[Any, Any, Any, Any]): Unit =
     ctx.path = path
+    ctx.wfpath = wfpath
     ctx.state.path = path
     ctx.state.asInstanceOf[TaskStateImpl].stateBackend = state
     task = _task
     _replierTask = _task match
       case t @ ReplierTask(_, _) => t
+      case t @ AskerReplierTask(_, _) => t
       case t @ _ => null
   end setup
 
@@ -127,7 +129,6 @@ private[portals] class TaskExecutorImpl:
         case Failure(t) =>
           oc.submit(Error(t))
           errord = Some(t)
-          println("error: " + t)
     }
 
     // if there was an error, end atom and seal batch
@@ -178,7 +179,7 @@ private[portals] class TaskExecutorImpl:
     *   reply to be executed
     */
   def run_and_cleanup_reply[T, U, Req, Rep](id: Int, r: Rep)(using
-      actx: AskerTaskContext[T, U, Req, Rep]
+      actx: TaskContextImpl[T, U, Req, Rep]
   ): Unit =
 
     // setup state
@@ -186,20 +187,35 @@ private[portals] class TaskExecutorImpl:
       PerTaskState[Map[Int, Rep]]("futures", Map.empty)
     lazy val _continuations: AskerTaskContext[T, U, Req, Rep] ?=> PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]] =
       PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]]("continuations", Map.empty)
+    lazy val _continuations_meta =
+      PerTaskState[Map[Int, ContinuationMeta]]("continuations_meta", Map.empty)
 
     // set future
     _futures.update(id, r)
 
     // run continuation
-    _continuations.get(id) match
-      case Some(continuation) => continuation(using actx)
-      case None => () // do nothing, no continuation was saved for this future
+    (_continuations.get(id), _continuations_meta.get(id)) match
+      case (Some(continuation), None) =>
+        // run continuation
+        continuation(using actx)
+      case (Some(continuation), Some(continuation_meta)) =>
+        // setup context
+        actx.id = continuation_meta.id
+        actx.asker = continuation_meta.asker
+        actx.portal = continuation_meta.portal
+        actx.portalAsker = continuation_meta.portalAsker
+        actx.askerKey = continuation_meta.askerKey
+        // run continuation
+        continuation(using actx)
+      case (None, Some(continuation_meta)) => ??? // should not happen
+      case (None, None) => () // do nothing, no continuation was saved for this future
 
     // cleanup future
     _futures.remove(id)
 
     // cleanup continuation
     _continuations.remove(id)
+    _continuations_meta.remove(id)
   end run_and_cleanup_reply
 
   /** Execute a wrapped event on the task.
@@ -248,8 +264,13 @@ private[portals] class TaskExecutorImpl:
       ctx.id = meta.id
       ctx.asker = meta.askingTask
       ctx.portal = meta.portal
+      ctx.portalAsker = meta.askingWF
       ctx.askerKey = meta.askingKey
-      _replierTask.f2(ctx)(e)
+      _replierTask match
+        case ReplierTask(_, f2) =>
+          f2(ctx)(e)
+        case AskerReplierTask(_, f2) =>
+          f2(ctx)(e)
       Success(())
     case Reply(key, meta, e) =>
       // task

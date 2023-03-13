@@ -7,28 +7,6 @@ import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.interpreter.InterpreterRuntimeContext
 import portals.runtime.WrappedEvents.*
 
-// TODO: remove this
-private[portals] object InterpreterWorkflow:
-  sealed trait ExecutionInfo
-  case class AskInfo(portal: String, askingWF: String) extends ExecutionInfo
-  case class ReplyInfo(portal: String, askingWF: String) extends ExecutionInfo
-  case object EventInfo extends ExecutionInfo
-
-// TODO: remove this
-private class InterpreterWorkflowContext:
-  import InterpreterWorkflow.*
-  var info: ExecutionInfo = _
-
-  def getAskingWF(): String = info match
-    case AskInfo(_, x) => x
-    case ReplyInfo(_, x) => x
-    case _ => ???
-
-  def getPortal(): String = info match
-    case AskInfo(x, _) => x
-    case ReplyInfo(x, _) => x
-    case _ => ???
-
 /** Internal API. TestRuntime wrapper of a Workflow.
   *
   * @param wf
@@ -37,10 +15,8 @@ private class InterpreterWorkflowContext:
   *   runtime context
   */
 private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: InterpreterRuntimeContext):
-  import InterpreterWorkflow.*
 
   // init
-  private val wctx = new InterpreterWorkflowContext()
   private val runner = TaskExecutorImpl()
 
   // topographically sorted according to connections
@@ -108,9 +84,8 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     */
   private def processAskBatch(atom: InterpreterAskBatch[_]): List[InterpreterAtom] = {
     // setup info
-    wctx.info = AskInfo(atom.meta.portal, atom.meta.askingWF)
     val taskName = rctx.portals(atom.meta.portal).replierTask
-    val task = initializedTasks.toMap.get(taskName).get.asInstanceOf[ReplierTask[_, _, _, _]]
+    val task = initializedTasks.toMap.get(taskName).get.asInstanceOf[ReplierTaskKind[_, _, _, _]]
 
     // execute ask batch
     val outputs1 = processReplierTask(taskName, task, atom)
@@ -118,8 +93,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     // execute resulting events
     val outputs2 = processAtomBatchHelper(Map(taskName -> outputs1))
 
-    // reset, has to be after the execute (for now...)
-    wctx.info = null
+    // reset
 
     // return
     outputs2
@@ -135,7 +109,6 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     */
   private def processReplyBatch(atom: InterpreterRepBatch[_]): List[InterpreterAtom] =
     // setup info
-    wctx.info = ReplyInfo(atom.meta.portal, atom.meta.askingWF)
 
     // execute reply batch
     val outputs1 = atom.list
@@ -146,7 +119,6 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
       .toMap
 
     // reset
-    wctx.info = null
 
     // execute resulting events
     val outputs2 = processAtomBatchHelper(outputs1)
@@ -177,7 +149,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
   ): InterpreterAtomBatch[_] = {
 
     // setup runner for task
-    runner.setup(path, task.asInstanceOf)
+    runner.setup(path, wf.path, task.asInstanceOf)
 
     // execute task on batch
     runner.run_batch(
@@ -239,12 +211,12 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     */
   private def processReplierTask(
       path: String,
-      task: ReplierTask[_, _, _, _],
+      task: ReplierTaskKind[_, _, _, _],
       batch: InterpreterAskBatch[_]
   ): InterpreterAtomBatch[_] =
 
     // setup runner for task
-    runner.setup(path, task.asInstanceOf)
+    runner.setup(path, wf.path, task.asInstanceOf)
 
     // execute replier task on ask batch
     runner.run_batch(batch.list)
@@ -275,7 +247,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
   private def processAskerTask(path: String, atom: InterpreterRepBatch[_]): InterpreterAtomBatch[_] =
 
     // setup runner for task
-    runner.setup(path, null)
+    runner.setup(path, wf.path, null)
 
     // execute asker task on reply batch
     runner.run_batch(atom.list)
@@ -350,10 +322,10 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
       val repoutputs =
         runner.oc
           .getRepOutput()
-          // group by portal
-          .groupBy { case Reply(_, portalMeta, _) => (portalMeta.portal) }
+          // group by portal and the asking workflow
+          .groupBy { case Reply(_, portalMeta, _) => (portalMeta.portal, portalMeta.askingWF) }
           // map grouping to reply batches
-          .map { (k, v) => InterpreterRepBatch(InterpreterPortalBatchMeta(k, wctx.getAskingWF()), v) }
+          .map { (k, v) => InterpreterRepBatch(InterpreterPortalBatchMeta(k._1, k._2), v) }
           .toList
 
       // concatenate list of atom batches

@@ -259,3 +259,134 @@ class PortalTest:
     testerAsker2.isEmptyAssert()
 
   end testMultiplePortals // def
+
+  @Test
+  @experimental
+  def testNestedAsks(): Unit =
+    import portals.api.dsl.DSL.*
+
+    val tester = new TestUtils.Tester[Int]()
+
+    val app = PortalsApp("testNestedAsks") {
+      val generator = Generators.signal[Int](128)
+
+      val portal = Portal[Int, Int]("portal")
+
+      val wf = Workflows[Int, Int]("wf")
+        .source(generator.stream)
+        .task(TaskBuilder.askerreplier[Int, Int, Int, Int](portal)(portal) { x =>
+          // triggered by signal
+          val f: Future[Int] = ask(portal)(x - 1)
+          await(f) {
+            emit(x)
+          }
+        } { x =>
+          // requests, triggered by ask
+          if x > 0 then
+            val f: Future[Int] = ask(portal)(x - 1)
+            await(f) {
+              emit(x)
+              reply(x)
+            }
+          else
+            emit(x)
+            reply(x)
+        })
+        .task(tester.task)
+        .sink()
+        .freeze()
+    }
+
+    val system = Systems.interpreter()
+
+    system.launch(app)
+
+    system.stepUntilComplete()
+
+    system.shutdown()
+
+    List.range(0, 128 + 1).foreach { x =>
+      tester.receiveAssert(x)
+    }
+
+  @Test
+  @experimental
+  def testNestedAskPingPong(): Unit =
+    import portals.api.dsl.DSL.*
+    import portals.api.dsl.ExperimentalDSL.*
+
+    val testerPing = new TestUtils.Tester[Int]()
+
+    val testerPong = new TestUtils.Tester[Int]()
+
+    val testerTrigger = new TestUtils.Tester[Int]()
+
+    val app = PortalsApp("NestedAskPingPong") {
+
+      val trigger = Generators.signal[Int](128)
+
+      val ping = Portal[Int, Int]("ping")
+
+      val pong = Portal[Int, Int]("pong")
+
+      def pingerPongerBehavior(pinger: AtomicPortalRef[Int, Int], ponger: AtomicPortalRef[Int, Int]) =
+        TaskBuilder.askerreplier[Nothing, Int, Int, Int](pinger)(ponger)(_ => ()) { x =>
+          // send request `x-1` to other
+          if x > 0 then
+            val f: Future[Int] = ask(pinger)(x - 1)
+            await(f) {
+              emit(x)
+              reply(x)
+            }
+          // else done
+          else
+            emit(x)
+            reply(x)
+        }
+
+      val pingWf = Workflows[Nothing, Nothing]("pingWf")
+        .source(Generators.empty.stream)
+        .task(pingerPongerBehavior(pong, ping))
+        .task(testerPing.task)
+        .empty[Nothing]()
+        .sink()
+        .freeze()
+
+      val pongWf = Workflows[Nothing, Nothing]("pongWf")
+        .source(Generators.empty.stream)
+        .task(pingerPongerBehavior(ping, pong))
+        .task(testerPong.task)
+        .empty[Nothing]()
+        .sink()
+        .freeze()
+
+      val triggerWf = Workflows[Int, Int]("triggerWf")
+        .source(trigger.stream)
+        .task(TaskBuilder.asker[Int, Int, Int, Int](ping, pong) { x =>
+          val f: Future[Int] = ask(ping)(x)
+          await(f) {
+            emit(x)
+          }
+        })
+        .task(testerTrigger.task)
+        .sink()
+        .freeze()
+    }
+
+    val system = Systems.interpreter()
+
+    system.launch(app)
+
+    system.stepUntilComplete()
+
+    system.shutdown()
+
+    List.range(0, 128 + 1).filter(_ % 2 == 0).foreach { x =>
+      testerPing.receiveAssert(x)
+    }
+
+    List.range(0, 128 + 1).filter(_ % 2 == 1).foreach { x =>
+      testerPong.receiveAssert(x)
+    }
+
+    testerTrigger.receiveAssert(128)

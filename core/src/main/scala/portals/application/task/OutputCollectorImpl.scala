@@ -26,9 +26,10 @@ private[portals] class OutputCollectorImpl[T, U, Req, Rep] extends OutputCollect
       askingTask: String,
       req: Req,
       key: Key[Long], // TODO: this is confusing exactly which key is meant here, askingKey or replyingKey
-      id: Int
+      id: Int,
+      askingWF: String,
   ): Unit =
-    _asks = Ask(key, PortalMeta(portal, askingTask, key, id), req) :: _asks
+    _asks = Ask(key, PortalMeta(portal, askingTask, key, id, askingWF), req) :: _asks
   def getAskOutput(): List[Ask[Req]] = _asks.reverse
   def clearAsks(): Unit = _asks = List.empty
 
@@ -41,8 +42,9 @@ private[portals] class OutputCollectorImpl[T, U, Req, Rep] extends OutputCollect
       portal: String,
       askingTask: String,
       key: Key[Long], // TODO: this is confusing exactly which key is meant here, askingKey or replyingKey
-      id: Int
-  ): Unit = _reps = Reply(key, PortalMeta(portal, askingTask, key, id), r) :: _reps
+      id: Int,
+      askingWF: String,
+  ): Unit = _reps = Reply(key, PortalMeta(portal, askingTask, key, id, askingWF), r) :: _reps
   def getRepOutput(): List[Reply[Rep]] = _reps.reverse
   def clearReps(): Unit = _reps = List.empty
 end OutputCollectorImpl // class

@@ -1,5 +1,6 @@
 package portals.compiler.phases
 
+import portals.application.task.AskerReplierTask
 import portals.application.task.ReplierTask
 import portals.application.Application
 import portals.compiler.*
@@ -26,7 +27,11 @@ private[portals] object WellFormedCheck extends CompilerPhase[Application, Appli
       // format: off
       val portals = application.portals.map(_.path)
       val portalTasks = application.workflows.map(_.tasks).flatMap(_.values)
-      val _portals = portalTasks.filter { case r @ ReplierTask(_, _) => true; case _ => false }.flatMap(_.asInstanceOf[ReplierTask[_, _, _, _]].portals).map(_.path)
+      val _portals = {
+        val replierTaskPortals = portalTasks.filter { case r @ ReplierTask(_, _) => true; case _ => false }.flatMap(_.asInstanceOf[ReplierTask[_, _, _, _]].portals).map(_.path)
+        val askerReplierTaskPortals = portalTasks.filter { case r @ AskerReplierTask(_, _) => true; case _ => false }.flatMap(_.asInstanceOf[AskerReplierTask[_, _, _, _]].replyerportals).map(_.path)
+        replierTaskPortals ++ askerReplierTaskPortals
+      }
       if !(portals.length == _portals.length && portals.forall { _portals.contains(_) } && _portals.forall {portals.contains(_)}) then ???
       // format: on
 

@@ -1,9 +1,8 @@
 package portals.application.task
 
-import portals.api.builder.*
-import portals.application.*
 import portals.application.task.AskerTaskContext
 import portals.application.task.Continuation
+import portals.application.task.ContinuationMeta
 import portals.application.task.GenericTask
 import portals.application.task.MapTaskContext
 import portals.application.task.MapTaskStateExtension
@@ -14,6 +13,7 @@ import portals.application.task.ProcessorTaskContext
 import portals.application.task.ReplierTaskContext
 import portals.application.task.TaskContext
 import portals.application.task.TaskState
+import portals.application.AtomicPortalRefKind
 import portals.runtime.WrappedEvents.*
 import portals.system.PortalsSystem
 import portals.util.Future
@@ -41,6 +41,7 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
 
   /** should be var so that it can be swapped out during runtime */
   private[portals] var path: String = _
+  private[portals] var wfpath: String = _
   private[portals] var key: Key[Long] = _
   private[portals] var system: PortalsSystem = _
   private[portals] var outputCollector: OutputCollector[T, U, Any, Any] = _
@@ -51,14 +52,30 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
   //////////////////////////////////////////////////////////////////////////////
   private lazy val _continuations =
     PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]]("continuations", Map.empty)(using this)
+  private lazy val _continuations_meta =
+    PerTaskState[Map[Int, ContinuationMeta]]("continuations_meta", Map.empty)(using this)
 
   override def ask(portal: AtomicPortalRefKind[Req, Rep])(msg: Req): Future[Rep] =
     val future: Future[Rep] = Future()
-    outputCollector.ask(portal.path, this.path, msg, this.key, future.id)
+    outputCollector.ask(portal.path, this.path, msg, this.key, future.id, this.wfpath)
     future
 
   override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit =
+    // update continuation
     _continuations.update(future.asInstanceOf[FutureImpl[_]].id, f)
+
+    // update continuation meta information
+    if this.asker != null then
+      _continuations_meta.update(
+        future.asInstanceOf[FutureImpl[_]].id,
+        ContinuationMeta(
+          this.id,
+          this.asker,
+          this.portal,
+          this.portalAsker,
+          this.askerKey
+        )
+      )
 
   //////////////////////////////////////////////////////////////////////////////
   // ReplierTaskContext
@@ -71,5 +88,5 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
   private[portals] var askerKey: Key[Long] = _
 
   override def reply(msg: Rep): Unit =
-    outputCollector.reply(msg, this.portal, this.asker, this.askerKey, this.id)
+    outputCollector.reply(msg, this.portal, this.asker, this.askerKey, this.id, this.portalAsker)
 end TaskContextImpl // class
