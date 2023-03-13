@@ -15,10 +15,9 @@ import portals.application.task.TaskContext
 import portals.application.task.TaskContextImpl
 import portals.application.task.TaskState
 
-/** Note: Scaladoc doesn't transfer or link documentation for exports #14342
-  * https://github.com/lampepfl/dotty/issues/14342 for now we removed exporting,
-  * and everything is flat in this file.
-  */
+// Issue/note: Scaladoc doesn't transfer or link documentation for exports
+// #14342 https://github.com/lampepfl/dotty/issues/14342 for now we removed
+// exporting, and everything is flat in this file.
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task Extensions
