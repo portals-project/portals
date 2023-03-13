@@ -121,3 +121,17 @@ object MapTaskStateExtension:
         (state.get() - key)
       )
   }
+
+  extension [K, V](state: PerKeyState[Map[K, V]]) {
+    def get(key: K): Option[V] = state.get().get(key)
+
+    def update(key: K, value: V): Unit =
+      state.set(
+        (state.get() + (key -> value))
+      )
+
+    def remove(key: K): Unit =
+      state.set(
+        (state.get() - key)
+      )
+  }
