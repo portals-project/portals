@@ -7,13 +7,6 @@ import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.interpreter.InterpreterRuntimeContext
 import portals.runtime.WrappedEvents.*
 
-// TODO: remove this
-private[portals] object InterpreterWorkflow:
-  sealed trait ExecutionInfo
-  case class AskInfo(portal: String, askingWF: String) extends ExecutionInfo
-  case class ReplyInfo(portal: String, askingWF: String) extends ExecutionInfo
-  case object EventInfo extends ExecutionInfo
-
 /** Internal API. TestRuntime wrapper of a Workflow.
   *
   * @param wf
@@ -22,10 +15,8 @@ private[portals] object InterpreterWorkflow:
   *   runtime context
   */
 private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: InterpreterRuntimeContext):
-  import InterpreterWorkflow.*
 
   // init
-  // private val wctx = new InterpreterWorkflowContext()
   private val runner = TaskExecutorImpl()
 
   // topographically sorted according to connections
@@ -93,7 +84,6 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     */
   private def processAskBatch(atom: InterpreterAskBatch[_]): List[InterpreterAtom] = {
     // setup info
-    // wctx.info = AskInfo(atom.meta.portal, atom.meta.askingWF)
     val taskName = rctx.portals(atom.meta.portal).replierTask
     val task = initializedTasks.toMap.get(taskName).get.asInstanceOf[ReplierTaskKind[_, _, _, _]]
 
@@ -103,8 +93,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     // execute resulting events
     val outputs2 = processAtomBatchHelper(Map(taskName -> outputs1))
 
-    // // reset, has to be after the execute (for now...)
-    // wctx.info = null
+    // reset
 
     // return
     outputs2
@@ -120,7 +109,6 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     */
   private def processReplyBatch(atom: InterpreterRepBatch[_]): List[InterpreterAtom] =
     // setup info
-    // wctx.info = ReplyInfo(atom.meta.portal, atom.meta.askingWF)
 
     // execute reply batch
     val outputs1 = atom.list
@@ -131,7 +119,6 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
       .toMap
 
     // reset
-    // wctx.info = null
 
     // execute resulting events
     val outputs2 = processAtomBatchHelper(outputs1)

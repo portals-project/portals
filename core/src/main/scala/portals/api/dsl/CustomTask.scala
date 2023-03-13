@@ -95,6 +95,13 @@ import portals.application.task.ReplierTaskContext
         inner.onAsk(ask)
       }
 
+  /** Creates an asker-replier task from the custom asker-replier task.
+    *
+    * @param f
+    *   function that creates the custom asker-replier task
+    * @return
+    *   asker-replier task
+    */
   def askerReplier[T, U, Req, Rep, X <: CustomAskerReplierTask[T, U, Req, Rep]](
       askerportal: AtomicPortalRef[Req, Rep]
   )(

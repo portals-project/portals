@@ -24,7 +24,7 @@ private[portals] class TaskExecutorImpl:
   ctx.outputCollector = oc
   private val state = MapStateBackendImpl()
   private var task: GenericTask[Any, Any, Any, Any] = _
-  private var _replierTask: ReplierTask[Any, Any, Any, Any] = _
+  private var _replierTask: ReplierTaskKind[Any, Any, Any, Any] = _
 
   /** Setup the task executor for a specific task.
     *
@@ -43,7 +43,7 @@ private[portals] class TaskExecutorImpl:
     task = _task
     _replierTask = _task match
       case t @ ReplierTask(_, _) => t
-      case t @ AskerReplierTask(f1, f2) => ReplierTask(f1, f2)(t.replyerportals: _*) // HACK, fixme
+      case t @ AskerReplierTask(_, _) => t
       case t @ _ => null
   end setup
 
@@ -129,7 +129,6 @@ private[portals] class TaskExecutorImpl:
         case Failure(t) =>
           oc.submit(Error(t))
           errord = Some(t)
-          println("error: " + t)
     }
 
     // if there was an error, end atom and seal batch
@@ -267,16 +266,17 @@ private[portals] class TaskExecutorImpl:
       ctx.portal = meta.portal
       ctx.portalAsker = meta.askingWF
       ctx.askerKey = meta.askingKey
-      _replierTask.f2(ctx)(e)
+      _replierTask match
+        case ReplierTask(_, f2) =>
+          f2(ctx)(e)
+        case AskerReplierTask(_, f2) =>
+          f2(ctx)(e)
       Success(())
     case Reply(key, meta, e) =>
       // task
       ctx.key = key
       ctx.task = null // this.task is already null, but we set it to null to be sure
       ctx.state.key = key
-      // // ask
-      // ctx.askerKey = meta.askingKey
-      // ctx.portalAsker = meta.askingWF // unsure if necessary :/// check if can be removed
       // reply
       run_and_cleanup_reply(meta.id, e)(using ctx)
       Success(())

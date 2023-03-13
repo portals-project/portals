@@ -61,7 +61,10 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
     future
 
   override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit =
+    // update continuation
     _continuations.update(future.asInstanceOf[FutureImpl[_]].id, f)
+
+    // update continuation meta information
     if this.asker != null then
       _continuations_meta.update(
         future.asInstanceOf[FutureImpl[_]].id,
