@@ -257,12 +257,51 @@ object TaskBuilder extends TaskBuilder:
   ): GenericTask[T, U, Req, Rep] =
     ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))(portals: _*)
 
-  // TODO: write doc.
-  /** Behavior factory for an asker-replier task.
-    *
-    * The asker-replier can both send requests and receive requests. In
-    * particular, it can also nest asks within continuations.
-    */
+    /** Behavior factory for an asker-replier task.
+      *
+      * The asker-replier can both send requests and receive requests. In
+      * particular, it can also nest asks within continuations. A common pattern
+      * is to use the same portal for both asker and replier.
+      *
+      * The asker binds to portals `askerportals`, the replier binds to the
+      * `replierportals`, it executes the handler `f1` on regular events, and
+      * executes handler `f2` on requests.
+      *
+      * @example
+      *   {{{
+      * TaskBuilder
+      *   .askerreplier[T, U, Req, Rep](askerportal)(replierportal)( event =>
+      *     // handle event as normal
+      *     val future = ask(askerportal, event)
+      *     await(future) { ctx.log.info(future.value.get.toString()) }
+      *  )(request =>
+      *    // nested ask from within the request handler
+      *    val future = ask(askerportal, event)
+      *    await(future) {
+      *      val reply = Rep(future.value.get)
+      *      // reply from the continuation
+      *      ctx.reply(reply)
+      *   }}}
+      *
+      * @tparam T
+      *   type of the input events
+      * @tparam U
+      *   type of the output events
+      * @tparam Req
+      *   type of the requests
+      * @tparam Rep
+      *   type of the replies
+      * @param askerportals
+      *   the portals to which the task will send requests
+      * @param replierportals
+      *   the portals from which the task will receive requests
+      * @param f1
+      *   the handler for regular input events
+      * @param f2
+      *   the handler for requests
+      * @return
+      *   asker-replier task behavior
+      */
   @experimental
   def askerreplier[T, U, Req, Rep](
       askerportals: AtomicPortalRefKind[Req, Rep]*

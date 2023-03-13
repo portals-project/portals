@@ -1,6 +1,9 @@
 package portals.api.builder
 
+import scala.annotation.experimental
+
 import portals.application.*
+import portals.application.task.AskerReplierTaskContext
 import portals.application.task.AskerTaskContext
 import portals.application.task.GenericTask
 import portals.application.task.MapTaskContext
@@ -252,6 +255,15 @@ private[portals] class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderCon
       f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
   )(f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit): FlowBuilder[T, U, CU, CCU] =
     val behavior = TaskBuilder.portal[Req, Rep](portals: _*).replier[CU, CCU](f1)(f2)
+    addTask(behavior)
+
+  @experimental
+  override def askerreplier[CCU, Req, Rep](askerportals: AtomicPortalRefKind[Req, Rep]*)(
+      replierportals: AtomicPortalRefKind[Req, Rep]*
+  )(
+      f1: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
+  )(f2: AskerReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit): FlowBuilder[T, U, CU, CCU] =
+    val behavior = TaskBuilder.askerreplier[CU, CCU, Req, Rep](askerportals: _*)(replierportals: _*)(f1)(f2)
     addTask(behavior)
 
 end FlowBuilderImpl // class
