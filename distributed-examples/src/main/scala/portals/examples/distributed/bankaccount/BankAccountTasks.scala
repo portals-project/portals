@@ -106,14 +106,19 @@ object BankAccountTasks:
   def triggerTask(account: AtomicPortalRefKind[Req, Rep]) =
     TaskBuilder.asker[Req, Rep, Req, Rep](account) { case saga @ Saga(head, tail) =>
       if BankAccountConfig.LOGGING then log.info(s"Asking for transaction: $saga")
+
+      // Send the saga transaction to the account
       val f = ask(account)(saga)
       await(f) {
         f.value.get match
+          // Transaction succeeded, emit SagaSuccess
           case SagaSuccess(_) =>
             if BankAccountConfig.LOGGING then ctx.log.info(s"Whole transaction success: $saga")
             ctx.emit(SagaSuccess(Some(saga)))
+
+          // Transaction aborted, emit SagaAbort
           case SagaAbort(_) =>
-            ctx.emit(SagaAbort(Some(saga)))
             if BankAccountConfig.LOGGING then ctx.log.info(s"Whole transaction aborted: $saga")
+            ctx.emit(SagaAbort(Some(saga)))
       }
     }

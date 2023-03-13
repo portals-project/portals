@@ -5,12 +5,14 @@ import scala.annotation.experimental
 import portals.api.dsl.CustomTask
 import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
+import portals.application.Application
 
 @experimental
 object BankAccount:
   import BankAccountEvents.*
 
-  val app = PortalsApp("BankAccount") {
+  // the bank account application
+  val app: Application = PortalsApp("BankAccount") {
     // generated stream of transactions
     val txnOps = Generators.fromIteratorOfIterators(BankAccountData.txnIter)
 
