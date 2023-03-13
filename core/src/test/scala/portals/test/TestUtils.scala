@@ -153,6 +153,10 @@ object TestUtils:
       assertEquals(Some(event), receive())
       this
 
+    def receiveAtomAssert(): this.type =
+      assertEquals(Some(Atom), Try(queue.dequeue()).toOption)
+      this
+
     def receiveSealAssert(): this.type =
       assertEquals(Some(Seal), Try(queue.dequeue()).toOption)
       this
