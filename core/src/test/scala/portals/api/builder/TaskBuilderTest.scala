@@ -1,4 +1,4 @@
-package portals.application.task
+package portals.api.builder
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -23,7 +23,7 @@ import portals.test.TestUtils
 import portals.util.Key
 
 @RunWith(classOf[JUnit4])
-class TasksTest:
+class TaskBuilderTest:
 
   @Test
   def testSteppers(): Unit =
