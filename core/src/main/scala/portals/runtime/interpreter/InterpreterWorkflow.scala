@@ -14,21 +14,6 @@ private[portals] object InterpreterWorkflow:
   case class ReplyInfo(portal: String, askingWF: String) extends ExecutionInfo
   case object EventInfo extends ExecutionInfo
 
-// // TODO: remove this
-// private class InterpreterWorkflowContext:
-//   import InterpreterWorkflow.*
-//   var info: ExecutionInfo = _
-
-//   def getAskingWF(): String = info match
-//     case AskInfo(_, x) => x
-//     case ReplyInfo(_, x) => x
-//     case _ => ???
-
-//   def getPortal(): String = info match
-//     case AskInfo(x, _) => x
-//     case ReplyInfo(x, _) => x
-//     case _ => ???
-
 /** Internal API. TestRuntime wrapper of a Workflow.
   *
   * @param wf
@@ -110,7 +95,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     // setup info
     // wctx.info = AskInfo(atom.meta.portal, atom.meta.askingWF)
     val taskName = rctx.portals(atom.meta.portal).replierTask
-    val task = initializedTasks.toMap.get(taskName).get.asInstanceOf[ReplierTask[_, _, _, _]]
+    val task = initializedTasks.toMap.get(taskName).get.asInstanceOf[ReplierTaskKind[_, _, _, _]]
 
     // execute ask batch
     val outputs1 = processReplierTask(taskName, task, atom)
@@ -239,7 +224,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     */
   private def processReplierTask(
       path: String,
-      task: ReplierTask[_, _, _, _],
+      task: ReplierTaskKind[_, _, _, _],
       batch: InterpreterAskBatch[_]
   ): InterpreterAtomBatch[_] =
 
