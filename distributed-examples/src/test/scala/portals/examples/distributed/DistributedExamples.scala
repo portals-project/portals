@@ -30,3 +30,8 @@ class DistributedExamplesTest:
   def testShoppingCart(): Unit =
     import portals.examples.distributed.shoppingcart.ShoppingCartMain
     ShoppingCartMain
+
+  @Test
+  def testBankAccount(): Unit =
+    import portals.examples.distributed.bankaccount.BankAccountMain
+    BankAccountMain
