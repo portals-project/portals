@@ -238,6 +238,7 @@ trait GeneratorBuilder:
   private[portals] def generator[T](g: Generator[T]): AtomicGeneratorRef[T]
 end GeneratorBuilder
 
+/** Internal API. The generator builder. */
 object GeneratorBuilder:
   /** Internal API. Create a GeneratorBuilder using the application context. */
   def apply(name: String)(using bctx: ApplicationBuilderContext): GeneratorBuilder =
