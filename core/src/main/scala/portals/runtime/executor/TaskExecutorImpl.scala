@@ -35,13 +35,15 @@ private[portals] class TaskExecutorImpl:
     * @param _task
     *   task to be executed
     */
-  def setup(path: String, _task: GenericTask[Any, Any, Any, Any]): Unit =
+  def setup(path: String, wfpath: String, _task: GenericTask[Any, Any, Any, Any]): Unit =
     ctx.path = path
+    ctx.wfpath = wfpath
     ctx.state.path = path
     ctx.state.asInstanceOf[TaskStateImpl].stateBackend = state
     task = _task
     _replierTask = _task match
       case t @ ReplierTask(_, _) => t
+      case t @ AskerReplierTask(f1, f2) => ReplierTask(f1, f2)(t.replyerportals: _*) // HACK, fixme
       case t @ _ => null
   end setup
 
@@ -178,7 +180,7 @@ private[portals] class TaskExecutorImpl:
     *   reply to be executed
     */
   def run_and_cleanup_reply[T, U, Req, Rep](id: Int, r: Rep)(using
-      actx: AskerTaskContext[T, U, Req, Rep]
+      actx: TaskContextImpl[T, U, Req, Rep]
   ): Unit =
 
     // setup state
@@ -186,20 +188,35 @@ private[portals] class TaskExecutorImpl:
       PerTaskState[Map[Int, Rep]]("futures", Map.empty)
     lazy val _continuations: AskerTaskContext[T, U, Req, Rep] ?=> PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]] =
       PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]]("continuations", Map.empty)
+    lazy val _continuations_meta =
+      PerTaskState[Map[Int, ContinuationMeta]]("continuations_meta", Map.empty)
 
     // set future
     _futures.update(id, r)
 
     // run continuation
-    _continuations.get(id) match
-      case Some(continuation) => continuation(using actx)
-      case None => () // do nothing, no continuation was saved for this future
+    (_continuations.get(id), _continuations_meta.get(id)) match
+      case (Some(continuation), None) =>
+        // run continuation
+        continuation(using actx)
+      case (Some(continuation), Some(continuation_meta)) =>
+        // setup context
+        actx.id = continuation_meta.id
+        actx.asker = continuation_meta.asker
+        actx.portal = continuation_meta.portal
+        actx.portalAsker = continuation_meta.portalAsker
+        actx.askerKey = continuation_meta.askerKey
+        // run continuation
+        continuation(using actx)
+      case (None, Some(continuation_meta)) => ??? // should not happen
+      case (None, None) => () // do nothing, no continuation was saved for this future
 
     // cleanup future
     _futures.remove(id)
 
     // cleanup continuation
     _continuations.remove(id)
+    _continuations_meta.remove(id)
   end run_and_cleanup_reply
 
   /** Execute a wrapped event on the task.
@@ -248,6 +265,7 @@ private[portals] class TaskExecutorImpl:
       ctx.id = meta.id
       ctx.asker = meta.askingTask
       ctx.portal = meta.portal
+      ctx.portalAsker = meta.askingWF
       ctx.askerKey = meta.askingKey
       _replierTask.f2(ctx)(e)
       Success(())
@@ -256,6 +274,9 @@ private[portals] class TaskExecutorImpl:
       ctx.key = key
       ctx.task = null // this.task is already null, but we set it to null to be sure
       ctx.state.key = key
+      // // ask
+      // ctx.askerKey = meta.askingKey
+      // ctx.portalAsker = meta.askingWF // unsure if necessary :/// check if can be removed
       // reply
       run_and_cleanup_reply(meta.id, e)(using ctx)
       Success(())

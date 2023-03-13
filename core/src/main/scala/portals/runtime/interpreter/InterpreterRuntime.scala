@@ -3,6 +3,7 @@ package portals.runtime.interpreter
 import scala.util.Random
 
 import portals.application.*
+import portals.application.task.AskerReplierTask
 import portals.application.task.AskerTask
 import portals.application.task.ReplierTask
 import portals.compiler.phases.RuntimeCompilerPhases
@@ -161,9 +162,11 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
         task match
           case atask @ AskerTask(_) => List.empty
           case rtask @ ReplierTask(_, _) =>
-            rtask.portals.toList
             rctx.portals(rtask.portals.head.path).replier = wf.path
             rctx.portals(rtask.portals.head.path).replierTask = name
+          case artask @ AskerReplierTask(_, _) =>
+            rctx.portals(artask.replyerportals.head.path).replier = wf.path
+            rctx.portals(artask.replyerportals.head.path).replierTask = name
           case _ => List.empty
       )
     }

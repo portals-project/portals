@@ -1,5 +1,9 @@
 package portals.api.builder
 
+import scala.annotation.experimental
+
+import portals.application.task.AskerReplierTask
+import portals.application.task.AskerReplierTaskContext
 import portals.application.task.AskerTask
 import portals.application.task.AskerTaskContext
 import portals.application.task.GenericTask
@@ -252,5 +256,23 @@ object TaskBuilder extends TaskBuilder:
       f2: ReplierTaskContext[T, U, Req, Rep] ?=> Req => Unit
   ): GenericTask[T, U, Req, Rep] =
     ReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))(portals: _*)
+
+  // TODO: write doc.
+  /** Behavior factory for an asker-replier task.
+    *
+    * The asker-replier can both send requests and receive requests. In
+    * particular, it can also nest asks within continuations.
+    */
+  @experimental
+  def askerreplier[T, U, Req, Rep](
+      askerportals: AtomicPortalRefKind[Req, Rep]*
+  )(
+      replierportals: AtomicPortalRefKind[Req, Rep]*
+  )(
+      f1: AskerTaskContext[T, U, Req, Rep] ?=> T => Unit
+  )(
+      f2: AskerReplierTaskContext[T, U, Req, Rep] ?=> Req => Unit
+  ): GenericTask[T, U, Req, Rep] =
+    AskerReplierTask[T, U, Req, Rep](ctx => f1(using ctx), ctx => f2(using ctx))(askerportals: _*)(replierportals: _*)
 
 end TaskBuilder // object

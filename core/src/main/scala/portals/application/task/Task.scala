@@ -67,11 +67,22 @@ end AskerTask // trait
 
 private[portals] case class ReplierTask[T, U, Req, Rep](
     f1: TaskContextImpl[T, U, Req, Rep] => T => Unit,
-    f2: ReplierTaskContext[T, U, Req, Rep] => Req => Unit
+    f2: TaskContextImpl[T, U, Req, Rep] => Req => Unit
 )(val portals: AtomicPortalRefKind[Req, Rep]*)
     extends BaseTask[T, U, Req, Rep]:
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f1(ctx)(t)
 end ReplierTask // trait
+
+private[portals] case class AskerReplierTask[T, U, Req, Rep](
+    f1: TaskContextImpl[T, U, Req, Rep] => T => Unit,
+    f2: TaskContextImpl[T, U, Req, Rep] => Req => Unit
+)(
+    val askerportals: AtomicPortalRefKind[Req, Rep]*
+)(
+    val replyerportals: AtomicPortalRefKind[Req, Rep]*
+) extends BaseTask[T, U, Req, Rep]:
+  override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = f1(ctx)(t)
+end AskerReplierTask // trait
 
 private[portals] case class IdentityTask[T]() extends BaseTask[T, T, Nothing, Nothing]:
   override def onNext(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(event: T): Unit = ctx.emit(event)

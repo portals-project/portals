@@ -16,6 +16,7 @@ object WrappedEvents:
       askingTask: String,
       askingKey: Key[Long],
       id: Int, // request id
+      askingWF: String,
   )
 
   private[portals] case class Ask[T](

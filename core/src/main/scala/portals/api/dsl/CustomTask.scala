@@ -4,6 +4,7 @@ import scala.annotation.experimental
 
 import portals.api.builder.TaskBuilder
 import portals.application.*
+import portals.application.task.AskerReplierTaskContext
 import portals.application.task.AskerTaskContext
 import portals.application.task.GenericTask
 import portals.application.task.ProcessorTaskContext
@@ -33,9 +34,17 @@ import portals.application.task.ReplierTaskContext
 /** Custom task for writing an asker task in object oriented style. */
 @experimental trait CustomAskerTask[T, U, Req, Rep] extends CustomTask[T, U, Req, Rep]:
   def onNext(using ctx: AskerTaskContext[T, U, Req, Rep])(t: T): Unit = ()
-  def onError(using ctx: AskerTaskContext[T, U, Req, Rep])(t: Throwable): Unit = ()
-  def onComplete(using ctx: AskerTaskContext[T, U, Req, Rep]): Unit = ()
-  def onAtomComplete(using ctx: AskerTaskContext[T, U, Req, Rep]): Unit = ()
+  def onError(using ctx: ProcessorTaskContext[T, U])(t: Throwable): Unit = ()
+  def onComplete(using ctx: ProcessorTaskContext[T, U]): Unit = ()
+  def onAtomComplete(using ctx: ProcessorTaskContext[T, U]): Unit = ()
+
+@experimental
+trait CustomAskerReplierTask[T, U, Req, Rep] extends CustomTask[T, U, Req, Rep]:
+  def onAsk(using ctx: AskerReplierTaskContext[T, U, Req, Rep])(t: Req): Unit = ()
+  def onNext(using ctx: AskerTaskContext[T, U, Req, Rep])(t: T): Unit = ()
+  def onError(using ctx: ProcessorTaskContext[T, U])(t: Throwable): Unit = ()
+  def onComplete(using ctx: ProcessorTaskContext[T, U]): Unit = ()
+  def onAtomComplete(using ctx: ProcessorTaskContext[T, U]): Unit = ()
 
 /** Custom task for writing a processor task in object oriented style. */
 @experimental trait CustomProcessorTask[T, U] extends CustomTask[T, U, Nothing, Nothing]:
@@ -81,6 +90,21 @@ import portals.application.task.ReplierTaskContext
     TaskBuilder
       .portal(portal)
       .replier[T, U] { event =>
+        inner.onNext(event)
+      } { ask =>
+        inner.onAsk(ask)
+      }
+
+  def askerReplier[T, U, Req, Rep, X <: CustomAskerReplierTask[T, U, Req, Rep]](
+      askerportal: AtomicPortalRef[Req, Rep]
+  )(
+      replierportal: AtomicPortalRef[Req, Rep]
+  )(
+      f: () => X
+  ): GenericTask[T, U, Req, Rep] =
+    lazy val inner = f()
+    TaskBuilder
+      .askerreplier[T, U, Req, Rep](askerportal)(replierportal) { event =>
         inner.onNext(event)
       } { ask =>
         inner.onAsk(ask)

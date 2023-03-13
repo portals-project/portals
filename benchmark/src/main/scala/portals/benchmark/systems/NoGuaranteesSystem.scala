@@ -137,8 +137,8 @@ object NoGuaranteesRunner extends AkkaRunner:
         tctx.outputCollector = new OutputCollector[T, U, Any, Any] {
           def submit(event: WrappedEvent[U]): Unit =
             subscribers.foreach { sub => sub ! Event(path, event) }
-          def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int): Unit = ???
-          def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int): Unit = ???
+          def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int, askingWF: String): Unit = ???
+          def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit = ???
         }
 
         val preparedTask = TaskExecution.prepareTask(task, tctx)
