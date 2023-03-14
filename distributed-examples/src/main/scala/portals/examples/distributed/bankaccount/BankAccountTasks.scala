@@ -29,10 +29,21 @@ object BankAccountTasks:
   class AccountTask(portal: AtomicPortalRefKind[Req, Rep]) extends CustomAskerReplierTask[Nothing, Nothing, Req, Rep]:
 
     // Account state
-    lazy val state: WithStatefulTaskContext[PerKeyState[Int]] = PerKeyState[Int]("state", 0)
+    lazy val state: WithStatefulTaskContext[PerKeyState[Int]] =
+      PerKeyState[Int]("state", BankAccountConfig.STARTING_BALANCE)
 
     // Account lock
-    lazy val lock: WithStatefulTaskContext[PerKeyState[Boolean]] = PerKeyState[Boolean]("lock", false)
+    lazy val lock: WithStatefulTaskContext[PerKeyState[Boolean]] =
+      PerKeyState[Boolean]("lock", false)
+
+    // Check if an account operation can be executed on the state
+    private def canExecuteOp(op: AccountOperation)(using StatefulTaskContext, LoggingTaskContext): Boolean =
+      if BankAccountConfig.LOGGING then log.info(s"Checking if can execute: $op")
+      op match
+        case Deposit(_, _) =>
+          true
+        case Withdraw(id, amount) =>
+          state.get() >= amount
 
     // Execute an account operation on the state
     private def executeOp(op: AccountOperation)(using StatefulTaskContext, LoggingTaskContext): Unit =
@@ -59,44 +70,50 @@ object BankAccountTasks:
         // Lock the account
         lock.set(true)
 
-        // If the transaction tail is empty, then we can execute the transaction, and reply with success
-        if req.tail.isEmpty then
-          if BankAccountConfig.LOGGING then ctx.log.info(s"Transaction success, executing operation: ${req.head}")
-          executeOp(req.head)
-          reply(SagaSuccess())
+        // Check if we can pre-commit / execute the operation, else abort
+        if !canExecuteOp(req.head) then reply(SagaAbort())
+        else { // open bracket here needed as otherwise scalafmt will unindent subsequent code
 
-          // Unlock the account
-          lock.set(false)
+          // If the transaction tail is empty, then we can execute the transaction, and reply with success
+          if req.tail.isEmpty then
+            if BankAccountConfig.LOGGING then ctx.log.info(s"Transaction success, executing operation: ${req.head}")
+            executeOp(req.head)
+            reply(SagaSuccess())
 
-        // Otherwise, the transaction tail is not empty, so we need to forward the Saga before we can execute it
-        else
+            // Unlock the account
+            lock.set(false)
 
-          // Forward the Saga tail to the next account
-          val next = Saga(req.tail.head, req.tail.tail)
-          if BankAccountConfig.LOGGING then ctx.log.info(s"Next operation in transaction: $next")
-          val f = ask(portal)(next)
+          // Otherwise, the transaction tail is not empty, so we need to forward the Saga before we can execute it
+          else
 
-          // Wait for a reply from the next account, if the next one has succeded, then we can also commit, else abort
-          f.await {
-            f.value.get match
+            // Forward the Saga tail to the next account
+            val next = Saga(req.tail.head, req.tail.tail)
+            if BankAccountConfig.LOGGING then ctx.log.info(s"Next operation in transaction: $next")
+            val f = ask(portal)(next)
 
-              // Transaction succeeded, execute the operation, and reply with success
-              case SagaSuccess(_) =>
-                if BankAccountConfig.LOGGING then ctx.log.info(s"Transaction success, executing operation: ${req.head}")
-                executeOp(req.head)
-                reply(SagaSuccess())
+            // Wait for a reply from the next account, if the next one has succeded, then we can also commit, else abort
+            f.await {
+              f.value.get match
 
-                // Unlock the account
-                lock.set(false)
+                // Transaction succeeded, execute the operation, and reply with success
+                case SagaSuccess(_) =>
+                  if BankAccountConfig.LOGGING then
+                    ctx.log.info(s"Transaction success, executing operation: ${req.head}")
+                  executeOp(req.head)
+                  reply(SagaSuccess())
 
-              // Transaction aborted, abort the transaction, and reply with abort
-              case SagaAbort(_) =>
-                if BankAccountConfig.LOGGING then ctx.log.info(s"Transaction aborted: ${req.head}")
-                reply(SagaAbort())
+                  // Unlock the account
+                  lock.set(false)
 
-                // Unlock the account
-                lock.set(false)
-          }
+                // Transaction aborted, abort the transaction, and reply with abort
+                case SagaAbort(_) =>
+                  if BankAccountConfig.LOGGING then ctx.log.info(s"Transaction aborted: ${req.head}")
+                  reply(SagaAbort())
+
+                  // Unlock the account
+                  lock.set(false)
+            }
+        }
 
   //////////////////////////////////////////////////////////////////////////////
   // Trigger Task
