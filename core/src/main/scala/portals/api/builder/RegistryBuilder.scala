@@ -1,5 +1,7 @@
 package portals.api.builder
 
+import scala.scalajs.js.annotation.JSExportAll
+
 import portals.application.*
 
 /** Build the registry to fetch references from the registry.
@@ -64,13 +66,13 @@ class RegistryBuilderImpl(using bctx: ApplicationBuilderContext) extends Registr
   override def portals: Registry2[ExtAtomicPortalRef] = new PortalsRegistryImpl()
 
 /** Internal API. A registry which has a single generic type parameter. */
-trait Registry[A[_]]:
+@JSExportAll trait Registry[A[_]]:
   /** Get a reference of `path` from the registry. */
   def get[T](path: String): A[T]
 end Registry
 
 /** Internal API. A registry which has two generic type parameters. */
-trait Registry2[A[_, _]]:
+@JSExportAll trait Registry2[A[_, _]]:
   /** Get a reference of `path` from the registry. */
   def get[T, U](path: String): A[T, U]
 end Registry2

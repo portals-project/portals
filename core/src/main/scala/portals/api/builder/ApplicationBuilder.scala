@@ -1,6 +1,7 @@
 package portals.api.builder
 
 import portals.application.Application
+import scala.scalajs.js.annotation.JSExportAll
 
 /** Builder for Portals applications.
   *

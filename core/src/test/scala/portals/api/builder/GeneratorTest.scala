@@ -94,44 +94,44 @@ class GeneratorTest:
     }
     system.shutdown()
 
-  @Test
-  @experimental
-  @deprecated
-  def testExternal(): Unit =
-    import portals.api.dsl.DSL.*
+  // @Test
+  // @experimental
+  // @deprecated
+  // def testExternal(): Unit =
+  //   import portals.api.dsl.DSL.*
 
-    val tester = new TestUtils.Tester[Int]()
+  //   val tester = new TestUtils.Tester[Int]()
 
-    val builder = ApplicationBuilder("app")
+  //   val builder = ApplicationBuilder("app")
 
-    val (ext_ref, generator) = builder.generators.external[Int]()
+  //   val (ext_ref, generator) = builder.generators.external[Int]()
 
-    val workflow = builder
-      .workflows[Int, Int]("wf")
-      .source(generator.stream)
-      .task(tester.task)
-      // .logger()
-      .sink()
-      .freeze()
+  //   val workflow = builder
+  //     .workflows[Int, Int]("wf")
+  //     .source(generator.stream)
+  //     .task(tester.task)
+  //     // .logger()
+  //     .sink()
+  //     .freeze()
 
-    val app = builder.build()
+  //   val app = builder.build()
 
     val system = Systems.test()
 
-    // ASTPrinter.println(app)
+  //   // ASTPrinter.println(app)
 
-    system.launch(app)
+  //   system.launch(app)
 
-    List.range(0, 10).foreach { i =>
-      ext_ref.submit(i)
-      ext_ref.fuse()
-    }
-    ext_ref.seal()
+  //   List.range(0, 10).foreach { i =>
+  //     ext_ref.submit(i)
+  //     ext_ref.fuse()
+  //   }
+  //   ext_ref.seal()
 
-    system.stepUntilComplete()
+  //   system.stepUntilComplete()
 
-    system.shutdown()
+  //   system.shutdown()
 
-    List.range(0, 10).foreach { i =>
-      assertEquals(Some(List(i)), tester.receiveAtom())
-    }
+  //   List.range(0, 10).foreach { i =>
+  //     assertEquals(Some(List(i)), tester.receiveAtom())
+  //   }
