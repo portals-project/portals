@@ -18,6 +18,7 @@ ThisBuild / scalaVersion := scala3Version
 
 lazy val portals = project
   .in(file("core"))
+  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "portals",
     Compile / doc / target := target.value / "api",
@@ -50,5 +51,17 @@ lazy val distributedExamples = project
   .settings(
     name := "portals-distributed-examples",
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
+  )
+  .dependsOn(portals % "test->test;compile->compile")
+
+lazy val portalsjs = project
+  .in(file("portals-js"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    name := "portals-js",
+    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.4.0",
+    // main method disabled
+    // scalaJSUseMainModuleInitializer := true,
+    Compile / scalaJSLinkerConfig ~= { _.withSourceMap(false) },
   )
   .dependsOn(portals % "test->test;compile->compile")

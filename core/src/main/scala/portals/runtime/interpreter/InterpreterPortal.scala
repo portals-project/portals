@@ -13,7 +13,7 @@ import portals.util.Key
   * replier needs to be set dynamically by the replying workflow.
   */
 private[portals] class InterpreterPortal(
-    portal: AtomicPortal[_, _],
+    val portal: AtomicPortal[_, _],
     var replier: String = null,
     var replierTask: String = null
 )(using InterpreterRuntimeContext):

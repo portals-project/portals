@@ -6,7 +6,7 @@ import portals.runtime.interpreter.InterpreterRuntimeContext
 import portals.runtime.WrappedEvents.*
 
 /** Internal API. Test Runtime wrapper around the Splitter. */
-private[portals] class InterpreterSplitter(splitter: AtomicSplitter[_])(using rctx: InterpreterRuntimeContext):
+private[portals] class InterpreterSplitter(val splitter: AtomicSplitter[_])(using rctx: InterpreterRuntimeContext):
 
   /** Add an output to the splitter, that filters out the events for the path.
     *

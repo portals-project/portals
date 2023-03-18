@@ -6,7 +6,7 @@ import portals.application.AtomicStream
 import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.interpreter.InterpreterRuntimeContext
 
-private[portals] class InterpreterStream(stream: AtomicStream[_])(using rctx: InterpreterRuntimeContext):
+private[portals] class InterpreterStream(val stream: AtomicStream[_])(using rctx: InterpreterRuntimeContext):
   private var atomQueue = ArrayDeque.empty[InterpreterAtom]
   private var index: Long = -1
 

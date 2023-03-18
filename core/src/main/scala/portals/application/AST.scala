@@ -1,5 +1,7 @@
 package portals.application
 
+import scala.scalajs.js.annotation.JSExportAll
+
 import portals.application.generator.Generator
 import portals.application.sequencer.Sequencer
 import portals.application.splitter.Splitter
@@ -18,6 +20,7 @@ sealed trait AST:
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Application. */
+@JSExportAll
 case class Application(
     path: String, // path of access from registry. this is /name for the app
     private[portals] workflows: List[Workflow[_, _]] = List.empty,
@@ -39,6 +42,7 @@ case class Application(
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Workflow. */
+@JSExportAll
 case class Workflow[T, U](
     path: String,
     private[portals] consumes: AtomicStreamRefKind[T],
@@ -54,15 +58,19 @@ case class Workflow[T, U](
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Atomic Stream Ref Kind. */
+@JSExportAll
 sealed trait AtomicStreamRefKind[T] extends AST
 
 /** Atomic Stream. */
+@JSExportAll
 case class AtomicStream[T](path: String) extends AST
 
 /** Atomic Stream Ref. */
+@JSExportAll
 case class AtomicStreamRef[T](path: String) extends AtomicStreamRefKind[T]
 
 /** External Atomic Stream Ref. */
+@JSExportAll
 case class ExtAtomicStreamRef[T](path: String) extends AtomicStreamRefKind[T]
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,6 +82,7 @@ sealed trait AtomicSequencerRefKind[T] extends AST:
   val stream: AtomicStreamRefKind[T]
 
 /** Atomic Sequencer. */
+@JSExportAll
 case class AtomicSequencer[T](
     path: String,
     stream: AtomicStreamRef[T],
@@ -81,9 +90,11 @@ case class AtomicSequencer[T](
 ) extends AST
 
 /** Atomic Sequencer Ref. */
+@JSExportAll
 case class AtomicSequencerRef[T](path: String, stream: AtomicStreamRef[T]) extends AtomicSequencerRefKind[T]
 
 /** External Atomic Sequencer Ref. */
+@JSExportAll
 case class ExtAtomicSequencerRef[T](path: String, stream: ExtAtomicStreamRef[T]) extends AtomicSequencerRefKind[T]
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,9 +102,11 @@ case class ExtAtomicSequencerRef[T](path: String, stream: ExtAtomicStreamRef[T])
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Atomic Splitter Ref. */
+@JSExportAll
 sealed trait AtomicSplitterRefKind[T] extends AST
 
 /** Atomic Splitter. */
+@JSExportAll
 case class AtomicSplitter[T](
     path: String,
     private[portals] in: AtomicStreamRefKind[T],
@@ -102,9 +115,11 @@ case class AtomicSplitter[T](
 ) extends AST
 
 /** Atomic Splitter Ref. */
+@JSExportAll
 case class AtomicSplitterRef[T](path: String) extends AtomicSplitterRefKind[T]
 
 /** External Atomic Splitter Ref. */
+@JSExportAll
 case class ExtAtomicSplitterRef[T](path: String) extends AtomicSplitterRefKind[T]
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -112,6 +127,7 @@ case class ExtAtomicSplitterRef[T](path: String) extends AtomicSplitterRefKind[T
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Atomic Split. */
+@JSExportAll
 case class AtomicSplit[T](
     path: String,
     private[portals] from: AtomicSplitterRefKind[T],
@@ -124,6 +140,7 @@ case class AtomicSplit[T](
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Atomic Generator. */
+@JSExportAll
 case class AtomicGenerator[T](
     path: String,
     stream: AtomicStreamRef[T],
@@ -131,6 +148,7 @@ case class AtomicGenerator[T](
 ) extends AST
 
 /** Atomic Generator Ref. */
+@JSExportAll
 case class AtomicGeneratorRef[T](path: String, stream: AtomicStreamRef[T]) extends AST
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,6 +156,7 @@ case class AtomicGeneratorRef[T](path: String, stream: AtomicStreamRef[T]) exten
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Atomic Connection. */
+@JSExportAll
 case class AtomicConnection[T](
     path: String,
     private[portals] from: AtomicStreamRefKind[T],
@@ -149,20 +168,24 @@ case class AtomicConnection[T](
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Atomic Portal Reference. */
+@JSExportAll
 case class AtomicPortalRef[T, R](
     path: String,
 ) extends AtomicPortalRefKind[T, R]
 
 /** Atomic Portal. */
+@JSExportAll
 case class AtomicPortal[T, R](
     path: String,
     key: Option[T => Long] = None,
 ) extends AST
 
 /** Atomic Portal Reference. */
+@JSExportAll
 sealed trait AtomicPortalRefKind[T, R] extends AST
 
 /** External Atomic Portal Reference. */
+@JSExportAll
 case class ExtAtomicPortalRef[T, R](
     path: String,
 ) extends AtomicPortalRefKind[T, R]

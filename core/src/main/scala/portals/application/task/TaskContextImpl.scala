@@ -1,5 +1,7 @@
 package portals.application.task
 
+import scala.scalajs.js.annotation.JSExportAll
+
 import portals.application.task.AskerTaskContext
 import portals.application.task.Continuation
 import portals.application.task.ContinuationMeta
@@ -21,6 +23,7 @@ import portals.util.FutureImpl
 import portals.util.Key
 import portals.util.Logger
 
+@JSExportAll
 private[portals] class TaskContextImpl[T, U, Req, Rep]
     extends TaskContext[T, U, Req, Rep]
     with MapTaskContext[T, U]

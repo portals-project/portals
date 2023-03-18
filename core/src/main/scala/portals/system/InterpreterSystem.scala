@@ -23,3 +23,5 @@ class InterpreterSystem(seed: Option[Int] = None) extends PortalsSystem:
 
   /** Terminate the system and cleanup. */
   def shutdown(): Unit = runtime.shutdown()
+
+  def registry = runtime.registry
