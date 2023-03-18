@@ -1,4 +1,4 @@
-lazy val scala3Version = "3.3.0-RC4"
+lazy val scala3Version = "3.2.0"
 lazy val junitInterfaceVersion = "0.11"
 lazy val logbackversion = "1.2.11"
 lazy val akkaVersion = "2.6.20"
@@ -18,9 +18,10 @@ ThisBuild / scalaVersion := scala3Version
 
 lazy val portals = project
   .in(file("core"))
+  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "portals",
-    Compile / doc / target := baseDirectory.value.getParentFile / "target" / "api",
+    Compile / doc / target := target.value / "api",
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
     libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
@@ -42,5 +43,25 @@ lazy val examples = project
   .settings(
     name := "portals-examples",
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
+  )
+  .dependsOn(portals % "test->test;compile->compile")
+
+lazy val distributedExamples = project
+  .in(file("distributed-examples"))
+  .settings(
+    name := "portals-distributed-examples",
+    libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
+  )
+  .dependsOn(portals % "test->test;compile->compile")
+
+lazy val portalsjs = project
+  .in(file("portals-js"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    name := "portals-js",
+    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.4.0",
+    // main method disabled
+    // scalaJSUseMainModuleInitializer := true,
+    Compile / scalaJSLinkerConfig ~= { _.withSourceMap(false) },
   )
   .dependsOn(portals % "test->test;compile->compile")

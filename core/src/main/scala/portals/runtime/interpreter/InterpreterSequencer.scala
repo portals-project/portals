@@ -7,7 +7,7 @@ import portals.runtime.interpreter.InterpreterRuntimeContext
 import portals.runtime.WrappedEvents.*
 
 /** Internal API. Test Runtime wrapper around the Sequencer. */
-private[portals] class InterpreterSequencer(sequencer: AtomicSequencer[_])(using rctx: InterpreterRuntimeContext):
+private[portals] class InterpreterSequencer(val sequencer: AtomicSequencer[_])(using rctx: InterpreterRuntimeContext):
   // buffer for atoms, not used for random sequencer.
   private var streams: Map[String, List[List[WrappedEvent[_]]]] = Map.empty
 

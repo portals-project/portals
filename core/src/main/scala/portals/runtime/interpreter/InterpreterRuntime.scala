@@ -29,14 +29,20 @@ private[portals] class InterpreterRuntimeContext():
   def splitters: Map[String, InterpreterSplitter] = _splitters
   def generators: Map[String, InterpreterGenerator] = _generators
   def connections: Map[String, InterpreterConnection] = _connections
-  def addApplication(application: Application): Unit = _applications += application.path -> application
-  def addStream(stream: AtomicStream[_]): Unit = _streams += stream.path -> InterpreterStream(stream)(using this)
-  def addPortal(portal: AtomicPortal[_, _]): Unit = _portals += portal.path -> InterpreterPortal(portal)(using this)
-  def addWorkflow(wf: Workflow[_, _]): Unit = _workflows += wf.path -> InterpreterWorkflow(wf)(using this)
-  def addSequencer(seqr: AtomicSequencer[_]): Unit = _sequencers += seqr.path -> InterpreterSequencer(seqr)(using this)
-  def addSplitter(spltr: AtomicSplitter[_]): Unit = _splitters += spltr.path -> InterpreterSplitter(spltr)(using this)
-  def addGenerator(genr: AtomicGenerator[_]): Unit = _generators += genr.path -> InterpreterGenerator(genr)(using this)
-  def addConnection(conn: AtomicConnection[_]): Unit =
+  private[portals] def addApplication(application: Application): Unit = _applications += application.path -> application
+  private[portals] def addStream(stream: AtomicStream[_]): Unit =
+    _streams += stream.path -> InterpreterStream(stream)(using this)
+  private[portals] def addPortal(portal: AtomicPortal[_, _]): Unit =
+    _portals += portal.path -> InterpreterPortal(portal)(using this)
+  private[portals] def addWorkflow(wf: Workflow[_, _]): Unit =
+    _workflows += wf.path -> InterpreterWorkflow(wf)(using this)
+  private[portals] def addSequencer(seqr: AtomicSequencer[_]): Unit =
+    _sequencers += seqr.path -> InterpreterSequencer(seqr)(using this)
+  private[portals] def addSplitter(spltr: AtomicSplitter[_]): Unit =
+    _splitters += spltr.path -> InterpreterSplitter(spltr)(using this)
+  private[portals] def addGenerator(genr: AtomicGenerator[_]): Unit =
+    _generators += genr.path -> InterpreterGenerator(genr)(using this)
+  private[portals] def addConnection(conn: AtomicConnection[_]): Unit =
     _connections += conn.path -> InterpreterConnection(conn)(using this)
 
 /** Internal API. Tracks the progress for a path with respect to other streams.
@@ -353,3 +359,5 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
   /** Perform runtime wellformedness checks on the application. */
   def check(application: Application): Unit =
     RuntimeCompilerPhases.wellFormedCheck(application)(using rctx)
+
+  def registry: InterpreterRuntimeContext = rctx

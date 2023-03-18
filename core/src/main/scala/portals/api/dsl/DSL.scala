@@ -843,18 +843,18 @@ object DSL:
   //////////////////////////////////////////////////////////////////////////////
 
   class FlowBuilderAsker[T, U, CT, CU, CCU](fb: FlowBuilder[T, U, CT, CU]):
-    def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
+    def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep])(
         f: AskerTaskContext[CU, CCU, Req, Rep] ?=> CU => Unit
     ): FlowBuilder[T, U, CU, CCU] =
-      fb.asker[CCU, Req, Rep](portals: _*)(f)
+      fb.asker[CCU, Req, Rep](portals)(f)
 
   class FlowBuilderReplier[T, U, CT, CU, CCU](fb: FlowBuilder[T, U, CT, CU]):
-    def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep]*)(
+    def apply[Req, Rep](portals: AtomicPortalRefKind[Req, Rep])(
         f1: ProcessorTaskContext[CU, CCU] ?=> CU => Unit
     )(
         f2: ReplierTaskContext[CU, CCU, Req, Rep] ?=> Req => Unit
     ): FlowBuilder[T, U, CU, CCU] =
-      fb.replier[CCU, Req, Rep](portals: _*)(f1)(f2)
+      fb.replier[CCU, Req, Rep](portals)(f1)(f2)
 
   extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
 

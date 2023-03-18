@@ -14,7 +14,7 @@ import portals.runtime.WrappedEvents.*
   * @param rctx
   *   runtime context
   */
-private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: InterpreterRuntimeContext):
+private[portals] class InterpreterWorkflow(val wf: Workflow[_, _])(using rctx: InterpreterRuntimeContext):
 
   // init
   private val runner = TaskExecutorImpl()

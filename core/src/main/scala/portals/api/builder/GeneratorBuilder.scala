@@ -222,17 +222,17 @@ trait GeneratorBuilder:
     */
   def fromRange(start: Int, end: Int, step: Int): AtomicGeneratorRef[Int]
 
-  @experimental
-  @deprecated
-  /** Internal API. Create a generator for external systems to directly interact
-    * with. Events can be submitted to the returned `ExternalRef`. The
-    * `AtomicGeneratorRef` is a reference to this generator which can be used to
-    * further build the application.
-    *
-    * @tparam T
-    *   The type of the generated events.
-    */
-  def external[T](): (ExternalRef[T], AtomicGeneratorRef[T])
+  // @experimental
+  // @deprecated
+  // /** Internal API. Create a generator for external systems to directly interact
+  //   * with. Events can be submitted to the returned `ExternalRef`. The
+  //   * `AtomicGeneratorRef` is a reference to this generator which can be used to
+  //   * further build the application.
+  //   *
+  //   * @tparam T
+  //   *   The type of the generated events.
+  //   */
+  // def external[T](): (ExternalRef[T], AtomicGeneratorRef[T])
 
   /** Internal API. Create a generator from a generator implementation. */
   private[portals] def generator[T](g: Generator[T]): AtomicGeneratorRef[T]
@@ -297,11 +297,11 @@ class GeneratorBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) 
     val _generator = Generators.fromRange(start, end, step)
     build(_generator)
 
-  @experimental
-  @deprecated
-  override def external[T](): (ExternalRef[T], AtomicGeneratorRef[T]) =
-    val (_extRef, _generator) = Generators.external[T]()
-    (_extRef, build(_generator))
+  // @experimental
+  // @deprecated
+  // override def external[T](): (ExternalRef[T], AtomicGeneratorRef[T]) =
+  //   val (_extRef, _generator) = Generators.external[T]()
+  //   (_extRef, build(_generator))
 
   override def generator[T](g: Generator[T]): AtomicGeneratorRef[T] =
     build(g)
