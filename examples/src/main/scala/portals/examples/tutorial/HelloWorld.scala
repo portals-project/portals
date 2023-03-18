@@ -32,7 +32,7 @@ object HelloWorld:
     application
   }
 
-@main def HelloWorldMain(): Unit =
+object HelloWorldMain extends App:
   val application = HelloWorld.app
   // ASTPrinter.println(application) // print the application AST
   val system = Systems.test()

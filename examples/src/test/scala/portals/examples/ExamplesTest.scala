@@ -42,7 +42,7 @@ class ExamplesTest:
   @Test
   def testHelloWorld(): Unit =
     import portals.examples.tutorial.HelloWorldMain
-    HelloWorldMain()
+    HelloWorldMain
 
   @Test
   def testDynamicQuery(): Unit =
