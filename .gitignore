@@ -13,3 +13,8 @@ target/
 .metals/
 .vscode/
 *metals.sbt
+
+# Node
+node_modules/
+package-lock.json
+package.json
