@@ -1,5 +1,7 @@
 package portals.util
 
+import scala.collection.mutable.ListBuffer
+
 import portals.application.task.AskerTaskContext
 import portals.application.task.PerTaskState
 
@@ -55,3 +57,18 @@ private[portals] object Future:
   private def generate_id: Int = { _rand.nextInt() }
 
   def apply[T](): Future[T] = new FutureImpl[T](generate_id)
+
+object Futures:
+  def awaitAll[Rep](
+      futures: Future[Rep]*
+  )(f: AskerTaskContext[_, _, _, Rep] ?=> List[Rep] => Unit)(using ctx: AskerTaskContext[_, _, _, Rep]): Unit = {
+    var n = 0
+    val resp = ListBuffer[Rep]()
+    futures.foreach(future =>
+      ctx.await(future) {
+        n += 1
+        resp += future.value.get
+        if n == futures.length then f(resp.toList)
+      }
+    )
+  }
