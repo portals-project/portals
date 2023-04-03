@@ -51,9 +51,9 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
   // AskerTaskContext
   //////////////////////////////////////////////////////////////////////////////
   private lazy val _continuations =
-    PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]]("continuations", Map.empty)(using this)
+    PerTaskState[Map[Int, Continuation[T, U, Req, Rep]]]("continuations", Map.empty)
   private lazy val _continuations_meta =
-    PerTaskState[Map[Int, ContinuationMeta]]("continuations_meta", Map.empty)(using this)
+    PerTaskState[Map[Int, ContinuationMeta]]("continuations_meta", Map.empty)
 
   override def ask(portal: AtomicPortalRefKind[Req, Rep])(msg: Req): Future[Rep] =
     val future: Future[Rep] = Future()
@@ -62,7 +62,7 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
 
   override def await(future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit): Unit =
     // update continuation
-    _continuations.update(future.asInstanceOf[FutureImpl[_]].id, f)
+    _continuations.update(future.asInstanceOf[FutureImpl[_]].id, f)(using this)
 
     // update continuation meta information
     if this.asker != null then
@@ -75,7 +75,7 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
           this.portalAsker,
           this.askerKey
         )
-      )
+      )(using this)
 
   //////////////////////////////////////////////////////////////////////////////
   // ReplierTaskContext
