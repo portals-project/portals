@@ -6,7 +6,6 @@ import portals.*
 import portals.api.builder.TaskBuilder
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
-import portals.api.dsl.ExperimentalDSL.*
 import portals.application.task.AskerReplierTaskContext
 import portals.application.task.AskerTaskContext
 import portals.application.task.LoggingTaskContext
@@ -16,6 +15,8 @@ import portals.application.AtomicPortalRefKind
 
 @experimental
 object BankAccountTasks:
+  import portals.api.dsl.ExperimentalDSL.*
+
   import BankAccountEvents.*
 
   type WithStatefulTaskContext[T] = StatefulTaskContext ?=> T

@@ -161,13 +161,14 @@ end ActorBehaviors // object
 
 @experimental
 private[portals] object ActorEvents:
-  sealed trait ActorMessage(val aref: ActorRef[_])
+  sealed trait ActorMessage:
+    def aref: ActorRef[_]
 
   @experimental
-  case class ActorSend[T](override val aref: ActorRef[T], msg: T) extends ActorMessage(aref)
+  case class ActorSend[T](aref: ActorRef[T], msg: T) extends ActorMessage
 
   @experimental
-  case class ActorCreate[T](override val aref: ActorRef[T], behavior: ActorBehavior[T]) extends ActorMessage(aref)
+  case class ActorCreate[T](aref: ActorRef[T], behavior: ActorBehavior[T]) extends ActorMessage
 end ActorEvents // object
 
 @experimental

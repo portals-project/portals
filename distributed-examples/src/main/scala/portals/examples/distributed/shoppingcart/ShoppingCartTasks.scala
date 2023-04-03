@@ -13,9 +13,11 @@ import portals.application.task.ProcessorTaskContext
 import portals.application.task.ReplierTaskContext
 import portals.application.task.StatefulTaskContext
 import portals.application.AtomicPortalRefKind
-import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
 
+@experimental
 object ShoppingCartTasks:
+  import portals.examples.distributed.shoppingcart.ShoppingCartEvents.*
+
   @experimental
   class CartTask(portal: AtomicPortalRefKind[InventoryReqs, InventoryReps])
       extends CustomAskerTask[CartOps, OrderOps, InventoryReqs, InventoryReps]:
