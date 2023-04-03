@@ -4,11 +4,12 @@ import scala.annotation.experimental
 
 import portals.api.dsl.CustomTask
 import portals.api.dsl.DSL.*
-import portals.api.dsl.ExperimentalDSL.*
 import portals.application.Application
 
 @experimental
 object BankAccount:
+  import portals.api.dsl.ExperimentalDSL.*
+
   import BankAccountEvents.*
 
   // the bank account application

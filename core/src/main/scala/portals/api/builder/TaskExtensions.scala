@@ -240,11 +240,10 @@ private[portals] case class Stepper[T, U](steppers: List[Steppers[T, U]])
   end onAtomComplete
 end Stepper // case class
 
-private[portals] sealed trait Steppers[T, U](val task: GenericTask[T, U, Nothing, Nothing])
-private[portals] case class Step[T, U](override val task: GenericTask[T, U, Nothing, Nothing])
-    extends Steppers[T, U](task)
-private[portals] case class Loop[T, U](override val task: GenericTask[T, U, Nothing, Nothing], count: Int)
-    extends Steppers[T, U](task)
+private[portals] sealed trait Steppers[T, U]:
+  def task: GenericTask[T, U, Nothing, Nothing]
+private[portals] case class Step[T, U](task: GenericTask[T, U, Nothing, Nothing]) extends Steppers[T, U]
+private[portals] case class Loop[T, U](task: GenericTask[T, U, Nothing, Nothing], count: Int) extends Steppers[T, U]
 
 extension [T, U](task: GenericTask[T, U, Nothing, Nothing]) {
 

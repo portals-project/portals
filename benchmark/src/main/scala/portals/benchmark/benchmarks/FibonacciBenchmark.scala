@@ -22,9 +22,10 @@ object FibonacciBenchmark extends Benchmark:
   override def runOneIteration(): Unit =
     val nFib = config.getInt("--nFib")
 
-    sealed trait FibEvent(val receiver: Int)
-    case class FibRequest(sender: Int, override val receiver: Int) extends FibEvent(receiver)
-    case class FibResponse(sender: Int, override val receiver: Int, v: Long) extends FibEvent(receiver)
+    sealed trait FibEvent:
+      def receiver: Int
+    case class FibRequest(sender: Int, receiver: Int) extends FibEvent
+    case class FibResponse(sender: Int, receiver: Int, v: Long) extends FibEvent
 
     val system = Systems.local()
 
