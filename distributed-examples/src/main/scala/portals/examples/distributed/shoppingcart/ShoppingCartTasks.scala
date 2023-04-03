@@ -11,7 +11,6 @@ import portals.application.task.AskerTaskContext
 import portals.application.task.PerKeyState
 import portals.application.task.ProcessorTaskContext
 import portals.application.task.ReplierTaskContext
-import portals.application.task.StatefulTaskContext
 import portals.application.AtomicPortalRefKind
 
 @experimental
@@ -24,7 +23,7 @@ object ShoppingCartTasks:
     import portals.api.dsl.DSL.*
     import portals.api.dsl.ExperimentalDSL.*
 
-    lazy val state: StatefulTaskContext ?=> PerKeyState[CartState] =
+    lazy val state: PerKeyState[CartState] =
       PerKeyState[CartState]("state", CartState.zero)
 
     // format: off
@@ -70,7 +69,7 @@ object ShoppingCartTasks:
     import portals.api.dsl.DSL.*
     import portals.api.dsl.ExperimentalDSL.*
 
-    lazy val state: StatefulTaskContext ?=> PerKeyState[Int] = PerKeyState[Int]("state", 0)
+    lazy val state: PerKeyState[Int] = PerKeyState[Int]("state", 0)
 
     def get(e: Get)(using ProcessorTaskContext[InventoryReqs, Nothing]): Unit =
       if ShoppingCartConfig.LOGGING then ctx.log.info(s"Taking ${e.item} from inventory")

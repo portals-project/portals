@@ -19,7 +19,7 @@ object BankAccountTasks:
 
   import BankAccountEvents.*
 
-  type WithStatefulTaskContext[T] = StatefulTaskContext ?=> T
+  // type WithStatefulTaskContext[T] = StatefulTaskContext ?=> T
 
   //////////////////////////////////////////////////////////////////////////////
   // Account Task
@@ -30,11 +30,11 @@ object BankAccountTasks:
   class AccountTask(portal: AtomicPortalRefKind[Req, Rep]) extends CustomAskerReplierTask[Nothing, Nothing, Req, Rep]:
 
     // Account state
-    lazy val state: WithStatefulTaskContext[PerKeyState[Int]] =
+    lazy val state: PerKeyState[Int] =
       PerKeyState[Int]("state", BankAccountConfig.STARTING_BALANCE)
 
     // Account lock
-    lazy val lock: WithStatefulTaskContext[PerKeyState[Boolean]] =
+    lazy val lock: PerKeyState[Boolean] =
       PerKeyState[Boolean]("lock", false)
 
     // Check if an account operation can be executed on the state
