@@ -7,7 +7,11 @@ import portals.api.builder.FlowBuilder
 import portals.api.builder.GeneratorBuilder
 import portals.application.*
 import portals.application.task.AskerTaskContext
+import portals.application.task.MapTaskStateExtension.*
+import portals.application.task.PerKeyState
+import portals.application.task.PerTaskState
 import portals.util.Future
+import portals.util.FutureImpl
 
 ////////////////////////////////////////////////////////////////////////////////
 // Experimental DSL
@@ -92,5 +96,35 @@ object ExperimentalDSL:
       ctx: AskerTaskContext[T, U, Req, Rep]
   ): Unit =
     ctx.await(future)(fRec(Rec.contextual_rec(fRec)))
+
+  def awaitAll[Rep](
+      futures: Future[Rep]*
+  )(f: AskerTaskContext[_, _, _, Rep] ?=> Unit)(using ctx: AskerTaskContext[_, _, _, Rep]): Unit = {
+    lazy val _futures =
+      PerTaskState[Map[Int, Rep]]("futures", Map.empty)
+    lazy val _futures_copy =
+      PerTaskState[Map[Int, Rep]]("futures_copy", Map.empty)
+    lazy val _count =
+      PerKeyState[Map[Int, Int]]("_count", Map.empty)
+
+    _count.update(futures(0).id, 0)
+
+    val wrappedFunc: Future[Rep] => Unit = { future =>
+      _count.update(futures(0).id, _count.get(futures(0).id).get + 1)
+      _futures_copy.update(future.id, future.value.get)
+      if _count.get(futures(0).id).get == futures.length then
+        // restore futures
+        futures.foreach(future =>
+          _futures.update(future.id, _futures_copy.get(future.id).get)
+          _futures_copy.remove(future.id)
+        )
+        f
+        // clear state
+        futures.foreach(future => _futures.remove(future.id))
+        _count.remove(futures(0).id)
+    }
+
+    futures.foreach(future => ctx.await(future)(wrappedFunc(future)))
+  }
 
 end ExperimentalDSL
