@@ -25,6 +25,11 @@ class ExamplesTest:
     PingPongMain
 
   @Test
+  def testCountingActor(): Unit =
+    import portals.examples.actor.CountingActorMain
+    CountingActorMain
+
+  @Test
   def testShoppingCart(): Unit =
     import portals.examples.shoppingcart.ShoppingCartMain
     ShoppingCartMain
