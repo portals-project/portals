@@ -1,6 +1,8 @@
 package portals.compiler.phases
 
+import portals.compiler.phases.portal.*
+
 private[portals] object CompilerPhases:
-  def empty = EmptyPhase
   def wellFormedCheck = WellFormedCheck
   def codeGeneration = CodeGeneration
+  def rewritePortal = RewritePortalPhase
