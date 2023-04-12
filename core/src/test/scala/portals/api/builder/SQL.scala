@@ -27,13 +27,24 @@ class Book(id: Integer, title: String, year: Integer, author: Integer) {
   def toObjectArray: Array[Object] = Array[Object](id.asInstanceOf[Object], title.asInstanceOf[Object], year.asInstanceOf[Object], author.asInstanceOf[Object])
 }
 
+class Author(id: Integer, fname: String, lname: String) {
+  def toObjectArray: Array[Object] = Array[Object](id.asInstanceOf[Object], fname.asInstanceOf[Object], lname.asInstanceOf[Object])
+}
+
 @experimental object SQL {
   def main(args: Array[String]): Unit = {
     import scala.collection.JavaConverters._
 
     val app = PortalsApp("app") {
       val builder = ApplicationBuilder("app")
-      val portal = Portal[SQLQueryEvent, Result]("portal", qEvent => qEvent match
+      val bookPortal = Portal[SQLQueryEvent, Result]("bookPortal", qEvent => qEvent match
+        case SelectOp(tableName, key) =>
+          key
+        case InsertOp(tableName, data, key) =>
+          key
+        case _ => 0
+      )
+      val authorPortal = Portal[SQLQueryEvent, Result]("authorPortal", qEvent => qEvent match
         case SelectOp(tableName, key) =>
           key
         case InsertOp(tableName, data, key) =>
@@ -44,6 +55,8 @@ class Book(id: Integer, title: String, year: Integer, author: Integer) {
       // return two SQL queries for each iterator
       val generator = Generators
         .fromIteratorOfIterators[String](List(
+          List("INSERT INTO Author (id, fname, lname) VALUES (0, 'Victor', 'Hugo')").iterator,
+          List("INSERT INTO Author (id, fname, lname) VALUES (1, 'Alexandre', 'Dumas')").iterator,
           List("INSERT INTO Book (id, title, \"year\", author) VALUES (1, 'Les Miserables', 1862, 0)").iterator,
           List("INSERT INTO Book (id, title, \"year\", author) VALUES (2, 'The Hunchback of Notre-Dame', 1829, 0)").iterator,
           List("INSERT INTO Book (id, title, \"year\", author) VALUES (3, 'The Last Day of a Condemned Man', 1829, 0)").iterator,
@@ -52,50 +65,86 @@ class Book(id: Integer, title: String, year: Integer, author: Integer) {
           List("SELECT * FROM Book WHERE \"year\" > 1855 AND id IN (4, 5, 6)").iterator,
           List("INSERT INTO Book (id, title, \"year\", author) VALUES (6, 'The Lord of the Rings', 1954, 1)").iterator,
           List("SELECT * FROM Book WHERE \"year\" > 1855 AND id IN (4, 5, 6)").iterator,
+          List("SELECT b.id, b.title, b.\"year\", a.fname || ' ' || a.lname FROM Book b\n" +
+            "JOIN Author a ON b.author=a.id\n" +
+            //            "LEFT OUTER JOIN Author a ON b.author=a.id\n" +
+            "WHERE b.\"year\" > 1830 AND a.id IN (0, 1) AND b.id IN (1, 2, 3, 4, 5, 6)\n" +
+            "ORDER BY b.id DESC").iterator,
         ).iterator)
 
       val calcite = new Calcite()
+      calcite.printPlan = true
       calcite.registerTable("Book", List(SqlTypeName.INTEGER, SqlTypeName.VARCHAR, SqlTypeName.INTEGER, SqlTypeName.INTEGER).asJava,
         List("id", "title", "year", "author").asJava, 0)
+      calcite.registerTable("Author", List(SqlTypeName.INTEGER, SqlTypeName.VARCHAR, SqlTypeName.VARCHAR).asJava,
+        List("id", "fname", "lname").asJava, 0)
 
       Workflows[String, Nothing]("askerWf")
         .source(generator.stream)
-        .asker[Nothing](portal) {
+        .asker[Nothing](bookPortal) {
           sql => {
             val futureReadyCond = new LinkedBlockingQueue[Integer]()
             val awaitForFutureCond = new LinkedBlockingQueue[Integer]()
             val awaitForFinishCond = new LinkedBlockingQueue[Integer]()
+            val tableScanCntCond = new LinkedBlockingQueue[Integer]()
             val result = new util.ArrayList[Array[Object]]()
             val futures = new util.ArrayList[FutureWithResult]()
 
             var portalFutures = List[Future[Result]]()
 
+            // needs to know how many times are select asking called for different tables
             calcite.getTable("Book").setInsertRow(data => {
-              val future = ask(portal)(InsertOp("Book", data.toList, data(0).asInstanceOf[Int]))
+              val future = ask(bookPortal)(InsertOp("Book", data.toList, data(0).asInstanceOf[Int]))
               portalFutures = portalFutures :+ future
               new FutureWithResult(future, null)
             })
             calcite.getTable("Book").setGetFutureByRowKeyFunc(key => {
-              val future = ask(portal)(SelectOp("Book", key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
+              println("Book key: " + key)
+              val future = ask(bookPortal)(SelectOp("Book", key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
+              portalFutures = portalFutures :+ future
+              new FutureWithResult(future, null)
+            })
+            calcite.getTable("Author").setInsertRow(data => {
+              val future = ask(authorPortal)(InsertOp("Author", data.toList, data(0).asInstanceOf[Int]))
+              portalFutures = portalFutures :+ future
+              new FutureWithResult(future, null)
+            })
+            calcite.getTable("Author").setGetFutureByRowKeyFunc(key => {
+              println("Author key: " + key)
+              val future = ask(authorPortal)(SelectOp("Author", key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
               portalFutures = portalFutures :+ future
               new FutureWithResult(future, null)
             })
 
             calcite.executeSQL(sql,
-              futureReadyCond, awaitForFutureCond, awaitForFinishCond, futures, result);
+              futureReadyCond, awaitForFutureCond, awaitForFinishCond, tableScanCntCond, futures, result);
 
-            futureReadyCond.take
+            val tableScanCnt = tableScanCntCond.take
+            println("tableScanCnt: " + tableScanCnt)
 
-            awaitAll(portalFutures: _*) {
-              futures.forEach(f => {
-                val data = f.future.asInstanceOf[Future[Result]].value
-                f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
-              })
-              awaitForFutureCond.put(1)
-              awaitForFinishCond.take()
+            for (i <- 1 to tableScanCnt) {
+              println("try future ready consume")
+              futureReadyCond.take
+              println("future ready consume done")
 
-              println("====== Result for " + sql + " ======")
-              result.forEach(row => println(util.Arrays.toString(row)))
+              // wait for the last one to awaitAll
+              if i != tableScanCnt then
+                awaitForFutureCond.put(1)
+              else
+                awaitAll(portalFutures: _*) {
+                  futures.forEach(f => {
+                    val data = f.future.asInstanceOf[Future[Result]].value
+                    f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
+                  })
+
+                  awaitForFutureCond.put(1) // allow SQL execution to start
+
+                  awaitForFinishCond.take() // wait for SQL execution to finish
+
+                  println("====== Result for " + sql + " ======")
+                  result.forEach(row => println(util.Arrays.toString(row)))
+                }
+
             }
           }
         }
@@ -103,31 +152,33 @@ class Book(id: Integer, title: String, year: Integer, author: Integer) {
         .sink()
         .freeze()
 
-      lazy val state = PerKeyState[Book]("book", null)
+      // =================== Book Wf
+
+      lazy val bookState = PerKeyState[Book]("book", null)
 
       Workflows[Nothing, Nothing]("bookWf")
         .source(Generators.empty.stream)
-        .replier[Nothing](portal) {
+        .replier[Nothing](bookPortal) {
 
           _ => ()
         } {
           q =>
             q match
               case SelectOp(tableName, key) =>
-                val data = state.get()
+                val data = bookState.get()
                 println("select " + key + " " + data)
                 if (data != null)
-                  reply(Result("ok", state.get().toObjectArray))
+                  reply(Result("ok", bookState.get().toObjectArray))
                 else
                   reply(Result("ok", null))
               case InsertOp(tableName, data, key) =>
                 println("insert " + data)
-                state.set(Book(
+                bookState.set(Book(
                   data(0).asInstanceOf[Integer],
                   data(1).asInstanceOf[String],
                   data(2).asInstanceOf[Integer],
                   data(3).asInstanceOf[Integer]))
-                println("inserted " + state.get())
+                println("inserted " + bookState.get())
                 reply(Result("ok", Array[Object]()))
               case _ => reply(Result("error", List()))
         }
@@ -135,7 +186,38 @@ class Book(id: Integer, title: String, year: Integer, author: Integer) {
         .sink()
         .freeze()
 
+      // ============== Author Wf
 
+      lazy val authorState = PerKeyState[Author]("author", null)
+
+      Workflows[Nothing, Nothing]("authorWf")
+        .source(Generators.empty.stream)
+        .replier[Nothing](authorPortal) {
+
+          _ => ()
+        } {
+          q =>
+            q match
+              case SelectOp(tableName, key) =>
+                val data = authorState.get()
+                println("select " + key + " " + data)
+                if (data != null)
+                  reply(Result("ok", authorState.get().toObjectArray))
+                else
+                  reply(Result("ok", null))
+              case InsertOp(tableName, data, key) =>
+                println("insert " + data)
+                authorState.set(Author(
+                  data(0).asInstanceOf[Integer],
+                  data(1).asInstanceOf[String],
+                  data(2).asInstanceOf[String]))
+                println("inserted " + authorState.get())
+                reply(Result("ok", Array[Object]()))
+              case _ => reply(Result("error", List()))
+        }
+
+        .sink()
+        .freeze()
     }
 
     val system = Systems.interpreter()
