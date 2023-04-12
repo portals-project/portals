@@ -479,6 +479,7 @@ class PortalTest:
         Workflows[Int, Nothing](name)
           .source(Generators.fromRange(0, 10, 1).stream)
           .replier[Nothing](portal) { _ => () } { x =>
+            println(name + " " + x + " * " + multiplier + " = " + x * multiplier)
             reply(x * multiplier)
           }
           .sink()
@@ -490,6 +491,7 @@ class PortalTest:
       val askerWF = Workflows[Int, Int]("askerWF")
         .source(Generators.fromRange(0, 10, 1).stream)
         .asker[Int](portal1, portal2) { ctx ?=> x =>
+          println(x)
           val future1 = ask(portal1)(x)
           val future2 = ask(portal2)(x)
           awaitAll(future1, future2) {

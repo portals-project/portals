@@ -4,6 +4,7 @@ lazy val logbackversion = "1.2.11"
 lazy val akkaVersion = "2.6.20"
 lazy val pprintversion = "0.7.0"
 lazy val nexmarkVersion = "2.41.0"
+lazy val calciteVersion = "1.33.0"
 
 ThisBuild / organization := "org.portals-project"
 ThisBuild / organizationName := "Portals-Project"
@@ -25,6 +26,7 @@ lazy val portals = project
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
     libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
     libraryDependencies += "com.lihaoyi" %% "pprint" % pprintversion,
+    libraryDependencies += "org.apache.calcite" % "calcite-core" % calciteVersion,
   )
 
 lazy val benchmark = project
