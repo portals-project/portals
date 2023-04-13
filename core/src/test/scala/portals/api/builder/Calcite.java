@@ -24,10 +24,7 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
-import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.logical.LogicalTableModify;
-import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -42,14 +39,17 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
+import org.apache.calcite.util.Sarg;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -68,11 +68,7 @@ public class Calcite {
                 ImmutableList.of(SqlTypeName.INTEGER, SqlTypeName.VARCHAR, SqlTypeName.INTEGER, SqlTypeName.INTEGER),
                 ImmutableList.of("id", "title", "year", "author"), 0);
         // asking
-        calcite.getTable("Book").setGetFutureByRowKeyFunc(o -> {
-//                    System.out.println("call " + o.toString());
-//                    return new Object[]{1, "Les Miserables", 1862, 0};
-            return new FutureWithResult(null, null);
-        });
+        calcite.getTable("Book").setGetFutureByRowKeyFunc(o -> new FutureWithResult(null, null));
         calcite.getTable("Book").setInsertRow(objects -> {
             System.out.println("insert " + Arrays.toString(objects));
             return new FutureWithResult(null, null);
@@ -88,12 +84,11 @@ public class Calcite {
         // calcite: finish the query, fill the output + awaitForResultCond.signal()
         calcite.executeSQL("INSERT INTO Book (id, title, \"year\", author) VALUES (6, 'The Lord of the Rings', 1954, 1)",
 //        calcite.executeSQL("SELECT * FROM Book WHERE \"year\" > 1829 AND id IN (1, 2, 3)",
-                futureReadyCond, awaitForFutureCond, awaitForFinishCond, futures, result);
+                futureReadyCond, awaitForFutureCond, awaitForFinishCond, new LinkedBlockingQueue<>(), futures, result);
         // signal at awaitAll when data is ready
         futureReadyCond.take();
-        for (Object future : futures) {
-            FutureWithResult fwr = (FutureWithResult) future;
-            fwr.futureResult = new Object[]{1, "Les Miserables", 1862, 0};
+        for (FutureWithResult future : futures) {
+            future.futureResult = new Object[]{1, "Les Miserables", 1862, 0};
         }
         awaitForFutureCond.put(1);
         awaitForFinishCond.take();
@@ -114,13 +109,12 @@ public class Calcite {
         // portals: awaitAll(futures) { fill in the data + cond.signal() + awaitForResultCond.await() }
         // calcite: finish the query, fill the output + awaitForResultCond.signal()
         calcite.executeSQL("SELECT * FROM Book WHERE \"year\" > 1829 AND id IN (1, 2, 3)",
-                futureReadyCond, awaitForFutureCond, awaitForFinishCond, futures, result);
+                futureReadyCond, awaitForFutureCond, awaitForFinishCond, new LinkedBlockingQueue<>(), futures, result);
 
         futureReadyCond.take();
         // at awaitAll
-        for (Object future : futures) {
-            FutureWithResult fwr = (FutureWithResult) future;
-            fwr.futureResult = new Object[]{1, "Les Miserables", 1862, 0};
+        for (FutureWithResult future : futures) {
+            future.futureResult = new Object[]{1, "Les Miserables", 1862, 0};
         }
         awaitForFutureCond.put(1);
         awaitForFinishCond.take();
@@ -159,27 +153,34 @@ public class Calcite {
 
         // Initialize table
         if (schema.getTable(tableName, false) == null)
-            MPFTable = new MPFTable(tableType.build(), new MyList<>(this), pkIndex, this);
+            MPFTable = new MPFTable(tableName, tableType.build(), new MyList<>(this), pkIndex, this);
         registeredTable.put(tableName, MPFTable);
         schema.add(tableName, MPFTable);
     }
 
-    public boolean printPlan = false;
+    public boolean printPlan = true;
     public boolean debug = false;
     // TODO: can be removed
     MPFTable MPFTable;
     BlockingQueue<Integer> futureReadyCond;
     BlockingQueue<Integer> awaitForFuturesCond;
     BlockingQueue<Integer> awaitForSQLCompletionCond;
-    List<FutureWithResult> futures;
+    BlockingQueue<Integer> tableOpCntCond;
+
+    List<FutureWithResult> futures; // for outside usage only
+    Map<String, List<FutureWithResult>> tableFutures = new HashMap<>();
+
     List<Object[]> result;
 
     public void executeSQL(String sql, BlockingQueue<Integer> futureReadyCond, BlockingQueue<Integer> awaitForFutureCond,
-                           BlockingQueue<Integer> awaitForSQLCompletionCond, List<FutureWithResult> futures,
+                           BlockingQueue<Integer> awaitForSQLCompletionCond,
+                           BlockingQueue<Integer> tableScanCntCond,
+                           List<FutureWithResult> futures,
                            List<Object[]> result) throws InterruptedException {
         this.futureReadyCond = futureReadyCond;
         this.awaitForFuturesCond = awaitForFutureCond;
         this.awaitForSQLCompletionCond = awaitForSQLCompletionCond;
+        this.tableOpCntCond = tableScanCntCond;
         this.futures = futures;
         this.result = result;
         Runnable runnable = () -> {
@@ -237,6 +238,9 @@ public class Calcite {
         // Convert the valid AST into a logical plan
         RelNode logPlan = relConverter.convertQuery(validNode, false, true).rel;
 
+        // report tableScanCnt
+        tableOpCntCond.put(getTableOpCnt(logPlan));
+
         // Display the logical plan
         if (printPlan) {
             System.out.println(
@@ -267,6 +271,18 @@ public class Calcite {
             }
         } else {
             bindableConventionPlanExecution(logPlan, cluster);
+        }
+    }
+
+    private int getTableOpCnt(RelNode logPlan) {
+        if (logPlan instanceof LogicalTableScan || logPlan instanceof LogicalValues) {
+            return 1;
+        } else {
+            int cnt = 0;
+            for (RelNode input : logPlan.getInputs()) {
+                cnt += getTableOpCnt(input);
+            }
+            return cnt;
         }
     }
 
@@ -332,6 +348,8 @@ public class Calcite {
             result.add(new Object[]{row});
         }
         awaitForSQLCompletionCond.put(1);
+
+        init();
     }
 
     private void bindableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster) throws InterruptedException {
@@ -368,6 +386,13 @@ public class Calcite {
             result.add(row);
         }
         awaitForSQLCompletionCond.put(1);
+
+        init();
+    }
+
+    private void init() {
+        futures = new ArrayList<>();
+        tableFutures = new HashMap<>();
     }
 
     private static RelOptCluster newCluster(RelDataTypeFactory factory) {
@@ -417,8 +442,9 @@ public class Calcite {
     // TODO: declare table (+register)
 
 
-    public static class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilterableTable, DeletableTable {
+    class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilterableTable, DeletableTable {
 
+        private String tableName;
         private MyList<Object[]> data;
         private final RelDataType rowType;
         private int pkIndex = 0;
@@ -426,7 +452,8 @@ public class Calcite {
         private Function<Object, FutureWithResult> getFutureByRowKeyFunc;
         private Calcite calcite;
 
-        public MPFTable(RelDataType rowType, MyList<Object[]> data, int pkIndex, Calcite calcite) {
+        public MPFTable(String tableName, RelDataType rowType, MyList<Object[]> data, int pkIndex, Calcite calcite) {
+            this.tableName = tableName;
             this.data = data;
             this.rowType = rowType;
             this.pkIndex = pkIndex;
@@ -459,20 +486,25 @@ public class Calcite {
                 // ask, return future
                 FutureWithResult futureWithResult = getFutureByRowKeyFunc.apply(pkPredicate.getValue());
                 calcite.futures.add(futureWithResult);
+                calcite.tableFutures.putIfAbsent(tableName, new ArrayList<>());
+                calcite.tableFutures.get(tableName).add(futureWithResult);
             }
 
             // tell outside that they can get these futures and call awaitAll
             try {
+                System.out.println("put futureReadyCond " + tableName);
                 calcite.futureReadyCond.put(1);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             try {
-                // wait for awaitAll callback to be called
+                // wait for awaitAll callback to be called, so the asking is actually executed
                 calcite.awaitForFuturesCond.take();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
+            System.out.println("return tableScan " + tableName);
 
             return new AbstractEnumerable<Object[]>() {
                 public Enumerator<Object[]> enumerator() {
@@ -488,7 +520,8 @@ public class Calcite {
                             while (++row < pkPredicates.size()) {
                                 // await
 //                                Object[] current = data.get(row);
-                                Object[] current = calcite.futures.get(row).futureResult;
+                                Object[] current = calcite.tableFutures.get(tableName).get(row).futureResult;
+                                System.out.println("moveNext " + tableName + " " + row + " " + Arrays.toString(current));
                                 if (current == null) {
                                     continue;
                                 }
@@ -549,6 +582,10 @@ public class Calcite {
         }
 
         private List<RexNode> copyAndRemovePKPredicate(List<RexNode> targetList) {
+            if (targetList.isEmpty()) {
+                return new ArrayList<>();
+            }
+
             this.pkPredicates.clear();
 
             assert targetList.size() == 1;
@@ -611,9 +648,37 @@ public class Calcite {
                     }
                 }
                 return ans;
+            } else if (rexCall.op == SqlStdOperatorTable.SEARCH) {
+                List<RexLiteral> ans = new ArrayList<>();
+                RexInputRef ref = (RexInputRef) rexCall.operands.get(0); // check pk
+                if (ref.getIndex() == pkIndex) {
+                    Sarg sarg = (Sarg)((RexLiteral) rexCall.operands.get(1)).getValue();
+                    sarg.rangeSet.asRanges().forEach(range -> {
+//                        String x = range.toString().split();
+                        String intStr = range.toString().split("\\.\\.")[0].replace("[", "");
+                        ans.add(intToRexLiteral(Integer.parseInt(intStr)));
+                    });
+                }
+                return ans;
             }
             return null;
         }
+
+        private RexLiteral intToRexLiteral(int i) {
+            RexBuilder builder = new RexBuilder(new JavaTypeFactoryImpl());
+            return builder.makeExactLiteral(BigDecimal.valueOf(i));
+//            return RexLiteral.fromJdbcString(typeFactory., SqlTypeName.DECIMAL, String.valueOf(i));
+//            return null;
+        }
+
+//        private List<RexLiteral> convertSargToRexLiteral(Sarg sarg) {
+//            List<RexLiteral> ans = new ArrayList<>();
+//            for (int i = 0; i < 100; i++) {
+//                if (sarg.rangeSet.contains(i)) {
+//                    ans.add(RexLiteral.intValue())
+//                }
+//            }
+//        }
     }
 }
 
@@ -647,12 +712,13 @@ class MyList<T> extends ArrayList<T> {
 
         // tell outside that they can get these futures and call awaitAll
         try {
+            System.out.println("put futureReadyCond");
             calcite.futureReadyCond.put(1);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         try {
-            // wait for awaitAll callback to be called
+            // wait for awaitAll callback to be called, so the asking is actually executed
             calcite.awaitForFuturesCond.take();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -661,7 +727,7 @@ class MyList<T> extends ArrayList<T> {
         // future is complete, we can return
         if (calcite.debug) System.out.println("add " + t);
         // but we intercept and add the result
-//        return super.add(t);
-        return true;
+        return super.add(t); // comment this will cause the "row affected" to be 0
+//        return true;
     }
 }
