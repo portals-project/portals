@@ -480,7 +480,7 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
 
         List<RexNode> newFilters = copyAndRemovePKPredicate(filters);
         filters.clear();
-//        filters.addAll(newFilters);
+        filters.addAll(newFilters);
 
         for (RexLiteral pkPredicate : pkPredicates) {
             // ask, return future
