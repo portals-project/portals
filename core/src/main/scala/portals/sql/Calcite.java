@@ -1,4 +1,4 @@
-package portals.api.builder;
+package portals.sql;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -39,7 +39,6 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -152,16 +151,15 @@ public class Calcite {
         }
 
         // Initialize table
-        if (schema.getTable(tableName, false) == null)
-            MPFTable = new MPFTable(tableName, tableType.build(), new MyList<>(this), pkIndex, this);
-        registeredTable.put(tableName, MPFTable);
-        schema.add(tableName, MPFTable);
+        if (schema.getTable(tableName, false) == null) {
+            MPFTable table = new MPFTable(tableName, tableType.build(), new MyList<>(this), pkIndex, this);
+            registeredTable.put(tableName, table);
+            schema.add(tableName, table);
+        }
     }
 
     public boolean printPlan = true;
     public boolean debug = false;
-    // TODO: can be removed
-    MPFTable MPFTable;
     BlockingQueue<Integer> futureReadyCond;
     BlockingQueue<Integer> awaitForFuturesCond;
     BlockingQueue<Integer> awaitForSQLCompletionCond;
@@ -442,234 +440,241 @@ public class Calcite {
     // TODO: declare table (+register)
 
 
-    class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilterableTable, DeletableTable {
+}
 
-        private String tableName;
-        private MyList<Object[]> data;
-        private final RelDataType rowType;
-        private int pkIndex = 0;
-        private List<RexLiteral> pkPredicates = new ArrayList<>();
-        private Function<Object, FutureWithResult> getFutureByRowKeyFunc;
-        private Calcite calcite;
+class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilterableTable, Calcite.DeletableTable {
 
-        public MPFTable(String tableName, RelDataType rowType, MyList<Object[]> data, int pkIndex, Calcite calcite) {
-            this.tableName = tableName;
-            this.data = data;
-            this.rowType = rowType;
-            this.pkIndex = pkIndex;
-            this.calcite = calcite;
+    private String tableName;
+    private MyList<Object[]> data;
+    private final RelDataType rowType;
+    private int pkIndex = 0;
+    private List<RexLiteral> pkPredicates = new ArrayList<>();
+    private Function<Object, FutureWithResult> getFutureByRowKeyFunc;
+    private Calcite calcite;
+
+    MPFTable(String tableName, RelDataType rowType, MyList<Object[]> data, int pkIndex, Calcite calcite) {
+        this.tableName = tableName;
+        this.data = data;
+        this.rowType = rowType;
+        this.pkIndex = pkIndex;
+        this.calcite = calcite;
+    }
+
+    public void setInsertRow(Function<Object[], FutureWithResult> insertRow) {
+        this.data.insertRow = insertRow;
+    }
+
+    public void setGetFutureByRowKeyFunc(Function<Object, FutureWithResult> getFutureByRowKeyFunc) {
+        this.getFutureByRowKeyFunc = getFutureByRowKeyFunc;
+    }
+
+    @Override
+    public void delete(List<Object[]> keys) {
+
+    }
+
+    @Override
+    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
+        // TODO: filter
+        if (calcite.debug) System.out.println("scan");
+
+        List<RexNode> newFilters = copyAndRemovePKPredicate(filters);
+        filters.clear();
+//        filters.addAll(newFilters);
+
+        for (RexLiteral pkPredicate : pkPredicates) {
+            // ask, return future
+            FutureWithResult futureWithResult = getFutureByRowKeyFunc.apply(pkPredicate.getValue());
+            calcite.futures.add(futureWithResult);
+            calcite.tableFutures.putIfAbsent(tableName, new ArrayList<>());
+            calcite.tableFutures.get(tableName).add(futureWithResult);
         }
 
-        public void setInsertRow(Function<Object[], FutureWithResult> insertRow) {
-            this.data.insertRow = insertRow;
+        // tell outside that they can get these futures and call awaitAll
+        try {
+            System.out.println("put futureReadyCond " + tableName);
+            calcite.futureReadyCond.put(1);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        try {
+            // wait for awaitAll callback to be called, so the asking is actually executed
+            calcite.awaitForFuturesCond.take();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        public void setGetFutureByRowKeyFunc(Function<Object, FutureWithResult> getFutureByRowKeyFunc) {
-            this.getFutureByRowKeyFunc = getFutureByRowKeyFunc;
-        }
+        System.out.println("return tableScan " + tableName);
 
-        @Override
-        public void delete(List<Object[]> keys) {
+        return new AbstractEnumerable<Object[]>() {
+            public Enumerator<Object[]> enumerator() {
+                return new Enumerator<Object[]>() {
+                    int row = -1;
+                    Object[] current;
 
-        }
+                    public Object[] current() {
+                        return current;
+                    }
 
-        @Override
-        public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-            // TODO: filter
-            if (calcite.debug) System.out.println("scan");
-
-            List<RexNode> newFilters = copyAndRemovePKPredicate(filters);
-            filters.clear();
-            filters.addAll(newFilters);
-
-            for (RexLiteral pkPredicate : pkPredicates) {
-                // ask, return future
-                FutureWithResult futureWithResult = getFutureByRowKeyFunc.apply(pkPredicate.getValue());
-                calcite.futures.add(futureWithResult);
-                calcite.tableFutures.putIfAbsent(tableName, new ArrayList<>());
-                calcite.tableFutures.get(tableName).add(futureWithResult);
-            }
-
-            // tell outside that they can get these futures and call awaitAll
-            try {
-                System.out.println("put futureReadyCond " + tableName);
-                calcite.futureReadyCond.put(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            try {
-                // wait for awaitAll callback to be called, so the asking is actually executed
-                calcite.awaitForFuturesCond.take();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            System.out.println("return tableScan " + tableName);
-
-            return new AbstractEnumerable<Object[]>() {
-                public Enumerator<Object[]> enumerator() {
-                    return new Enumerator<Object[]>() {
-                        int row = -1;
-                        Object[] current;
-
-                        public Object[] current() {
-                            return current;
-                        }
-
-                        public boolean moveNext() {
-                            while (++row < pkPredicates.size()) {
-                                // await
+                    public boolean moveNext() {
+                        while (++row < pkPredicates.size()) {
+                            // await
 //                                Object[] current = data.get(row);
-                                Object[] current = calcite.tableFutures.get(tableName).get(row).futureResult;
-                                System.out.println("moveNext " + tableName + " " + row + " " + Arrays.toString(current));
-                                if (current == null) {
-                                    continue;
-                                }
-                                if (projects == null) {
-                                    this.current = current;
-                                } else {
-                                    Object[] newCurrent = new Object[projects.length];
-                                    for (int i = 0; i < projects.length; i++) {
-                                        newCurrent[i] = current[projects[i]];
-                                    }
-                                    this.current = newCurrent;
-                                }
-                                return true;
+                            Object[] current = calcite.tableFutures.get(tableName).get(row).futureResult;
+                            System.out.println("moveNext " + tableName + " " + row + " " + Arrays.toString(current));
+                            if (current == null) {
+                                continue;
                             }
-                            return false;
+                            if (projects == null) {
+                                this.current = current;
+                            } else {
+                                Object[] newCurrent = new Object[projects.length];
+                                for (int i = 0; i < projects.length; i++) {
+                                    newCurrent[i] = current[projects[i]];
+                                }
+                                this.current = newCurrent;
+                            }
+                            return true;
                         }
-
-                        public void reset() {
-                            row = -1;
-                        }
-
-                        public void close() {
-                        }
-                    };
-                }
-            };
-        }
-
-        @Override
-        public Collection getModifiableCollection() {
-            return data;
-        }
-
-        @Override
-        public TableModify toModificationRel(RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened) {
-            return LogicalTableModify.create(table, catalogReader, child, operation,
-                    updateColumnList, sourceExpressionList, flattened);
-        }
-
-        public RelDataType getRowType(RelDataTypeFactory relDataTypeFactory) {
-            return rowType;
-        }
-
-        // should not be called
-        @Override
-        public <T> Queryable<T> asQueryable(QueryProvider queryProvider, SchemaPlus schema, String tableName) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Type getElementType() {
-            return Object[].class;
-        }
-
-        @Override
-        public Expression getExpression(SchemaPlus schema, String tableName, Class clazz) {
-            return Schemas.tableExpression(schema, getElementType(), tableName, clazz);
-        }
-
-        private List<RexNode> copyAndRemovePKPredicate(List<RexNode> targetList) {
-            if (targetList.isEmpty()) {
-                return new ArrayList<>();
-            }
-
-            this.pkPredicates.clear();
-
-            assert targetList.size() == 1;
-            RexCall target = (RexCall) targetList.get(0);
-            List<RexLiteral> pkPredicates = isPKPredicate(target);
-            if (pkPredicates != null) {
-                this.pkPredicates.addAll(pkPredicates);
-                return new ArrayList<>();
-            }
-
-            return Collections.singletonList(target.clone(target.getType(), removePkPredicate(target.operands)));
-        }
-
-        private Set<SqlOperator> leafOperators() {
-            return ImmutableSet.of(SqlStdOperatorTable.EQUALS, SqlStdOperatorTable.AND, SqlStdOperatorTable.OR);
-        }
-
-        private ImmutableList<RexNode> removePkPredicate(ImmutableList<RexNode> operands) {
-            List<RexNode> ans = new ArrayList<>();
-            for (RexNode operand : operands) {
-                if (operand instanceof RexCall) {
-                    RexCall operandCall = (RexCall) operand;
-                    List<RexLiteral> pkPredicates = isPKPredicate(operandCall);
-                    if (pkPredicates != null) {
-                        this.pkPredicates.addAll(pkPredicates);
-                    } else {
-                        // not equal pk predicate, but may be tree leaf
-                        if (leafOperators().contains(operandCall.op)) {
-                            ans.add(operand);
-                        } else {
-                            ans.add(operandCall.clone(operandCall.getType(), removePkPredicate(operandCall.operands)));
-                        }
+                        return false;
                     }
+
+                    public void reset() {
+                        row = -1;
+                    }
+
+                    public void close() {
+                    }
+                };
+            }
+        };
+    }
+
+    @Override
+    public Collection getModifiableCollection() {
+        return data;
+    }
+
+    @Override
+    public TableModify toModificationRel(RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened) {
+        return LogicalTableModify.create(table, catalogReader, child, operation,
+                updateColumnList, sourceExpressionList, flattened);
+    }
+
+    public RelDataType getRowType(RelDataTypeFactory relDataTypeFactory) {
+        return rowType;
+    }
+
+    // should not be called
+    @Override
+    public <T> Queryable<T> asQueryable(QueryProvider queryProvider, SchemaPlus schema, String tableName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Type getElementType() {
+        return Object[].class;
+    }
+
+    @Override
+    public Expression getExpression(SchemaPlus schema, String tableName, Class clazz) {
+        return Schemas.tableExpression(schema, getElementType(), tableName, clazz);
+    }
+
+    private List<RexNode> copyAndRemovePKPredicate(List<RexNode> targetList) {
+        if (targetList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        this.pkPredicates.clear();
+
+        assert targetList.size() == 1;
+        RexCall target = (RexCall) targetList.get(0);
+        List<RexLiteral> pkPredicates = isPKPredicate(target);
+        if (pkPredicates != null) {
+            this.pkPredicates.addAll(pkPredicates);
+            return new ArrayList<>();
+        }
+
+        return Collections.singletonList(removePkPredicate(target));
+    }
+
+    private Set<SqlOperator> leafOperators() {
+        return ImmutableSet.of(SqlStdOperatorTable.EQUALS, SqlStdOperatorTable.AND, SqlStdOperatorTable.OR);
+    }
+
+    // pass in a rexCall, remove all its pk predicates, return the rest
+    private RexNode removePkPredicate(RexCall rexCall) {
+        List<RexNode> ans = new ArrayList<>();
+        for (RexNode operand : rexCall.operands) {
+            if (operand instanceof RexCall) {
+                RexCall operandCall = (RexCall) operand;
+                List<RexLiteral> pkPredicates = isPKPredicate(operandCall);
+                if (pkPredicates != null) {
+                    this.pkPredicates.addAll(pkPredicates);
                 } else {
-                    // TODO: when will this happen?
-                    ans.add(operand);
+                    // not equal pk predicate, but may be tree leaf
+                    if (leafOperators().contains(operandCall.op)) {
+                        ans.add(operand);
+                    } else {
+                        ans.add(removePkPredicate(operandCall));
+                    }
                 }
+            } else {
+                // TODO: when will this happen?
+                ans.add(operand);
             }
-            return ImmutableList.copyOf(ans);
+        }
+        if (rexCall.op == SqlStdOperatorTable.AND && ans.size() == 1) {
+            return ans.get(0);
         }
 
-        private List<RexLiteral> isPKPredicate(RexCall rexCall) {
-            if (rexCall.op == SqlStdOperatorTable.EQUALS) {
-                if (rexCall.operands.get(0) instanceof RexInputRef) {
-                    RexInputRef ref = (RexInputRef) rexCall.operands.get(0);
-                    if (ref.getIndex() == pkIndex) {
-                        return Collections.singletonList((RexLiteral) rexCall.operands.get(1));
-                    }
-                }
-            } else if (rexCall.op == SqlStdOperatorTable.OR) {
-                List<RexLiteral> ans = new ArrayList<>();
-                for (RexNode operand : rexCall.operands) {
-                    if (operand instanceof RexCall) {
-                        List<RexLiteral> literal = isPKPredicate((RexCall) operand);
-                        if (literal == null) {
-                            return null;
-                        }
-                        assert literal.size() == 1 : "literal.size() == 1";
-                        ans.add(literal.get(0));
-                    }
-                }
-                return ans;
-            } else if (rexCall.op == SqlStdOperatorTable.SEARCH) {
-                List<RexLiteral> ans = new ArrayList<>();
-                RexInputRef ref = (RexInputRef) rexCall.operands.get(0); // check pk
+        return rexCall.clone(rexCall.getType(), ans);
+    }
+
+    private List<RexLiteral> isPKPredicate(RexCall rexCall) {
+        if (rexCall.op == SqlStdOperatorTable.EQUALS) {
+            if (rexCall.operands.get(0) instanceof RexInputRef) {
+                RexInputRef ref = (RexInputRef) rexCall.operands.get(0);
                 if (ref.getIndex() == pkIndex) {
-                    Sarg sarg = (Sarg)((RexLiteral) rexCall.operands.get(1)).getValue();
-                    sarg.rangeSet.asRanges().forEach(range -> {
-//                        String x = range.toString().split();
-                        String intStr = range.toString().split("\\.\\.")[0].replace("[", "");
-                        ans.add(intToRexLiteral(Integer.parseInt(intStr)));
-                    });
+                    return Collections.singletonList((RexLiteral) rexCall.operands.get(1));
                 }
-                return ans;
             }
-            return null;
+        } else if (rexCall.op == SqlStdOperatorTable.OR) {
+            List<RexLiteral> ans = new ArrayList<>();
+            for (RexNode operand : rexCall.operands) {
+                if (operand instanceof RexCall) {
+                    List<RexLiteral> literal = isPKPredicate((RexCall) operand);
+                    if (literal == null) {
+                        return null;
+                    }
+                    assert literal.size() == 1 : "literal.size() == 1";
+                    ans.add(literal.get(0));
+                }
+            }
+            return ans;
+        } else if (rexCall.op == SqlStdOperatorTable.SEARCH) {
+            List<RexLiteral> ans = new ArrayList<>();
+            RexInputRef ref = (RexInputRef) rexCall.operands.get(0); // check pk
+            if (ref.getIndex() == pkIndex) {
+                Sarg sarg = (Sarg) ((RexLiteral) rexCall.operands.get(1)).getValue();
+                sarg.rangeSet.asRanges().forEach(range -> {
+//                        String x = range.toString().split();
+                    String intStr = range.toString().split("\\.\\.")[0].replace("[", "");
+                    ans.add(intToRexLiteral(Integer.parseInt(intStr)));
+                });
+            }
+            return ans;
         }
+        return null;
+    }
 
-        private RexLiteral intToRexLiteral(int i) {
-            RexBuilder builder = new RexBuilder(new JavaTypeFactoryImpl());
-            return builder.makeExactLiteral(BigDecimal.valueOf(i));
+    private RexLiteral intToRexLiteral(int i) {
+        RexBuilder builder = new RexBuilder(new JavaTypeFactoryImpl());
+        return builder.makeExactLiteral(BigDecimal.valueOf(i));
 //            return RexLiteral.fromJdbcString(typeFactory., SqlTypeName.DECIMAL, String.valueOf(i));
 //            return null;
-        }
+    }
 
 //        private List<RexLiteral> convertSargToRexLiteral(Sarg sarg) {
 //            List<RexLiteral> ans = new ArrayList<>();
@@ -679,7 +684,6 @@ public class Calcite {
 //                }
 //            }
 //        }
-    }
 }
 
 class FutureWithResult {

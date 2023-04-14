@@ -1,19 +1,18 @@
-package portals.api.builder
+package portals.sql
 
 import org.apache.calcite.sql.`type`.SqlTypeName
 import portals.api.builder.{ApplicationBuilder, TaskBuilder}
 import portals.api.dsl.DSL.*
-import portals.api.dsl.ExperimentalDSL.*
 import portals.application.AtomicPortalRef
 import portals.application.task.{AskerTaskContext, PerKeyState, PerTaskState, TaskStates}
 import portals.system.Systems
 import portals.util.Future
 
+import java.math.BigDecimal
 import java.util
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.stream.Collectors
 import scala.annotation.experimental
-import java.math.BigDecimal
 
 sealed class SQLQueryEvent
 
@@ -35,9 +34,12 @@ class Author(id: Integer, fname: String, lname: String) {
   override def toString: String = s"Author($id, $fname, $lname)"
 }
 
-@experimental object SQL {
+@experimental
+object Main {
   def main(args: Array[String]): Unit = {
-    import scala.collection.JavaConverters._
+    import portals.api.dsl.ExperimentalDSL.*
+
+    import scala.jdk.CollectionConverters.*
 
     val app = PortalsApp("app") {
       val builder = ApplicationBuilder("app")
@@ -72,7 +74,7 @@ class Author(id: Integer, fname: String, lname: String) {
           List("SELECT * FROM Author WHERE id IN (0, 1)").iterator,
           List("SELECT b.id, b.title, b.\"year\", a.fname || ' ' || a.lname FROM Book b\n" +
             "JOIN Author a ON b.author=a.id\n" +
-//                        "LEFT OUTER JOIN Author a ON b.author=a.id\n" +
+            //                        "LEFT OUTER JOIN Author a ON b.author=a.id\n" +
             "WHERE b.\"year\" > 1830 AND a.id IN (0, 1) AND b.id IN (1, 2, 3, 4, 5, 6)\n" +
             "ORDER BY b.id DESC").iterator,
         ).iterator)
