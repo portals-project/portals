@@ -44,4 +44,3 @@ lazy val examples = project
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
   .dependsOn(portals % "test->test;compile->compile")
-
