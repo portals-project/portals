@@ -20,7 +20,7 @@ lazy val portals = project
   .in(file("core"))
   .settings(
     name := "portals",
-    Compile / doc / target := target.value / "api",
+    Compile / doc / target := target.value.getParentFile / "target" / "api",
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
     libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
@@ -44,3 +44,4 @@ lazy val examples = project
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
   .dependsOn(portals % "test->test;compile->compile")
+
