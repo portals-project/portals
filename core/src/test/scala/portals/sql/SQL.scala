@@ -74,7 +74,6 @@ class Main {
     val tester = new TestUtils.Tester[String]()
 
     val app = PortalsApp("app") {
-      val builder = ApplicationBuilder("app")
       val bookPortal = Portal[SQLQueryEvent, Result](
         "bookPortal",
         qEvent =>
