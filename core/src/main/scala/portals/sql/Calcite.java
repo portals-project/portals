@@ -478,9 +478,7 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
         // TODO: filter
         if (calcite.debug) System.out.println("scan");
 
-        List<RexNode> newFilters = copyAndRemovePKPredicate(filters);
-        filters.clear();
-        filters.addAll(newFilters);
+        collectPKPredicates(filters);
 
         for (RexLiteral pkPredicate : pkPredicates) {
             // ask, return future
@@ -581,58 +579,45 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
         return Schemas.tableExpression(schema, getElementType(), tableName, clazz);
     }
 
-    private List<RexNode> copyAndRemovePKPredicate(List<RexNode> targetList) {
-        if (targetList.isEmpty()) {
-            return new ArrayList<>();
-        }
-
+    private void collectPKPredicates(List<RexNode> targetList) {
         this.pkPredicates.clear();
 
-        assert targetList.size() == 1;
-        RexCall target = (RexCall) targetList.get(0);
-        List<RexLiteral> pkPredicates = isPKPredicate(target);
-        if (pkPredicates != null) {
-            this.pkPredicates.addAll(pkPredicates);
-            return new ArrayList<>();
-        }
+        targetList.forEach(filter -> {
+            // is already a pk= / pk in
+            List<RexLiteral> pkPredicates = tryCollectPKPredicate((RexCall) filter);
+            if (pkPredicates != null) {
+                this.pkPredicates.addAll(pkPredicates);
+                return;
+            }
 
-        return Collections.singletonList(removePkPredicate(target));
+            // else need to search all its children
+            searchFilter((RexCall) filter);
+        });
     }
 
     private Set<SqlOperator> leafOperators() {
-        return ImmutableSet.of(SqlStdOperatorTable.EQUALS, SqlStdOperatorTable.AND, SqlStdOperatorTable.OR);
+        return ImmutableSet.of(SqlStdOperatorTable.EQUALS, SqlStdOperatorTable.AND, SqlStdOperatorTable.OR, SqlStdOperatorTable.SEARCH);
     }
 
     // pass in a rexCall, remove all its pk predicates, return the rest
-    private RexNode removePkPredicate(RexCall rexCall) {
-        List<RexNode> ans = new ArrayList<>();
+    private void searchFilter(RexCall rexCall) {
         for (RexNode operand : rexCall.operands) {
             if (operand instanceof RexCall) {
                 RexCall operandCall = (RexCall) operand;
-                List<RexLiteral> pkPredicates = isPKPredicate(operandCall);
+                List<RexLiteral> pkPredicates = tryCollectPKPredicate(operandCall);
                 if (pkPredicates != null) {
                     this.pkPredicates.addAll(pkPredicates);
                 } else {
                     // not equal pk predicate, but may be tree leaf
-                    if (leafOperators().contains(operandCall.op)) {
-                        ans.add(operand);
-                    } else {
-                        ans.add(removePkPredicate(operandCall));
+                    if (!leafOperators().contains(operandCall.op)) {
+                        searchFilter(operandCall);
                     }
                 }
-            } else {
-                // TODO: when will this happen?
-                ans.add(operand);
             }
         }
-        if (rexCall.op == SqlStdOperatorTable.AND && ans.size() == 1) {
-            return ans.get(0);
-        }
-
-        return rexCall.clone(rexCall.getType(), ans);
     }
 
-    private List<RexLiteral> isPKPredicate(RexCall rexCall) {
+    private List<RexLiteral> tryCollectPKPredicate(RexCall rexCall) {
         if (rexCall.op == SqlStdOperatorTable.EQUALS) {
             if (rexCall.operands.get(0) instanceof RexInputRef) {
                 RexInputRef ref = (RexInputRef) rexCall.operands.get(0);
@@ -644,7 +629,7 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
             List<RexLiteral> ans = new ArrayList<>();
             for (RexNode operand : rexCall.operands) {
                 if (operand instanceof RexCall) {
-                    List<RexLiteral> literal = isPKPredicate((RexCall) operand);
+                    List<RexLiteral> literal = tryCollectPKPredicate((RexCall) operand);
                     if (literal == null) {
                         return null;
                     }
@@ -672,18 +657,8 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
     private RexLiteral intToRexLiteral(int i) {
         RexBuilder builder = new RexBuilder(new JavaTypeFactoryImpl());
         return builder.makeExactLiteral(BigDecimal.valueOf(i));
-//            return RexLiteral.fromJdbcString(typeFactory., SqlTypeName.DECIMAL, String.valueOf(i));
-//            return null;
     }
 
-//        private List<RexLiteral> convertSargToRexLiteral(Sarg sarg) {
-//            List<RexLiteral> ans = new ArrayList<>();
-//            for (int i = 0; i < 100; i++) {
-//                if (sarg.rangeSet.contains(i)) {
-//                    ans.add(RexLiteral.intValue())
-//                }
-//            }
-//        }
 }
 
 class FutureWithResult {
