@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/portals-project/portals/actions/workflows/build-test.yaml/badge.svg)](https://github.com/portals-project/portals/actions/workflows/build-test.yaml)
 
-Welcome to the Portals repo!
+Welcome to the [Portals](https://www.portals-project.org/) repo!
 
 ## Getting Started Guide
 We recommend the following steps to get started.
