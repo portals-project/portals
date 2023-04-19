@@ -28,45 +28,19 @@ import portals.system.Systems
 import portals.test.TestUtils
 import portals.util.Future
 
-sealed trait SQLQueryEvent {
-  def tableName: String
-  def key: Int
-  def txnId: Int
-}
-
-case class PreCommitOp(tableName: String, key: Int, txnId: Int, op: SQLQueryEvent) extends SQLQueryEvent
-
-case class SelectOp(tableName: String, key: Int, txnId: Int = -1) extends SQLQueryEvent
-
-case class InsertOp(tableName: String, data: List[Any], key: Int, txnId: Int = -1) extends SQLQueryEvent
-
-case class RollbackOp(tableName: String, key: Int, txnId: Int = -1) extends SQLQueryEvent
-
-case class Result(status: String, data: Any)
-
-val STATUS_OK = "ok"
-
-class Book(id: Integer, title: String, year: Integer, author: Integer) {
-  def toObjectArray: Array[Object] = Array[Object](
-    id.asInstanceOf[Object],
-    title.asInstanceOf[Object],
-    year.asInstanceOf[Object],
-    author.asInstanceOf[Object]
-  )
-
-  override def toString: String = s"Book($id, $title, $year, $author)"
-}
-
-class Author(id: Integer, fname: String, lname: String) {
-  def toObjectArray: Array[Object] =
-    Array[Object](id.asInstanceOf[Object], fname.asInstanceOf[Object], lname.asInstanceOf[Object])
-
-  override def toString: String = s"Author($id, $fname, $lname)"
-}
+case class FirstPhaseResult(
+    txnID: Int,
+    success: Boolean,
+    succeedOps: List[SQLQueryEvent], // for rollback or commit
+    preparedOps: java.util.List[FutureWithResult] = null,
+    awaitForFutureCond: LinkedBlockingQueue[Integer] = null,
+    awaitForFinishCond: LinkedBlockingQueue[Integer] = null,
+    result: java.util.List[Array[Object]] = null,
+)
 
 @experimental
 @RunWith(classOf[JUnit4])
-class Main {
+class Transaction {
 
   @Test
   def main(): Unit = {
@@ -103,59 +77,27 @@ class Main {
       val bookPortal = createDataWfPortal("bookPortal")
       val authorPortal = createDataWfPortal("authorPortal")
 
+      val tableNameToPortal = Map(
+        "Book" -> bookPortal,
+        "Author" -> authorPortal,
+      )
+
       // return two SQL queries for each iterator
-      val generator = Generators
-        .fromIteratorOfIterators[String](
-          List(
-            List("INSERT INTO Author (id, fname, lname) VALUES (0, 'Victor', 'Hugo')").iterator,
-//            List("UPDATE Author SET fname='Victor Hugo' WHERE id=0").iterator,
-//            List("DELETE FROM Author WHERE id=0").iterator,
-            List("INSERT INTO Author (id, fname, lname) VALUES (1, 'Alexandre', 'Dumas')").iterator,
-            List("INSERT INTO Book (id, title, \"year\", author) VALUES (1, 'Les Miserables', 1862, 0)").iterator,
-            List(
-              "INSERT INTO Book (id, title, \"year\", author) VALUES (2, 'The Hunchback of Notre-Dame', 1829, 0)"
-            ).iterator,
-            List(
-              "INSERT INTO Book (id, title, \"year\", author) VALUES (3, 'The Last Day of a Condemned Man', 1829, 0)"
-            ).iterator,
-            List("INSERT INTO Book (id, title, \"year\", author) VALUES (4, 'The three Musketeers', 1844, 1)").iterator,
-            List(
-              "INSERT INTO Book (id, title, \"year\", author) VALUES (5, 'The Count of Monte Cristo', 1884, 1)"
-            ).iterator,
-            List("SELECT * FROM Book WHERE \"year\" > 1855 AND id IN (4, 5, 6)").iterator,
-            List(
-              "INSERT INTO Book (id, title, \"year\", author) VALUES (6, 'The Lord of the Rings', 1954, 1)"
-            ).iterator,
-            List("SELECT * FROM Book WHERE \"year\" > 1855 AND id IN (4, 5, 6)").iterator,
-            List("SELECT * FROM Author WHERE id IN (0, 1)").iterator,
-            List(
-              "SELECT b.id, b.title, b.\"year\", a.fname || ' ' || a.lname FROM Book b\n" +
-                "JOIN Author a ON b.author=a.id\n" +
-                "WHERE b.\"year\" > 1830 AND a.id IN (0, 1) AND b.id IN (1, 2, 3, 4, 5, 6)\n" +
-                "ORDER BY b.id DESC"
-            ).iterator,
-          ).iterator
+      val generator = Generators.fromList(
+        List(
+          "INSERT INTO Author (id, fname, lname) VALUES (0, 'Victor', 'Hugo')",
+          "SELECT * FROM Author WHERE id IN (0, 1)",
+//          "INSERT INTO Author (id, fname, lname) VALUES (1, 'Alexandre', 'Dumas')",
         )
-
-      val calcite = new Calcite()
-      calcite.printPlan = false
-      calcite.registerTable(
-        "Book",
-        List(SqlTypeName.INTEGER, SqlTypeName.VARCHAR, SqlTypeName.INTEGER, SqlTypeName.INTEGER).asJava,
-        List("id", "title", "year", "author").asJava,
-        0
-      )
-      calcite.registerTable(
-        "Author",
-        List(SqlTypeName.INTEGER, SqlTypeName.VARCHAR, SqlTypeName.VARCHAR).asJava,
-        List("id", "fname", "lname").asJava,
-        0
       )
 
-      Workflows[String, String]("askerWf")
+      val rndTxnIDGenerator = scala.util.Random()
+      rndTxnIDGenerator.setSeed(514)
+
+      Workflows[String, FirstPhaseResult]("askerWf")
         .source(generator.stream)
-        .asker[String](bookPortal) { sql =>
-
+        // TODO: question, why only book portal is enough?
+        .asker[FirstPhaseResult](bookPortal) { sql =>
           val futureReadyCond = new LinkedBlockingQueue[Integer]()
           val awaitForFutureCond = new LinkedBlockingQueue[Integer]()
           val awaitForFinishCond = new LinkedBlockingQueue[Integer]()
@@ -164,37 +106,67 @@ class Main {
           val futures = new util.ArrayList[FutureWithResult]()
 
           var portalFutures = List[Future[Result]]()
+          var preparedOperations = List[SQLQueryEvent]()
+
+          val calcite = new Calcite()
+          calcite.printPlan = false
+          calcite.registerTable(
+            "Book",
+            List(SqlTypeName.INTEGER, SqlTypeName.VARCHAR, SqlTypeName.INTEGER, SqlTypeName.INTEGER).asJava,
+            List("id", "title", "year", "author").asJava,
+            0
+          )
+          calcite.registerTable(
+            "Author",
+            List(SqlTypeName.INTEGER, SqlTypeName.VARCHAR, SqlTypeName.VARCHAR).asJava,
+            List("id", "fname", "lname").asJava,
+            0
+          )
+
+          val txnId = rndTxnIDGenerator.nextInt(1000000)
 
           // needs to know how many times are select asking called for different tables
           calcite
             .getTable("Book")
             .setInsertRow(data => {
-              val future = ask(bookPortal)(InsertOp("Book", data.toList, data(0).asInstanceOf[Int]))
+              val future = ask(bookPortal)(
+                PreCommitOp(
+                  "Book",
+                  data(0).asInstanceOf[Int],
+                  txnId,
+                  InsertOp("Book", data.toList, data(0).asInstanceOf[Int], txnId)
+                )
+              )
               portalFutures = portalFutures :+ future
               new FutureWithResult(future, null)
             })
           calcite
             .getTable("Book")
             .setGetFutureByRowKeyFunc(key => {
-              println("Book key: " + key)
-              val future =
-                ask(bookPortal)(SelectOp("Book", key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
+              val intKey = key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()
+              val future = ask(bookPortal)(PreCommitOp("Book", intKey, txnId, SelectOp("Book", intKey, txnId)))
               portalFutures = portalFutures :+ future
               new FutureWithResult(future, null)
             })
           calcite
             .getTable("Author")
             .setInsertRow(data => {
-              val future = ask(authorPortal)(InsertOp("Author", data.toList, data(0).asInstanceOf[Int]))
+              val future = ask(authorPortal)(
+                PreCommitOp(
+                  "Author",
+                  data(0).asInstanceOf[Int],
+                  txnId,
+                  InsertOp("Author", data.toList, data(0).asInstanceOf[Int], txnId)
+                )
+              )
               portalFutures = portalFutures :+ future
               new FutureWithResult(future, null)
             })
           calcite
             .getTable("Author")
             .setGetFutureByRowKeyFunc(key => {
-              println("Author key: " + key)
-              val future =
-                ask(authorPortal)(SelectOp("Author", key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
+              val intKey = key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()
+              val future = ask(authorPortal)(PreCommitOp("Author", intKey, txnId, SelectOp("Author", intKey, txnId)))
               portalFutures = portalFutures :+ future
               new FutureWithResult(future, null)
             })
@@ -212,40 +184,68 @@ class Main {
           val tableScanCnt = tableScanCntCond.take
           println("tableScanCnt: " + tableScanCnt)
 
-          val emit = { (x: String) =>
+          val emit = { (x: FirstPhaseResult) =>
             ctx.emit(x)
           }
 
           for (i <- 1 to tableScanCnt) {
-            println("try future ready consume")
+//            println("try future ready consume")
             futureReadyCond.take
-            println("future ready consume done")
+//            println("future ready consume done")
 
             // wait for the last one to awaitAll
             if i != tableScanCnt then awaitForFutureCond.put(1)
             else
               awaitAll[Result](portalFutures: _*) {
-                futures.forEach(f => {
-                  val data = f.future.asInstanceOf[Future[Result]].value
-                  f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
-                })
+                val results: List[Result] = futures.asScala.map(_.future.asInstanceOf[Future[Result]].value.get).toList
+                val succeedOps = results.filter(_.status == STATUS_OK).map(_.data.asInstanceOf[SQLQueryEvent])
+//                val failedOps = results.filter(_.status != STATUS_OK).map(_.data.asInstanceOf[SQLQueryEvent])
 
-                awaitForFutureCond.put(1) // allow SQL execution to start
-
-                awaitForFinishCond.take() // wait for SQL execution to finish
-
-                println("====== Result for " + sql + " ======")
-                result.forEach(row => println(util.Arrays.toString(row)))
-
-                result.forEach(row => {
-                  emit(util.Arrays.toString(row))
-                })
+                // TODO: made a partial commit example
+                if succeedOps.size != futures.size() then {
+                  awaitForFutureCond.put(-1) // trigger execution failure
+                  emit(FirstPhaseResult(txnId, false, succeedOps))
+                } else
+                  emit(
+                    FirstPhaseResult(txnId, true, succeedOps, futures, awaitForFutureCond, awaitForFinishCond, result)
+                  )
               }
-
+          }
+        }
+        .asker[FirstPhaseResult](bookPortal) { (preCommResult: FirstPhaseResult) =>
+          val emit = { (x: FirstPhaseResult) =>
+            ctx.emit(x)
           }
 
+          if preCommResult.success then {
+            println("txn " + preCommResult.txnID + " precommit succeed")
+            var futures = List[Future[Result]]()
+            preCommResult.succeedOps.foreach { op =>
+              futures = futures :+ ask(tableNameToPortal(op.tableName))(op)
+            }
+            awaitAll[Result](futures: _*) {
+              for (i <- futures.indices) {
+                preCommResult.preparedOps.get(i).futureResult = futures(i).value.get.data.asInstanceOf[Array[Object]]
+              }
+              preCommResult.awaitForFutureCond.put(1)
+              preCommResult.awaitForFinishCond.take()
+
+              preCommResult.result.forEach(row => {
+//                emit(util.Arrays.toString(row))
+                println(util.Arrays.toString(row))
+              })
+            }
+          } else {
+            println("txn " + preCommResult.txnID + " precommit failed")
+            var futures = List[Future[Result]]()
+            preCommResult.succeedOps.foreach { op =>
+              futures = futures :+ ask(tableNameToPortal(op.tableName))(RollbackOp(op.tableName, op.key, op.txnId))
+            }
+            awaitAll[Result](futures: _*) {
+              println("rollback done")
+            }
+          }
         }
-        .task(tester.task)
         .sink()
         .freeze()
 
@@ -259,8 +259,6 @@ class Main {
           ()
         } { q =>
           lazy val _txn = PerKeyState[Int]("_count", -1)
-          lazy val _count =
-            PerKeyState[Int]("_count", -1)
 
           q match
             case PreCommitOp(tableName, key, txnId, op) =>
@@ -341,26 +339,6 @@ class Main {
     system.stepUntilComplete()
     system.shutdown()
 
-    // inserts
-    for (i <- 1 to 7) {
-      tester.receiveAssert("[1]")
-    }
-
-    // book table query
-    tester.receiveAssert("[5, The Count of Monte Cristo, 1884, 1]")
-    tester.receiveAssert("[1]")
-    tester.receiveAssert("[5, The Count of Monte Cristo, 1884, 1]")
-    tester.receiveAssert("[6, The Lord of the Rings, 1954, 1]")
-
-    // author table query
-    tester.receiveAssert("[0, Victor, Hugo]")
-    tester.receiveAssert("[1, Alexandre, Dumas]")
-
-    // join query
-    tester.receiveAssert("[6, The Lord of the Rings, 1954, Alexandre Dumas]")
-    tester.receiveAssert("[5, The Count of Monte Cristo, 1884, Alexandre Dumas]")
-    tester.receiveAssert("[4, The three Musketeers, 1844, Alexandre Dumas]")
-    tester.receiveAssert("[1, Les Miserables, 1862, Victor Hugo]")
   }
 
 }

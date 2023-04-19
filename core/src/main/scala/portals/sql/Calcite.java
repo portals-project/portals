@@ -186,6 +186,8 @@ public class Calcite {
                 executeSQL0(sql);
             } catch (SqlParseException | InterruptedException e) {
                 e.printStackTrace();
+            } catch (ExecutionAbortException e) {
+                System.out.println("Execution aborted");
             }
         };
         executor.execute(runnable);
@@ -260,6 +262,7 @@ public class Calcite {
                 // TODO: AND()
                 RexInputRef left = (RexInputRef) cond.operands.get(0);
                 RexLiteral right = (RexLiteral) cond.operands.get(1);
+//                registeredTable.get(tableName).delete(right.getValue());
                 // TODO: key will be on the right, call delete manually (delete(tableName, key))
             } else if (modify.getOperation() == TableModify.Operation.INSERT) {
 //                (RexInputRef) cond.operands.get(0);
@@ -480,6 +483,10 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
 
         collectPKPredicates(filters);
 
+        if (pkPredicates.isEmpty()) {
+            throw new RuntimeException("no pk filter");
+        }
+
         for (RexLiteral pkPredicate : pkPredicates) {
             // ask, return future
             FutureWithResult futureWithResult = getFutureByRowKeyFunc.apply(pkPredicate.getValue());
@@ -497,7 +504,11 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
         }
         try {
             // wait for awaitAll callback to be called, so the asking is actually executed
-            calcite.awaitForFuturesCond.take();
+            int awaitForFutureResult = calcite.awaitForFuturesCond.take();
+            if (awaitForFutureResult == -1) {
+//                throw new RuntimeException("awaitForFutureResult == -1");
+                throw new ExecutionAbortException("");
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -708,5 +719,11 @@ class MyList<T> extends ArrayList<T> {
         // but we intercept and add the result
         return super.add(t); // comment this will cause the "row affected" to be 0
 //        return true;
+    }
+}
+
+class ExecutionAbortException extends RuntimeException {
+    public ExecutionAbortException(String message) {
+        super(message);
     }
 }
