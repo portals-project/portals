@@ -28,22 +28,15 @@ import portals.system.Systems
 import portals.test.TestUtils
 import portals.util.Future
 
-case class FirstPhaseResult(
-    txnID: Int,
-    success: Boolean,
-    succeedOps: List[SQLQueryEvent], // for rollback or commit
-    preparedOps: java.util.List[FutureWithResult] = null,
-    awaitForFutureCond: LinkedBlockingQueue[Integer] = null,
-    awaitForFinishCond: LinkedBlockingQueue[Integer] = null,
-    result: java.util.List[Array[Object]] = null,
-)
+
+
 
 @experimental
-@RunWith(classOf[JUnit4])
-class Transaction {
+//@RunWith(classOf[JUnit4])
+object Transaction extends App {
 
-  @Test
-  def main(): Unit = {
+//  @Test
+//  def main(): Unit = {
     import portals.api.dsl.ExperimentalDSL.*
 
     import scala.jdk.CollectionConverters.*
@@ -52,30 +45,13 @@ class Transaction {
     import ch.qos.logback.classic.Logger
     import ch.qos.logback.classic.Level
 
-    val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
-    logger.setLevel(Level.INFO)
-
     val tester = new TestUtils.Tester[String]()
 
     val app = PortalsApp("app") {
-      def createDataWfPortal(portalName: String) =
-        Portal[SQLQueryEvent, Result](
-          portalName,
-          qEvent =>
-            qEvent match
-              case PreCommitOp(tableName, key, txnId, op) =>
-                key
-              case SelectOp(tableName, key, txnId) =>
-                key
-              case InsertOp(tableName, data, key, txnId) =>
-                key
-              case RollbackOp(tableName, key, txnId) =>
-                key
-              case null => 0
-        )
 
-      val bookPortal = createDataWfPortal("bookPortal")
-      val authorPortal = createDataWfPortal("authorPortal")
+
+      val bookPortal = QueryableWorkflow.createDataWfPortal("bookPortal")
+      val authorPortal = QueryableWorkflow.createDataWfPortal("authorPortal")
 
       val tableNameToPortal = Map(
         "Book" -> bookPortal,
@@ -106,7 +82,6 @@ class Transaction {
           val futures = new util.ArrayList[FutureWithResult]()
 
           var portalFutures = List[Future[Result]]()
-          var preparedOperations = List[SQLQueryEvent]()
 
           val calcite = new Calcite()
           calcite.printPlan = false
@@ -249,89 +224,9 @@ class Transaction {
         .sink()
         .freeze()
 
-      // =================== Book Wf
 
-      lazy val bookState = PerKeyState[Book]("book", null)
-
-      Workflows[Nothing, Nothing]("bookWf")
-        .source(Generators.empty.stream)
-        .replier[Nothing](bookPortal) { _ =>
-          ()
-        } { q =>
-          lazy val _txn = PerKeyState[Int]("_count", -1)
-
-          q match
-            case PreCommitOp(tableName, key, txnId, op) =>
-              println("precommit txn " + txnId + " key " + key)
-              if _txn.get() == -1 || _txn.get() == txnId then
-                _txn.set(txnId)
-                reply(Result(STATUS_OK, op))
-              else reply(Result("error", List()))
-            case SelectOp(tableName, key, txnId) =>
-              val data = bookState.get()
-              println("select " + key + " " + data)
-              if (data != null)
-                reply(Result(STATUS_OK, bookState.get().toObjectArray))
-              else
-                reply(Result(STATUS_OK, null))
-            case InsertOp(tableName, data, key, txnId) =>
-              bookState.set(
-                Book(
-                  data(0).asInstanceOf[Integer],
-                  data(1).asInstanceOf[String],
-                  data(2).asInstanceOf[Integer],
-                  data(3).asInstanceOf[Integer]
-                )
-              )
-              println("inserted " + bookState.get())
-              reply(Result(STATUS_OK, Array[Object]()))
-            case RollbackOp(tableName, key, txnId) =>
-              println("rollback txn " + txnId + " key " + key)
-              _txn.set(-1)
-              reply(Result(STATUS_OK, Array[Object]()))
-            case null => reply(Result("error", List()))
-        }
-        .sink()
-        .freeze()
-
-      // ============== Author Wf
-
-      lazy val authorState = PerKeyState[Author]("author", null)
-
-      Workflows[Nothing, Nothing]("authorWf")
-        .source(Generators.empty.stream)
-        .replier[Nothing](authorPortal) { _ =>
-          ()
-        } { q =>
-          lazy val _txn = PerKeyState[Int]("_count", -1)
-
-          q match
-            case PreCommitOp(tableName, key, txnId, op) =>
-              println("precommit txn " + txnId + " key " + key)
-              if _txn.get() == -1 || _txn.get() == txnId then
-                _txn.set(txnId)
-                reply(Result(STATUS_OK, op))
-              else reply(Result("error", List()))
-            case SelectOp(tableName, key, txnId) =>
-              val data = authorState.get()
-              println("select " + key + " " + data)
-              if (data != null)
-                reply(Result(STATUS_OK, authorState.get().toObjectArray))
-              else
-                reply(Result(STATUS_OK, null))
-            case InsertOp(tableName, data, key, txnId) =>
-              authorState.set(
-                Author(data(0).asInstanceOf[Integer], data(1).asInstanceOf[String], data(2).asInstanceOf[String])
-              )
-              println("inserted " + authorState.get())
-              reply(Result(STATUS_OK, Array[Object]()))
-            case RollbackOp(tableName, key, txnId) =>
-              _txn.set(-1)
-              reply(Result(STATUS_OK, Array[Object]()))
-            case null => reply(Result("error", List()))
-        }
-        .sink()
-        .freeze()
+      QueryableWorkflow.createDataWorkflow[Book]("Book", bookPortal, Book)
+      QueryableWorkflow.createDataWorkflow[Author]("Author", authorPortal, Author)
     }
 
     val system = Systems.interpreter()
@@ -341,4 +236,3 @@ class Transaction {
 
   }
 
-}
