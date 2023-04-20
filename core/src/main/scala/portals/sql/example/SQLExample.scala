@@ -1,59 +1,66 @@
-package portals.sql
-
-import java.math.BigDecimal
-import java.util
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.stream.Collectors
+package portals.sql.example
 
 import scala.annotation.experimental
-import scala.collection.immutable.List
 
-import org.apache.calcite.sql.`type`.SqlTypeName
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-
-import ch.qos.logback.classic.Logger
-
-import portals.api.builder.ApplicationBuilder
-import portals.api.builder.TaskBuilder
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
-import portals.application.task.AskerTaskContext
-import portals.application.task.PerKeyState
-import portals.application.task.PerTaskState
-import portals.application.task.TaskStates
-import portals.application.AtomicPortalRef
-import portals.sql.*
+import portals.api.dsl.DSL.PortalsApp
+import portals.sql.DBSerializable
+import portals.sql.QueryableWorkflow
 import portals.system.Systems
-import portals.test.TestUtils
-import portals.util.Future
+
+object Book extends DBSerializable[Book]:
+  def fromObjectArray(arr: List[Any]): Book =
+    Book(
+      arr(0).asInstanceOf[Integer],
+      arr(1).asInstanceOf[String],
+      arr(2).asInstanceOf[Integer],
+      arr(3).asInstanceOf[Integer]
+    )
+
+  def toObjectArray(book: Book): Array[Object] =
+    Array[Object](
+      book.id.asInstanceOf[Object],
+      book.title.asInstanceOf[Object],
+      book.year.asInstanceOf[Object],
+      book.author.asInstanceOf[Object]
+    )
+
+case class Book(id: Integer, title: String, year: Integer, author: Integer) {
+  override def toString: String = s"Book($id, $title, $year, $author)"
+}
+
+object Author extends DBSerializable[Author]:
+  def fromObjectArray(arr: List[Any]): Author =
+    Author(arr(0).asInstanceOf[Integer], arr(1).asInstanceOf[String], arr(2).asInstanceOf[String])
+
+  def toObjectArray(author: Author): Array[Object] =
+    Array[Object](author.id.asInstanceOf[Object], author.fname.asInstanceOf[Object], author.lname.asInstanceOf[Object])
+
+case class Author(id: Integer, fname: String, lname: String) {
+  override def toString: String = s"Author($id, $fname, $lname)"
+}
 
 @experimental
-//@RunWith(classOf[JUnit4])
-object SQLCleaned extends App {
+object SQLExample extends App:
 
   import scala.jdk.CollectionConverters.*
 
   import org.slf4j.LoggerFactory
 
-//  @Test
-//  def main(): Unit = {
   import ch.qos.logback.classic.Level
   import ch.qos.logback.classic.Logger
 
   import portals.api.dsl.ExperimentalDSL.*
+  import portals.sql.*
 
   val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
   logger.setLevel(Level.INFO)
-
-  val tester = new TestUtils.Tester[String]()
 
   val app = PortalsApp("app") {
     val bookTable = QueryableWorkflow.createTable[Book]("Book", "id", Book)
     val authorTable = QueryableWorkflow.createTable[Author]("Author", "id", Author)
 
-    // return two SQL queries for each iterator
     val generator = Generators
       .fromIteratorOfIterators[String](
         List(
@@ -87,9 +94,7 @@ object SQLCleaned extends App {
 
     Workflows[String, String]("askerWf")
       .source(generator.stream)
-      .id()
       .querier(bookTable, authorTable)
-      .task(tester.task)
       .sink()
       .freeze()
   }
@@ -98,25 +103,3 @@ object SQLCleaned extends App {
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()
-
-  // inserts
-  for (i <- 1 to 7) {
-    tester.receiveAssert("[1]")
-  }
-
-  // book table query
-  tester.receiveAssert("[5, The Count of Monte Cristo, 1884, 1]")
-  tester.receiveAssert("[1]")
-  tester.receiveAssert("[5, The Count of Monte Cristo, 1884, 1]")
-  tester.receiveAssert("[6, The Lord of the Rings, 1954, 1]")
-
-  // author table query
-  tester.receiveAssert("[0, Victor, Hugo]")
-  tester.receiveAssert("[1, Alexandre, Dumas]")
-
-  // join query
-  tester.receiveAssert("[6, The Lord of the Rings, 1954, Alexandre Dumas]")
-  tester.receiveAssert("[5, The Count of Monte Cristo, 1884, Alexandre Dumas]")
-  tester.receiveAssert("[4, The three Musketeers, 1844, Alexandre Dumas]")
-  tester.receiveAssert("[1, Les Miserables, 1862, Victor Hugo]")
-}

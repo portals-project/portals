@@ -1,26 +1,29 @@
 package portals.sql
 
-import org.apache.calcite.sql.`type`.SqlTypeName
-import portals.api.dsl.DSL.Portal
-import portals.api.builder.{ApplicationBuilder, FlowBuilder}
-import portals.application.AtomicPortalRef
-import portals.api.dsl.DSL.*
-import portals.application.task.PerKeyState
-import portals.util.Future
-
 import java.util.concurrent.LinkedBlockingQueue
+
 import scala.annotation.experimental
 import scala.reflect.ClassTag
+
+import org.apache.calcite.sql.`type`.SqlTypeName
+
+import portals.api.builder.ApplicationBuilder
+import portals.api.builder.FlowBuilder
+import portals.api.dsl.DSL.*
+import portals.api.dsl.DSL.Portal
+import portals.application.task.PerKeyState
+import portals.application.AtomicPortalRef
+import portals.util.Future
 
 type SQLPortal = AtomicPortalRef[SQLQueryEvent, Result]
 
 case class TableInfo(
-                      tableName: String,
-                      primaryField: String,
-                      portal: SQLPortal,
-                      fieldNames: Array[String],
-                      fieldTypes: Array[SqlTypeName]
-                    )
+    tableName: String,
+    primaryField: String,
+    portal: SQLPortal,
+    fieldNames: Array[String],
+    fieldTypes: Array[SqlTypeName]
+)
 
 @experimental
 object QueryableWorkflow:
@@ -42,7 +45,6 @@ object QueryableWorkflow:
           case null => 0
     )
 
-
   val clsToSqlTypeMapping = Map[Class[_], SqlTypeName](
     classOf[Int] -> SqlTypeName.INTEGER,
     classOf[Integer] -> SqlTypeName.INTEGER,
@@ -51,10 +53,10 @@ object QueryableWorkflow:
 
   // TODO: default primary key to be the first field
   def createTable[T: ClassTag](
-                      tableName: String,
-                      primaryField: String,
-                      dBSerializable: DBSerializable[T]
-                    )(using ab: ApplicationBuilder) = {
+      tableName: String,
+      primaryField: String,
+      dBSerializable: DBSerializable[T]
+  )(using ab: ApplicationBuilder) = {
     // get all fields using reflection, then map to Sql type
     val clazz = implicitly[ClassTag[T]].runtimeClass
     val fields = clazz.getDeclaredFields
@@ -68,10 +70,10 @@ object QueryableWorkflow:
   }
 
   def createDataWorkflow[T](
-                             tableName: String,
-                             portal: AtomicPortalRef[SQLQueryEvent, Result],
-                             dbSerializable: DBSerializable[T]
-                           )(using ab: ApplicationBuilder) = {
+      tableName: String,
+      portal: AtomicPortalRef[SQLQueryEvent, Result],
+      dbSerializable: DBSerializable[T]
+  )(using ab: ApplicationBuilder) = {
     Workflows[Nothing, Nothing](tableName + "Wf")
       .source(Generators.empty.stream)
       .replier[Nothing](portal) { _ =>
@@ -82,21 +84,23 @@ object QueryableWorkflow:
 
         q match
           case PreCommitOp(tableName, key, txnId, op) =>
-            println("precommit txn " + txnId + " key " + key)
             if _txn.get() == -1 || _txn.get() == txnId then
+              println("precommit txn " + txnId + " key " + key + " success")
               _txn.set(txnId)
               reply(Result(STATUS_OK, op))
-            else reply(Result("error", List()))
+            else
+              println("precommit txn " + txnId + " key " + key + " fail")
+              reply(Result("error", List()))
           case SelectOp(tableName, key, txnId) =>
             val data = state.get()
             if (data.isDefined)
-              println("select " + key + " " + data.get)
+//              println("select " + key + " " + data.get)
               reply(Result(STATUS_OK, dbSerializable.toObjectArray(data.get)))
             else
               reply(Result(STATUS_OK, null))
           case InsertOp(tableName, data, key, txnId) =>
             state.set(Some(dbSerializable.fromObjectArray(data)))
-            println("inserted " + state.get().get)
+//            println("inserted " + state.get().get)
             reply(Result(STATUS_OK, Array[Object]()))
           case RollbackOp(tableName, key, txnId) =>
             println("rollback txn " + txnId + " key " + key)
@@ -110,13 +114,13 @@ object QueryableWorkflow:
 
 extension [T, U](wb: FlowBuilder[T, U, String, String]) {
 
-  def id() : FlowBuilder[T, U, String, String] = wb
+  def id(): FlowBuilder[T, U, String, String] = wb
   @experimental
-  def querier(tableInfos: TableInfo*) : FlowBuilder[T, U, String, String] = {
+  def querier(tableInfos: TableInfo*): FlowBuilder[T, U, String, String] = {
     import scala.jdk.CollectionConverters.*
     import java.math.BigDecimal
     import portals.api.dsl.ExperimentalDSL.*
-    
+
     wb.asker[String](tableInfos.map(_.portal): _*) { sql =>
       val futureReadyCond = new LinkedBlockingQueue[Integer]()
       val awaitForFutureCond = new LinkedBlockingQueue[Integer]()
@@ -131,17 +135,22 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
 
       tableInfos.foreach(ti => {
         calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
-        calcite.getTable(ti.tableName).setInsertRow(data => {
-          // TODO: assert pk always Int
-          val future = ask(ti.portal)(InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int]))
-          portalFutures = portalFutures :+ future
-          new FutureWithResult(future, null)
-        })
-        calcite.getTable(ti.tableName).setGetFutureByRowKeyFunc(key => {
-          val future = ask(ti.portal)(SelectOp(ti.tableName, key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
-          portalFutures = portalFutures :+ future
-          new FutureWithResult(future, null)
-        })
+        calcite
+          .getTable(ti.tableName)
+          .setInsertRow(data => {
+            // TODO: assert pk always Int
+            val future = ask(ti.portal)(InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int]))
+            portalFutures = portalFutures :+ future
+            new FutureWithResult(future, null)
+          })
+        calcite
+          .getTable(ti.tableName)
+          .setGetFutureByRowKeyFunc(key => {
+            val future =
+              ask(ti.portal)(SelectOp(ti.tableName, key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
+            portalFutures = portalFutures :+ future
+            new FutureWithResult(future, null)
+          })
       })
 
       calcite.executeSQL(
@@ -161,9 +170,9 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
       }
 
       for (i <- 1 to tableScanCnt) {
-        println("try future ready consume")
+//        println("try future ready consume")
         futureReadyCond.take
-        println("future ready consume done")
+//        println("future ready consume done")
 
         // wait for the last one to awaitAll
         if i != tableScanCnt then awaitForFutureCond.put(1)
@@ -178,7 +187,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
 
             awaitForFinishCond.take() // wait for SQL execution to finish
 
-            println("====== Result for " + sql + " ======")
+//            println("====== Result for " + sql + " ======")
             result.forEach(row => println(java.util.Arrays.toString(row)))
 
             result.forEach(row => {
@@ -190,7 +199,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
   }
 
   @experimental
-  def querierTransactional(tableInfos: TableInfo*) : FlowBuilder[T, U, FirstPhaseResult, String] = {
+  def querierTransactional(tableInfos: TableInfo*): FlowBuilder[T, U, FirstPhaseResult, String] = {
     import scala.jdk.CollectionConverters.*
     import java.math.BigDecimal
     import portals.api.dsl.ExperimentalDSL.*
@@ -216,25 +225,29 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
 
       tableInfos.foreach(ti => {
         calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
-        calcite.getTable(ti.tableName).setInsertRow(data => {
-          // TODO: assert pk always Int
-          val future = ask(ti.portal)(
-            PreCommitOp(
-              ti.tableName,
-              data(0).asInstanceOf[Int],
-              txnId,
-              InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int], txnId)
+        calcite
+          .getTable(ti.tableName)
+          .setInsertRow(data => {
+            // TODO: assert pk always Int
+            val future = ask(ti.portal)(
+              PreCommitOp(
+                ti.tableName,
+                data(0).asInstanceOf[Int],
+                txnId,
+                InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int], txnId)
+              )
             )
-          )
-          portalFutures = portalFutures :+ future
-          new FutureWithResult(future, null)
-        })
-        calcite.getTable(ti.tableName).setGetFutureByRowKeyFunc(key => {
-          val intKey = key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()
-          val future = ask(ti.portal)(PreCommitOp(ti.tableName, intKey, txnId, SelectOp(ti.tableName, intKey, txnId)))
-          portalFutures = portalFutures :+ future
-          new FutureWithResult(future, null)
-        })
+            portalFutures = portalFutures :+ future
+            new FutureWithResult(future, null)
+          })
+        calcite
+          .getTable(ti.tableName)
+          .setGetFutureByRowKeyFunc(key => {
+            val intKey = key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()
+            val future = ask(ti.portal)(PreCommitOp(ti.tableName, intKey, txnId, SelectOp(ti.tableName, intKey, txnId)))
+            portalFutures = portalFutures :+ future
+            new FutureWithResult(future, null)
+          })
       })
 
       calcite.executeSQL(
@@ -248,7 +261,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
       )
 
       val tableScanCnt = tableScanCntCond.take
-      println("tableScanCnt: " + tableScanCnt)
+//      println("tableScanCnt: " + tableScanCnt)
 
       val emit = { (x: FirstPhaseResult) =>
         ctx.emit(x)
@@ -274,8 +287,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
               )
           }
       }
-    }
-    .asker[String](tableInfos.map(_.portal): _*) { (preCommResult: FirstPhaseResult) =>
+    }.asker[String](tableInfos.map(_.portal): _*) { (preCommResult: FirstPhaseResult) =>
       val emit = { (x: String) =>
         ctx.emit(x)
       }
@@ -306,7 +318,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
           futures = futures :+ ask(tableNameToPortal(op.tableName))(RollbackOp(op.tableName, op.key, op.txnId))
         }
         awaitAll[Result](futures: _*) {
-          println("rollback done")
+          println("rollback txn " + preCommResult.txnID)
           emit("rollback")
         }
       }

@@ -187,7 +187,7 @@ public class Calcite {
             } catch (SqlParseException | InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionAbortException e) {
-                System.out.println("Execution aborted");
+                System.out.printf("Execution for [%s] aborted\n", sql);
             }
         };
         executor.execute(runnable);
@@ -497,7 +497,7 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
 
         // tell outside that they can get these futures and call awaitAll
         try {
-            System.out.println("put futureReadyCond " + tableName);
+//            System.out.println("put futureReadyCond " + tableName);
             calcite.futureReadyCond.put(1);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -513,7 +513,7 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
             e.printStackTrace();
         }
 
-        System.out.println("return tableScan " + tableName);
+//        System.out.println("return tableScan " + tableName);
 
         return new AbstractEnumerable<Object[]>() {
             public Enumerator<Object[]> enumerator() {
@@ -530,7 +530,7 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
                             // await
 //                                Object[] current = data.get(row);
                             Object[] current = calcite.tableFutures.get(tableName).get(row).futureResult;
-                            System.out.println("moveNext " + tableName + " " + row + " " + Arrays.toString(current));
+//                            System.out.println("moveNext " + tableName + " " + row + " " + Arrays.toString(current));
                             if (current == null) {
                                 continue;
                             }
@@ -702,7 +702,7 @@ class MyList<T> extends ArrayList<T> {
 
         // tell outside that they can get these futures and call awaitAll
         try {
-            System.out.println("put futureReadyCond");
+//            System.out.println("put futureReadyCond");
             calcite.futureReadyCond.put(1);
         } catch (InterruptedException e) {
             e.printStackTrace();
