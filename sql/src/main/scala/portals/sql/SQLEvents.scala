@@ -22,9 +22,11 @@ val STATUS_OK = "ok"
 
 case class FirstPhaseResult(
     txnID: Int,
+    sql: String,
     success: Boolean,
     succeedOps: List[SQLQueryEvent], // for rollback or commit
     preparedOps: java.util.List[FutureWithResult] = null,
+    // 1 for success, -1 for failure
     awaitForFutureCond: LinkedBlockingQueue[Integer] = null,
     awaitForFinishCond: LinkedBlockingQueue[Integer] = null,
     result: java.util.List[Array[Object]] = null,

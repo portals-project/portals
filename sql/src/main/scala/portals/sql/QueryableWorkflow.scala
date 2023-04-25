@@ -90,6 +90,7 @@ object QueryableWorkflow:
               reply(Result("error", List()))
           case SelectOp(tableName, key, txnId) =>
             val data = state.get()
+            _txn.set(-1)
             if (data.isDefined)
 //              println("select " + key + " " + data.get)
               reply(Result(STATUS_OK, dbSerializable.toObjectArray(data.get)))
@@ -122,14 +123,15 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
       val futureReadyCond = new LinkedBlockingQueue[Integer]()
       val awaitForFutureCond = new LinkedBlockingQueue[Integer]()
       val awaitForFinishCond = new LinkedBlockingQueue[Integer]()
-      val tableScanCntCond = new LinkedBlockingQueue[Integer]()
+      val tableOptCntCond = new LinkedBlockingQueue[Integer]()
       val result = new java.util.ArrayList[Array[Object]]()
       val futures = new java.util.ArrayList[FutureWithResult]()
       var portalFutures = List[Future[Result]]()
 
       val calcite = new Calcite()
       calcite.printPlan = false
-
+      
+      // insert
       tableInfos.foreach(ti => {
         calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
         calcite
@@ -155,24 +157,24 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
         futureReadyCond,
         awaitForFutureCond,
         awaitForFinishCond,
-        tableScanCntCond,
+        tableOptCntCond,
         futures,
         result
       )
 
-      val tableScanCnt = tableScanCntCond.take
+      val tableOptCnt = tableOptCntCond.take
 
       val emit = { (x: String) =>
         ctx.emit(x)
       }
 
-      for (i <- 1 to tableScanCnt) {
+      for (i <- 1 to tableOptCnt) {
 //        println("try future ready consume")
         futureReadyCond.take
 //        println("future ready consume done")
 
         // wait for the last one to awaitAll
-        if i != tableScanCnt then awaitForFutureCond.put(1)
+        if i != tableOptCnt then awaitForFutureCond.put(1)
         else
           awaitAll[Result](portalFutures: _*) {
             futures.forEach(f => {
@@ -180,11 +182,12 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
               f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
             })
 
+            
             awaitForFutureCond.put(1) // allow SQL execution to start
 
             awaitForFinishCond.take() // wait for SQL execution to finish
 
-//            println("====== Result for " + sql + " ======")
+            println("====== Result for " + sql + " ======")
             result.forEach(row => println(java.util.Arrays.toString(row)))
 
             result.forEach(row => {
@@ -277,10 +280,10 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
             // TODO: made a partial commit example
             if succeedOps.size != futures.size() then {
               awaitForFutureCond.put(-1) // trigger execution failure
-              emit(FirstPhaseResult(txnId, false, succeedOps))
+              emit(FirstPhaseResult(txnId, sql, false, succeedOps))
             } else
               emit(
-                FirstPhaseResult(txnId, true, succeedOps, futures, awaitForFutureCond, awaitForFinishCond, result)
+                FirstPhaseResult(txnId, sql, true, succeedOps, futures, awaitForFutureCond, awaitForFinishCond, result)
               )
           }
       }
@@ -302,6 +305,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
           preCommResult.awaitForFutureCond.put(1)
           preCommResult.awaitForFinishCond.take()
 
+          println("====== Result for " + preCommResult.sql + " ======")
           preCommResult.result.forEach(row => {
             //                emit(util.Arrays.toString(row))
             println(java.util.Arrays.toString(row))
@@ -315,12 +319,10 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
           futures = futures :+ ask(tableNameToPortal(op.tableName))(RollbackOp(op.tableName, op.key, op.txnId))
         }
         awaitAll[Result](futures: _*) {
-          println("rollback txn " + preCommResult.txnID)
+          println("====== Rollback txn " + preCommResult.txnID + " sql " + preCommResult.sql)
           emit("rollback")
         }
       }
     }
   }
 }
-
-

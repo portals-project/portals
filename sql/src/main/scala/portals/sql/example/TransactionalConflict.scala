@@ -13,7 +13,7 @@ import portals.system.Systems
   * on key (1, 0), precommit on key 1 will be rolled back
   */
 @experimental
-object SQLExampleTransactional extends App:
+object TransactionalConflict extends App:
 
   import scala.jdk.CollectionConverters.*
 
@@ -46,7 +46,8 @@ object SQLExampleTransactional extends App:
       .freeze()
   }
 
-  val system = Systems.interpreter()
+//  val system = Systems.interpreter()
+  val system = new RandomInterpreter()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()

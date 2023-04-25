@@ -124,13 +124,13 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
   private val progressTracker = InterpreterProgressTracker()
   private val streamTracker = InterpreterStreamTracker()
   private val graphTracker = InterpreterGraphTracker()
-  private val rnd = seed.map(new Random(_)).getOrElse(new Random())
+  protected val rnd = seed.map(new Random(_)).getOrElse(new Random())
 
   /** The current step number of the execution. */
   private var _stepN: Long = 0
-  private def stepN: Long = { _stepN += 1; _stepN }
+  protected def stepN: Long = { _stepN += 1; _stepN }
 
-  private inline val GC_INTERVAL = 128 // GC Step Interval
+  protected inline val GC_INTERVAL = 128 // GC Step Interval
 
   /** Launch an application. */
   def launch(application: Application): Unit =
@@ -203,7 +203,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     }
 
   /** Perform GC on the runtime objects. */
-  private def garbageCollection(): Unit =
+  protected def garbageCollection(): Unit =
     ////////////////////////////////////////////////////////////////////////////
     // 1. Cleanup streams, compute min progress of stream dependents, and adjust accoringly
     ////////////////////////////////////////////////////////////////////////////
@@ -239,19 +239,19 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
             case x @ Some(v) => x
             case None => None
 
-  private def choosePortal(): Option[(String, InterpreterPortal)] =
+  protected def choosePortal(): Option[(String, InterpreterPortal)] =
     randomSelection(rctx.portals, (path, portal) => !portal.isEmpty)
 
-  private def chooseWorkflow(): Option[(String, InterpreterWorkflow)] =
+  protected def chooseWorkflow(): Option[(String, InterpreterWorkflow)] =
     randomSelection(rctx.workflows, (path, wf) => hasInput(path))
 
-  private def chooseSequencer(): Option[(String, InterpreterSequencer)] =
+  protected def chooseSequencer(): Option[(String, InterpreterSequencer)] =
     randomSelection(rctx.sequencers, (path, seqr) => hasInput(path))
 
-  private def chooseSplitter(): Option[(String, InterpreterSplitter)] =
+  protected def chooseSplitter(): Option[(String, InterpreterSplitter)] =
     randomSelection(rctx.splitters, (path, spltr) => hasInput(path))
 
-  private def chooseGenerator(): Option[(String, InterpreterGenerator)] =
+  protected def chooseGenerator(): Option[(String, InterpreterGenerator)] =
     randomSelection(rctx.generators, (path, genr) => genr.generator.generator.hasNext())
 
   private def distributeAtoms(listOfAtoms: List[InterpreterAtom]): Unit =
@@ -265,7 +265,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
         rctx.portals(meta.portal).enqueue(tpr)
     }
 
-  private def stepPortal(path: String, portal: InterpreterPortal): Unit =
+  protected def stepPortal(path: String, portal: InterpreterPortal): Unit =
     // dequeue the head event of the Portal
     portal.dequeue().get match
       // 1) if it is a TestAskBatch, then execute the replying workflow
@@ -280,7 +280,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
         distributeAtoms(outputAtoms)
       case _ => ??? // should not happen
 
-  private def stepWorkflow(path: String, wf: InterpreterWorkflow): Unit =
+  protected def stepWorkflow(path: String, wf: InterpreterWorkflow): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
@@ -288,7 +288,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     distributeAtoms(outputAtoms)
     progressTracker.incrementProgress(path, from)
 
-  private def stepSequencer(path: String, seqr: InterpreterSequencer): Unit =
+  protected def stepSequencer(path: String, seqr: InterpreterSequencer): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
@@ -296,11 +296,11 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     distributeAtoms(outputAtoms)
     progressTracker.incrementProgress(path, from)
 
-  private def stepGenerator(path: String, genr: InterpreterGenerator): Unit =
+  protected def stepGenerator(path: String, genr: InterpreterGenerator): Unit =
     val outputAtoms = genr.process()
     distributeAtoms(outputAtoms)
 
-  private def stepSplitter(path: String, spltr: InterpreterSplitter): Unit =
+  protected def stepSplitter(path: String, spltr: InterpreterSplitter): Unit =
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
