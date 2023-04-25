@@ -196,3 +196,15 @@ object AtomicGeneratorRef:
 object AtomicPortalRef:
   def apply[T, R](aportal: AtomicPortal[T, R]): AtomicPortalRef[T, R] =
     AtomicPortalRef(aportal.path)
+
+extension [T](atomicSequencer: AtomicSequencer[T]) {
+  def ref: AtomicSequencerRef[T] = AtomicSequencerRef(atomicSequencer.path, atomicSequencer.stream)
+}
+
+extension [T](atomicStream: AtomicStream[T]) {
+  def ref: AtomicStreamRef[T] = AtomicStreamRef(atomicStream.path)
+}
+
+extension [T](atomicSplitter: AtomicSplitter[T]) {
+  def ref: AtomicSplitterRef[T] = AtomicSplitterRef(atomicSplitter.path)
+}

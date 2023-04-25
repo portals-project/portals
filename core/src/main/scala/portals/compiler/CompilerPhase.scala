@@ -38,3 +38,14 @@ private[portals] trait CompilerPhase[T, U] {
         next.run { self.run(t) }
     }
 }
+
+object CompilerPhase:
+  /** Empty compiler phase, can be used to start a chain of compiler phases. */
+  def empty[T]: CompilerPhase[T, T] = new CompilerPhase[T, T] {
+    override def run(t: T)(using ctx: CompilerContext): T = t
+  }
+
+  /** Compiler phase that maps with the provided function `f`. */
+  def map[T, U](f: T => U): CompilerSubPhase[T, U] = new CompilerSubPhase[T, U] {
+    override def run(t: T)(using ctx: CompilerContext): U = f(t)
+  }

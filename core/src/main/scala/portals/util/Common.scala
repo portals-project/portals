@@ -1,4 +1,4 @@
-package portals.application
+package portals.util
 
 object Common:
   object Types:

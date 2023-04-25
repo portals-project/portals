@@ -7,7 +7,10 @@ import portals.compiler.*
 private[portals] class ApplicationBuilderImpl(using bctx: ApplicationBuilderContext) extends ApplicationBuilder:
   override def build(): Application =
     bctx.freeze()
-    CompilerBuilder.preCompiler().compile(bctx.app) // may throw exception
+    // may throw exception
+    CompilerBuilder
+      .preCompiler()
+      .compile(bctx.app)
 
   override def registry: RegistryBuilder = RegistryBuilder()
 
