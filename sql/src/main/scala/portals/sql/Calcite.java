@@ -56,7 +56,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-
 /**
  * An end to end example from an SQL query to a plan in Bindable convention.
  */
@@ -670,16 +669,6 @@ class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilt
         return builder.makeExactLiteral(BigDecimal.valueOf(i));
     }
 
-}
-
-class FutureWithResult {
-    Object future;
-    Object[] futureResult;
-
-    public FutureWithResult(Object future, Object[] futureResult) {
-        this.future = future;
-        this.futureResult = futureResult;
-    }
 }
 
 class MyList<T> extends ArrayList<T> {

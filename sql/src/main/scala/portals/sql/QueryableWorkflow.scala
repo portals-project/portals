@@ -1,12 +1,9 @@
 package portals.sql
 
 import java.util.concurrent.LinkedBlockingQueue
-
 import scala.annotation.experimental
 import scala.reflect.ClassTag
-
 import org.apache.calcite.sql.`type`.SqlTypeName
-
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.FlowBuilder
 import portals.api.dsl.DSL.*
@@ -325,3 +322,5 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
     }
   }
 }
+
+

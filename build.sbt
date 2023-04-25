@@ -48,3 +48,12 @@ lazy val examples = project
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
   .dependsOn(portals % "test->test;compile->compile")
+
+lazy val sql = project
+  .in(file("sql"))
+  .settings(
+    name := "portals-sql",
+    libraryDependencies += "org.apache.calcite" % "calcite-core" % calciteVersion,
+    libraryDependencies += "com.lihaoyi" %% "cask" % caskVersion
+  )
+  .dependsOn(portals % "test->test;compile->compile")

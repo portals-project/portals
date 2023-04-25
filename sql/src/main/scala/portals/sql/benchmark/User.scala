@@ -1,4 +1,4 @@
-package portals.sql
+package portals.sql.benchmark
 
 class User(
     id: String,
