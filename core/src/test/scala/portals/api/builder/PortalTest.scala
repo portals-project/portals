@@ -29,7 +29,6 @@ import portals.util.Future
 class PortalTest:
 
   @Test
-  // @Ignore
   @experimental
   def testPingPong(): Unit =
     import portals.api.dsl.DSL.*
@@ -98,7 +97,6 @@ class PortalTest:
   end testPingPong // def
 
   @Test
-  // @Ignore
   @experimental
   def testMultipleAskers(): Unit =
     import portals.api.dsl.DSL.*
@@ -186,7 +184,6 @@ class PortalTest:
   end testMultipleAskers // def
 
   @Test
-  // @Ignore
   @experimental
   def testMultiplePortals(): Unit =
     import portals.api.dsl.DSL.*
@@ -215,7 +212,6 @@ class PortalTest:
       val _ = repliersrc
         // .portal(portal1)
         .replier[Nothing](portal1) { _ => () } { case Ping(x) =>
-          ctx.log.info(x.toString())
           testerReplier1.enqueueEvent(x)
           reply(Pong(x - 1))
         }
@@ -223,22 +219,18 @@ class PortalTest:
 
       val _ = repliersrc
         .replier[Nothing](portal2) { _ => () } { case Ping(x) =>
-          ctx.log.info(x.toString())
           testerReplier2.enqueueEvent(x)
           reply(Pong(x - 2))
         }
         .sink()
 
-      var x = 0
-      def can: Boolean = { x += 1; x < 6 }
       def recAwait(x: Int, portal: AtomicPortalRef[Ping, Pong], tester: TestUtils.Tester[Int])(using
           AskerTaskContext[Int, Int, Ping, Pong]
       ): Unit =
         val future: Future[Pong] = ask(portal)(Ping(x))
         future.await {
           tester.enqueueEvent(future.value.get.x)
-          if can then ctx.emit(future.value.get.x)
-          ctx.log.info(future.value.get.x.toString())
+          ctx.emit(future.value.get.x)
           if future.value.get.x > 0 then recAwait(future.value.get.x, portal, tester)
         }
 
@@ -248,7 +240,7 @@ class PortalTest:
           recAwait(x, portal1, testerAsker1)
           recAwait(x, portal2, testerAsker2)
         }
-        .logger()
+        // .logger()
         .sink()
         .freeze()
     }
@@ -279,7 +271,6 @@ class PortalTest:
   end testMultiplePortals // def
 
   @Test
-  // @Ignore
   @experimental
   def testNestedAsks(): Unit =
     import portals.api.dsl.DSL.*
@@ -329,7 +320,6 @@ class PortalTest:
     }
 
   @Test
-  // @Ignore
   @experimental
   def testNestedAskPingPong(): Unit =
     import portals.api.dsl.DSL.*
@@ -412,7 +402,6 @@ class PortalTest:
     testerTrigger.receiveAssert(128)
 
   @Test
-  // @Ignore
   @experimental
   def testMultipleAsks(): Unit =
 
@@ -437,7 +426,6 @@ class PortalTest:
             val future1 = ask(portal)(FibQuery(n - 1))
             val future2 = ask(portal)(FibQuery(n - 2))
             awaitAll(future1, future2) {
-              ctx.log.info(future1.value.get.resp.toString() + " " + future2.value.get.resp)
               reply(FibResp(future1.value.get.resp + future2.value.get.resp))
             }
         }
@@ -454,7 +442,6 @@ class PortalTest:
             ctx.emit(future.value.get.resp)
           }
         }
-        .logger()
         .task(testerTrigger.task)
         .sink()
         .freeze()
@@ -477,7 +464,6 @@ class PortalTest:
     testerTrigger.receiveAssert(34)
 
   @Test
-  // @Ignore
   @experimental
   def testMultipleAsksToDifferentWorkflows(): Unit =
     import portals.api.dsl.DSL.*

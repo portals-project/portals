@@ -14,7 +14,7 @@ private[portals] object CompilerBuilder:
   def preCompiler(): Compiler[Application, Application] = PreCheckCompiler()
 
   /** Compiler that will rewrite portals into sequencers and splitters. */
-  @experimental 
+  @experimental
   def portalRewriteCompiler(): Compiler[Application, Application] = PortalRewriteCompiler()
 
   /** Create a compiler that will run all checks and transform the code to its

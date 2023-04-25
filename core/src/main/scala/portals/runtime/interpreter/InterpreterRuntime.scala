@@ -285,7 +285,6 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
     val outputAtoms = wf.process(inputAtom)
-    // println("STEPPING: " + path + " " + from + " " + idx + " " + inputAtom + " " + outputAtoms)
     distributeAtoms(outputAtoms)
     progressTracker.incrementProgress(path, from)
 
@@ -294,13 +293,11 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
     val outputAtoms = seqr.process(inputAtom)
-    // println("STEPPING: " + path + " " + from + " " + idx + " " + inputAtom + " " + outputAtoms)
     distributeAtoms(outputAtoms)
     progressTracker.incrementProgress(path, from)
 
   private def stepGenerator(path: String, genr: InterpreterGenerator): Unit =
     val outputAtoms = genr.process()
-    // println("STEPPING: " + path + " " + outputAtoms)
     distributeAtoms(outputAtoms)
 
   private def stepSplitter(path: String, spltr: InterpreterSplitter): Unit =
@@ -308,7 +305,6 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
     val outputAtoms = spltr.process(inputAtom)
-    // println("STEPPING: " + path + " " + from + " " + idx + " " + inputAtom + " " + outputAtoms)
     distributeAtoms(outputAtoms)
     progressTracker.incrementProgress(path, from)
 
