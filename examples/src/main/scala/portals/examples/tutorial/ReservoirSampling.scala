@@ -1,4 +1,4 @@
-package portals.examples
+package portals.examples.tutorial
 
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
@@ -12,24 +12,26 @@ import portals.system.Systems
   * This example shows how we can implement the Reservoir Sampling algorithm
   * using portals. The algorithm is described in
   * [[https://en.wikipedia.org/wiki/Reservoir_sampling#Algorithm_R this Wikipedia article]].
+  * We sample k elements from each batch of the stream.
   */
 
 @main def reservoirSamplingMain(): Unit =
   import portals.api.dsl.DSL.*
 
-  val k = 20 // size of the reservoir
-
+  val k = 10 // size of the reservoir
+  val stream_length = 100000 // size of the stream
+  val batch_size = 10000 // size of the batch
   // create an application builder
   val builder = ApplicationBuilder("application") // create an application builder
 
   // create a generator that generates a stream of integers from 1 to 100000 where 10000 is the size o the batch
-  val generator = builder.generators.fromRange(1, 100000, 10000)
+  val generator = builder.generators.fromRange(1, stream_length, batch_size)
 
   // create a workflow that implements the reservoir sampling algorithm
   val _ = builder
-    .workflows[Int, Int]("reservoirSampling")
-    .source[Int](generator.stream)
-    .init[Int] {
+    .workflows[Int, List[Int]]("reservoirSampling")
+    .source(generator.stream)
+    .init[List[Int]] {
       val reservoir = PerTaskState[Array[Int]]("reservoir", Array.empty) // create a reservoir per task
       val count = PerTaskState[Int]("count", 0) // create a counter per task
       TaskBuilder.processor { element =>
@@ -46,9 +48,8 @@ import portals.system.Systems
       }
     }
     .withOnAtomComplete { ctx ?=> // when the workflow is complete, emit the elements in the reservoir
-      print(s"Final state: \n")
       val reservoir = PerTaskState[Array[Int]]("reservoir", Array.empty)
-      reservoir.get().iterator.foreach { el => ctx.emit(el) }
+      ctx.emit(reservoir.get().toList)
       ctx.state.clear()
     }
     .logger() // log the elements in the reservoir
