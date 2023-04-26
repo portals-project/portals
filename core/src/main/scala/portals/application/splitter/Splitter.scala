@@ -55,7 +55,7 @@ object Splitters:
         List(error.get, Atom, Seal)
       else if atom.exists { case Seal => true; case _ => false } then List(Seal)
       else if atom.exists { case Atom => true; case _ => false } then List(Atom)
-      else List.empty // should give error
+      else ??? // should give error
 
     override def split(atom: List[WrappedEvent[T]]): List[(Path, List[WrappedEvent[T]])] =
       // special case if it is an empty atom with a seal event, then output seal on all outputs
