@@ -6,23 +6,24 @@ import akka.actor.typed.Behavior
 
 import portals.application.generator.Generator
 import portals.application.sequencer.Sequencer
+import portals.application.splitter.Splitter
 import portals.application.task.GenericTask
 import portals.application.task.OutputCollector
 import portals.application.task.TaskContextImpl
-import portals.application.task.TaskExecution
+import portals.runtime.executor.TaskExecutorImpl
 import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.local.AkkaLocalRuntime
-import portals.runtime.local.AkkaRunner
+import portals.runtime.local.AkkaRunnerBehaviors
 import portals.runtime.WrappedEvents.*
 import portals.system.PortalsSystem
 import portals.util.Key
 
 class NoGuaranteesSystem extends AkkaLocalRuntime with PortalsSystem:
-  import AkkaRunner.Events.*
-  override val runner: AkkaRunner = NoGuaranteesRunner
+  import AkkaRunnerBehaviors.Events.*
+  override val runner: AkkaRunnerBehaviors = NoGuaranteesRunner
 
-object NoGuaranteesRunner extends AkkaRunner:
-  import AkkaRunner.Events.*
+object NoGuaranteesRunner extends AkkaRunnerBehaviors:
+  import AkkaRunnerBehaviors.Events.*
 
   def atomicStream[T](path: String, subscribers: Set[ActorRef[Event[T]]] = Set.empty): Behavior[PubSubRequest] =
     AtomicStreamExecutor(path, subscribers)
@@ -32,6 +33,8 @@ object NoGuaranteesRunner extends AkkaRunner:
 
   def sequencer[T](path: String, sequencer: Sequencer[T], stream: ActorRef[Event[T]]): Behavior[Event[T]] =
     AtomicSequencerExecutor(path, sequencer, stream)
+
+  def splitter[T](path: String, splitter: Splitter[T]): Behavior[SplitterCommand] = ???
 
   def source[T](path: String, subscribers: Set[ActorRef[Event[T]]] = Set.empty): Behavior[Event[T]] =
     AtomicSourceExecutor(path, subscribers)
@@ -137,11 +140,13 @@ object NoGuaranteesRunner extends AkkaRunner:
         tctx.outputCollector = new OutputCollector[T, U, Any, Any] {
           def submit(event: WrappedEvent[U]): Unit =
             subscribers.foreach { sub => sub ! Event(path, event) }
-          def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int, askingWF: String): Unit = ???
-          def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit = ???
+          override def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int, askingWF: String): Unit =
+            ???
+          override def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit =
+            ???
         }
 
-        val preparedTask = TaskExecution.prepareTask(task, tctx)
+        val preparedTask = TaskExecutorImpl.prepareTask(task, tctx)
 
         Behaviors.receiveMessage { case Event(_, event) =>
           event match

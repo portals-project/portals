@@ -13,8 +13,6 @@ private[portals] object RewriteTask:
   private class RewriteTaskWrapper(_inner: GenericTask[Any, Any, Any, Any]):
     private var _tmp_oc: OutputCollector[Any, Any, Any, Any] = null
     private val _oc = OutputCollectorImpl[Any, Any, Any, Any]()
-    // TODO: replace with static call instead, once merged
-    private val taskexecutor = TaskExecutorImpl()
 
     private inline def pre_execute(
         event: Any,
@@ -64,7 +62,7 @@ private[portals] object RewriteTask:
               f2(ctx.asInstanceOf[TaskContextImpl[Any, Any, Any, Any]])(event)
             case _ => ???
         case RewritePortalEvents.RewriteEvent(WrappedEvents.Reply(key, meta, event)) =>
-          taskexecutor.run_and_cleanup_reply(meta.id, event)(using
+          TaskExecutorImpl.run_and_cleanup_reply(meta.id, event)(using
             ctx.asInstanceOf[TaskContextImpl[Any, Any, Any, Any]]
           )
         case event =>

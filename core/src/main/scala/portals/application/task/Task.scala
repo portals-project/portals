@@ -5,7 +5,7 @@ import scala.annotation.experimental
 import portals.application.*
 import portals.application.task.ReplierTaskContext
 import portals.application.task.TaskContextImpl
-import portals.application.task.TaskExecution
+import portals.runtime.executor.TaskExecutorImpl
 
 /** Internal API. For internal use only! Applies to this whole file. */
 private[portals] sealed trait GenericTask[T, U, Req, Rep]:
@@ -95,10 +95,13 @@ private[portals] case class IdentityTask[T]() extends BaseTask[T, T, Nothing, No
   override def onNext(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(event: T): Unit = ctx.emit(event)
 end IdentityTask // case class
 
-// TODO: initialization should happen automatically using the initfactory
 private[portals] case class InitTask[T, U, Req, Rep](
     initFactory: TaskContextImpl[T, U, Req, Rep] => GenericTask[T, U, Req, Rep]
 ) extends BaseTask[T, U, Req, Rep]:
+  // Fallback for initializing a nested init task during runtime; it would be
+  // good to remove this at some point as it adds unnecessary overhead, but it
+  // is needed for now to not break test cases.
+
   // wrapped initialized task
   var _task: Option[GenericTask[T, U, Req, Rep]] = None
 
@@ -107,7 +110,7 @@ private[portals] case class InitTask[T, U, Req, Rep](
     _task match
       case Some(task) => task
       case None =>
-        _task = Some(TaskExecution.prepareTask(this, ctx))
+        _task = Some(TaskExecutorImpl.prepareTask(this, ctx))
         _task.get
 
   override def onNext(using ctx: TaskContextImpl[T, U, Req, Rep])(t: T): Unit = this.prepOrGet.onNext(t)

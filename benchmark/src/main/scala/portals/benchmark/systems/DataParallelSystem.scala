@@ -25,13 +25,13 @@ import portals.application.AtomicSequencer
 import portals.application.AtomicStream
 import portals.application.Workflow
 import portals.runtime.interpreter.InterpreterEvents.*
-import portals.runtime.local.AkkaRunner
+import portals.runtime.local.AkkaRunnerBehaviors
 import portals.runtime.local.AkkaRunnerImpl
 import portals.runtime.WrappedEvents.*
 import portals.system.PortalsSystem
 
 class DataParallelSystem(val numPartitions: Int, val parallelism: Int = 32) extends PortalsSystem:
-  import AkkaRunner.Events.*
+  import AkkaRunnerBehaviors.Events.*
 
   val config = ConfigFactory
     .parseString(
