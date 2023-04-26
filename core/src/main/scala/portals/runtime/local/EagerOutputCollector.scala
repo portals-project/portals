@@ -5,6 +5,7 @@ import akka.actor.typed.ActorRef
 import portals.application.task.OutputCollector
 import portals.runtime.local.AkkaRunnerBehaviors.Events.Event
 import portals.util.Common.Types.Path
+import portals.util.Key
 
 private[portals] class EagerOutputCollector extends OutputCollector[Any, Any, Any, Any]:
   import portals.runtime.WrappedEvents.WrappedEvent
@@ -16,5 +17,8 @@ private[portals] class EagerOutputCollector extends OutputCollector[Any, Any, An
     this.path = path
     this.subs = subs
 
-  def submit(event: WrappedEvent[Any]): Unit =
+  override def submit(event: WrappedEvent[Any]): Unit =
     subs.foreach { sub => sub ! Event(path, event) }
+
+  override def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int, askingWF: String): Unit = ???
+  override def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit = ???
