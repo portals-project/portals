@@ -13,7 +13,6 @@ import portals.application.splitter.Splitter
 import portals.application.task.GenericTask
 import portals.application.task.OutputCollector
 import portals.application.task.TaskContextImpl
-// import portals.runtime.executor.AlignmentExecutorImpl
 import portals.runtime.executor.GeneratorExecutorImpl
 import portals.runtime.executor.SequencerExecutorImpl
 import portals.runtime.executor.SplitterExecutorImpl
@@ -128,7 +127,6 @@ object AkkaRunnerImpl extends AkkaRunnerBehaviors:
 
   // Behavior executor for an atomic sequencer.
   private object AtomicSequencerExecutor:
-    // def coordinator()
     def apply[T](path: String, sequencer: Sequencer[T], stream: ActorRef[Event[T]]): Behavior[Event[T]] =
       Behaviors.setup { ctx =>
 
@@ -218,7 +216,6 @@ object AkkaRunnerImpl extends AkkaRunnerBehaviors:
           deps: Set[String] = Set.empty,
           wfPath: String = "",
       ): Behavior[Event[T]] =
-        // atom alignment
         Behaviors.setup { ctx =>
           // setup
 
