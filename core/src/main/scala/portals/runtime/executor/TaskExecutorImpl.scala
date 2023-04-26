@@ -17,6 +17,7 @@ import portals.runtime.WrappedEvents.*
   * events.
   */
 private[portals] class TaskExecutorImpl:
+  import TaskExecutorImpl.*
 
   // setup
   private val ctx = TaskContextImpl[Any, Any, Any, Any]()
@@ -137,6 +138,93 @@ private[portals] class TaskExecutorImpl:
       oc.submit(Seal)
   end run_batch
 
+  /** Run the task on a single event. */
+  def run_event(event: WrappedEvent[Any]): Seq[WrappedEvent[Any]] =
+    this.run_wrapped_event(event)
+    this.oc.removeAll()
+
+  /** Prepare a task behavior at runtime.
+    *
+    * This executes the initialization and returns the initialized task. This
+    * needs to be called internally to initialize the task behavior before
+    * execution.
+    *
+    * @param task
+    *   task to be prepared
+    * @return
+    *   prepared task
+    */
+  def prepareTask[T, U, Req, Rep](
+      task: GenericTask[T, U, Req, Rep],
+  ): GenericTask[T, U, Req, Rep] =
+    TaskExecutorImpl.prepareTask(task, this.ctx.asInstanceOf)
+
+  /** Execute a wrapped event on the task.
+    *
+    * This is used to run a wrapped event. Works for both regular events, as
+    * well as Ask events and Reply events.
+    *
+    * Make sure that the context has been prepared correspondingly before
+    * calling this method, for example via calling `setup`.
+    *
+    * @param event
+    *   wrapped event to be executed
+    * @return
+    *   success if the event was executed successfully, failure otherwise
+    */
+  private def run_wrapped_event(event: WrappedEvent[Any]): Try[Unit] = event match
+    case Event(key, e) =>
+      ctx.key = key
+      ctx.task = task
+      ctx.state.key = key
+      scala.util.Try {
+        task.onNext(using ctx)(e)
+      } match
+        case Success(_) => Success(())
+        case Failure(t) => Failure(t)
+    case Atom =>
+      ctx.task = task
+      task.onAtomComplete(using ctx)
+      oc.submit(Atom)
+      Success(())
+    case Seal =>
+      ctx.task = task
+      task.onComplete(using ctx)
+      oc.submit(Seal)
+      Success(())
+    case Error(t) =>
+      ctx.task = task
+      task.onError(using ctx)(t)
+      oc.submit(Error(t))
+      Failure(t)
+    case Ask(key, meta, e) =>
+      // task
+      ctx.key = key
+      ctx.task = task
+      ctx.state.key = key
+      // ask
+      ctx.id = meta.id
+      ctx.asker = meta.askingTask
+      ctx.portal = meta.portal
+      ctx.portalAsker = meta.askingWF
+      ctx.askerKey = meta.askingKey
+      _replierTask match
+        case ReplierTask(_, f2) =>
+          f2(ctx)(e)
+        case AskerReplierTask(_, f2) =>
+          f2(ctx)(e)
+      Success(())
+    case Reply(key, meta, e) =>
+      // task
+      ctx.key = key
+      ctx.task = null // this.task is already null, but we set it to null to be sure
+      ctx.state.key = key
+      // reply
+      run_and_cleanup_reply(meta.id, e)(using ctx)
+      Success(())
+  end run_wrapped_event // def
+
+object TaskExecutorImpl:
   /** Prepare a task behavior at runtime.
     *
     * This executes the initialization and returns the initialized task. This
@@ -152,6 +240,7 @@ private[portals] class TaskExecutorImpl:
     */
   def prepareTask[T, U, Req, Rep](
       task: GenericTask[T, U, Req, Rep],
+      ctx: TaskContextImpl[T, U, Req, Rep]
   ): GenericTask[T, U, Req, Rep] =
     /** internal recursive method */
     def prepareTaskRec(
@@ -164,7 +253,7 @@ private[portals] class TaskExecutorImpl:
         case _ => task
 
     /** prepare the task, recursively performing initialization */
-    prepareTaskRec(task, ctx.asInstanceOf)
+    prepareTaskRec(task, ctx)
   end prepareTask // def
 
   /** Run the continuation `id` with the reply `r`.
@@ -217,67 +306,3 @@ private[portals] class TaskExecutorImpl:
     _continuations.remove(id)
     _continuations_meta.remove(id)
   end run_and_cleanup_reply
-
-  /** Execute a wrapped event on the task.
-    *
-    * This is used to run a wrapped event. Works for both regular events, as
-    * well as Ask events and Reply events.
-    *
-    * Make sure that the context has been prepared correspondingly before
-    * calling this method, for example via calling `setup`.
-    *
-    * @param event
-    *   wrapped event to be executed
-    * @return
-    *   success if the event was executed successfully, failure otherwise
-    */
-  private def run_wrapped_event(event: WrappedEvent[Any]): Try[Unit] = event match
-    case Event(key, e) =>
-      ctx.key = key
-      ctx.task = task
-      ctx.state.key = key
-      scala.util.Try {
-        task.onNext(using ctx)(e)
-      } match
-        case Success(_) => Success(())
-        case Failure(t) => Failure(t)
-    case Atom =>
-      ctx.task = task
-      task.onAtomComplete(using ctx)
-      oc.submit(Atom)
-      Success(())
-    case Seal =>
-      ctx.task = task
-      task.onComplete(using ctx)
-      oc.submit(Seal)
-      Success(())
-    case Error(t) =>
-      ctx.task = task
-      task.onError(using ctx)(t)
-      Failure(t)
-    case Ask(key, meta, e) =>
-      // task
-      ctx.key = key
-      ctx.task = task
-      ctx.state.key = key
-      // ask
-      ctx.id = meta.id
-      ctx.asker = meta.askingTask
-      ctx.portal = meta.portal
-      ctx.portalAsker = meta.askingWF
-      ctx.askerKey = meta.askingKey
-      _replierTask match
-        case ReplierTask(_, f2) =>
-          f2(ctx)(e)
-        case AskerReplierTask(_, f2) =>
-          f2(ctx)(e)
-      Success(())
-    case Reply(key, meta, e) =>
-      // task
-      ctx.key = key
-      ctx.task = null // this.task is already null, but we set it to null to be sure
-      ctx.state.key = key
-      // reply
-      run_and_cleanup_reply(meta.id, e)(using ctx)
-      Success(())
-  end run_wrapped_event // def

@@ -16,19 +16,20 @@ import portals.application.sequencer.Sequencer
 import portals.application.task.GenericTask
 import portals.application.task.OutputCollector
 import portals.application.task.TaskContextImpl
-import portals.application.task.TaskExecution
 import portals.application.Workflow
+import portals.runtime.executor.TaskExecutorImpl
 import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.local.AkkaLocalRuntime
-import portals.runtime.local.AkkaRunner
+import portals.runtime.local.AkkaRunnerBehaviors
 import portals.runtime.local.AkkaRunnerImpl
 import portals.runtime.WrappedEvents.*
 import portals.system.PortalsSystem
 import portals.util.Key
+import portals.application.splitter.Splitter
 
 class MicroBatchingSystem extends AkkaLocalRuntime with PortalsSystem:
-  import AkkaRunner.Events.*
-  override val runner: AkkaRunner = MicroBatchingRunner
+  import AkkaRunnerBehaviors.Events.*
+  override val runner: AkkaRunnerBehaviors = MicroBatchingRunner
 
   override def launchWorkflow[T, U](workflow: Workflow[T, U]): Unit =
     val stream = streams(workflow.stream.path)
@@ -96,8 +97,8 @@ class MicroBatchingSystem extends AkkaLocalRuntime with PortalsSystem:
 
     workflows = workflows + (workflow.path -> runtimeWorkflow)
 
-object MicroBatchingRunner extends AkkaRunner:
-  import AkkaRunner.Events.*
+object MicroBatchingRunner extends AkkaRunnerBehaviors:
+  import AkkaRunnerBehaviors.Events.*
 
   def atomicStream[T](path: String, subscribers: Set[ActorRef[Event[T]]] = Set.empty): Behavior[PubSubRequest] =
     AkkaRunnerImpl.atomicStream(path, subscribers)
@@ -107,6 +108,8 @@ object MicroBatchingRunner extends AkkaRunner:
 
   def sequencer[T](path: String, sequencer: Sequencer[T], stream: ActorRef[Event[T]]): Behavior[Event[T]] =
     AkkaRunnerImpl.sequencer(path, sequencer, stream)
+
+  def splitter[T](path: String, splitter: Splitter[T]): Behavior[SplitterCommand] = ???
 
   def source[T](path: String, subscribers: Set[ActorRef[Event[T]]] = Set.empty): Behavior[Event[T]] =
     ???
@@ -289,11 +292,11 @@ object MicroBatchingRunner extends AkkaRunner:
         tctx.outputCollector = new OutputCollector[T, U, Any, Any] {
           def submit(event: WrappedEvent[U]): Unit =
             subscribers.foreach { sub => sub ! Event(path, event) }
-          def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int, askingWF: String): Unit = ???
-          def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit = ???
+          override def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int, askingWF: String): Unit = ???
+          override def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit = ???
         }
 
-        val preparedTask = TaskExecution.prepareTask(task, tctx)
+        val preparedTask = TaskExecutorImpl.prepareTask(task, tctx)
 
         Behaviors.receiveMessage { case Event(sender, event) =>
           event match
