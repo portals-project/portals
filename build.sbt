@@ -1,4 +1,4 @@
-lazy val scala3Version = "3.3.0-RC3"
+lazy val scala3Version = "3.3.0-RC4"
 lazy val junitInterfaceVersion = "0.11"
 lazy val logbackversion = "1.2.11"
 lazy val akkaVersion = "2.6.20"
