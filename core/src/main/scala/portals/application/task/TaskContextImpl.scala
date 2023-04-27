@@ -42,7 +42,7 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
   /** should be var so that it can be swapped out during runtime */
   private[portals] var path: String = _
   private[portals] var wfpath: String = _
-  private[portals] var key: Key[Long] = _
+  private[portals] var key: Key = _
   private[portals] var system: PortalsSystem = _
   private[portals] var outputCollector: OutputCollector[T, U, Any, Any] = _
   private[portals] var task: GenericTask[T, U, Req, Rep] = _
@@ -85,7 +85,7 @@ private[portals] class TaskContextImpl[T, U, Req, Rep]
   private[portals] var asker: String = _
   private[portals] var portal: String = _
   private[portals] var portalAsker: String = _
-  private[portals] var askerKey: Key[Long] = _
+  private[portals] var askerKey: Key = _
 
   override def reply(msg: Rep): Unit =
     outputCollector.reply(msg, this.portal, this.asker, this.askerKey, this.id, this.portalAsker)

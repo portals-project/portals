@@ -7,5 +7,5 @@ case class ContinuationMeta(
     asker: String,
     portal: String,
     portalAsker: String,
-    askerKey: Key[Long],
+    askerKey: Key,
 )

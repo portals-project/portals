@@ -13,11 +13,11 @@ trait OutputCollector[T, U, Req, Rep]:
   // Asker Task
   //////////////////////////////////////////////////////////////////////////////
   // TODO: the param names are confusing, make it clear what they are heres
-  def ask(portal: String, asker: String, req: Req, key: Key[Long], id: Int, askingWF: String): Unit
+  def ask(portal: String, asker: String, req: Req, key: Key, id: Int, askingWF: String): Unit
 
   //////////////////////////////////////////////////////////////////////////////
   // Replier Task
   //////////////////////////////////////////////////////////////////////////////
   // TODO: the param names are confusing, make it clear what they are heres
-  def reply(r: Rep, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit
+  def reply(r: Rep, portal: String, asker: String, key: Key, id: Int, askingWF: String): Unit
 end OutputCollector // trait

@@ -10,6 +10,7 @@ import portals.api.builder.RegistryBuilder
 import portals.api.builder.SequencerBuilder
 import portals.api.builder.SplitBuilder
 import portals.api.builder.SplitterBuilder
+import portals.api.builder.TaskBuilder
 import portals.api.builder.WorkflowBuilder
 import portals.application.*
 import portals.application.task.AskerTaskContext
@@ -287,6 +288,22 @@ object DSL:
     )(using ctx: AskerTaskContext[T, U, Req, Rep]): Unit =
       ctx.await(future)(f)
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Convenient Builder DSL for TaskBuilder
+  //////////////////////////////////////////////////////////////////////////////
+
+  /** Summon the TaskBuilder.
+    *
+    * Use this method to create a task behavior with the summoned TaskBuilder.
+    *
+    * @example
+    *   {{{Tasks.processor[Int, Int] { ctx ?=> x => ctx.emit(x) }}}}
+    *
+    * @return
+    *   The task builder.
+    */
+  def Tasks: TaskBuilder.type = TaskBuilder
 
   //////////////////////////////////////////////////////////////////////////////
   // Convenient Builder DSL

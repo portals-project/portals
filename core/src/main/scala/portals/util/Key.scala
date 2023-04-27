@@ -1,7 +1,7 @@
 package portals.util
 
-trait Key[T]:
-  val x: T
+trait Key:
+  val x: Long
 
 object Key:
-  def apply[T](_x: T): Key[T] = new Key { val x = _x }
+  def apply(_x: Long): Key = new Key { val x = _x }

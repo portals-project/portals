@@ -20,5 +20,5 @@ private[portals] class EagerOutputCollector extends OutputCollector[Any, Any, An
   override def submit(event: WrappedEvent[Any]): Unit =
     subs.foreach { sub => sub ! Event(path, event) }
 
-  override def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int, askingWF: String): Unit = ???
-  override def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit = ???
+  override def ask(portal: String, asker: String, req: Any, key: Key, id: Int, askingWF: String): Unit = ???
+  override def reply(r: Any, portal: String, asker: String, key: Key, id: Int, askingWF: String): Unit = ???

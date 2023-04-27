@@ -28,7 +28,7 @@ private[portals] class OutputCollectorImpl[T, U, Req, Rep] extends OutputCollect
       portal: String,
       askingTask: String,
       req: Req,
-      key: Key[Long], // TODO: this is confusing exactly which key is meant here, askingKey or replyingKey
+      key: Key, // TODO: this is confusing exactly which key is meant here, askingKey or replyingKey
       id: Int,
       askingWF: String,
   ): Unit =
@@ -45,7 +45,7 @@ private[portals] class OutputCollectorImpl[T, U, Req, Rep] extends OutputCollect
       r: Rep,
       portal: String,
       askingTask: String,
-      key: Key[Long], // TODO: this is confusing exactly which key is meant here, askingKey or replyingKey
+      key: Key, // TODO: this is confusing exactly which key is meant here, askingKey or replyingKey
       id: Int,
       askingWF: String,
   ): Unit = _reps.addOne(Reply(key, PortalMeta(portal, askingTask, key, id, askingWF), r))

@@ -140,9 +140,9 @@ object NoGuaranteesRunner extends AkkaRunnerBehaviors:
         tctx.outputCollector = new OutputCollector[T, U, Any, Any] {
           def submit(event: WrappedEvent[U]): Unit =
             subscribers.foreach { sub => sub ! Event(path, event) }
-          override def ask(portal: String, asker: String, req: Any, key: Key[Long], id: Int, askingWF: String): Unit =
+          override def ask(portal: String, asker: String, req: Any, key: Key, id: Int, askingWF: String): Unit =
             ???
-          override def reply(r: Any, portal: String, asker: String, key: Key[Long], id: Int, askingWF: String): Unit =
+          override def reply(r: Any, portal: String, asker: String, key: Key, id: Int, askingWF: String): Unit =
             ???
         }
 
