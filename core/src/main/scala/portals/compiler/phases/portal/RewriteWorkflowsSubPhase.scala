@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scala.util.Try
 
 import portals.api.builder.*
+import portals.api.builder.TaskExtensions.*
 import portals.application.*
 import portals.application.task.*
 import portals.application.task.MapTaskStateExtension.*

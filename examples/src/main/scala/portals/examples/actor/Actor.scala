@@ -173,7 +173,7 @@ end ActorEvents // object
 
 @experimental
 private[portals] object ActorRuntime:
-  import portals.api.builder.StashExtension.*
+  import portals.api.builder.TaskExtensions.StashExtension.*
 
   import ActorBehaviors.*
   import ActorEvents.*

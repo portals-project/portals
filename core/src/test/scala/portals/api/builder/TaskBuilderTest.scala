@@ -6,15 +6,7 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.api.builder.filter
-import portals.api.builder.vsm
-import portals.api.builder.withAndThen
-import portals.api.builder.withLoop
-import portals.api.builder.withStep
-import portals.api.builder.withWrapper
-import portals.api.builder.TaskBuilder
-import portals.api.builder.VSMTask
-import portals.api.builder.VSMTasks
+import portals.api.builder.TaskExtensions.*
 import portals.api.dsl.DSL
 import portals.application.task.PerKeyState
 import portals.application.task.PerTaskState
