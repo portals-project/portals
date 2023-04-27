@@ -186,7 +186,7 @@ public class Calcite {
             } catch (SqlParseException | InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionAbortException e) {
-                System.out.printf("Execution for [%s] aborted\n", sql);
+//                System.out.printf("Execution for [%s] aborted\n", sql);
             }
         };
         executor.execute(runnable);

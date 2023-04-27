@@ -313,7 +313,8 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
         runner.oc
           .getAskOutput()
           // group by portal
-          .groupBy { case Ask(_, portalMeta, _) => (portalMeta.portal) }
+//          .groupBy { case Ask(_, portalMeta, _) => (portalMeta.portal) }
+          .map(x => (x.meta.portal, List(x)))
           // map grouping to ask batches
           .map { (k, v) => InterpreterAskBatch(InterpreterPortalBatchMeta(k, wf.path), v) }
           .toList

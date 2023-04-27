@@ -120,7 +120,7 @@ private[portals] class InterpreterStreamTracker:
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
 private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
-  private val rctx = new InterpreterRuntimeContext()
+  protected val rctx = new InterpreterRuntimeContext()
   private val progressTracker = InterpreterProgressTracker()
   private val streamTracker = InterpreterStreamTracker()
   private val graphTracker = InterpreterGraphTracker()
@@ -254,7 +254,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
   protected def chooseGenerator(): Option[(String, InterpreterGenerator)] =
     randomSelection(rctx.generators, (path, genr) => genr.generator.generator.hasNext())
 
-  private def distributeAtoms(listOfAtoms: List[InterpreterAtom]): Unit =
+  protected def distributeAtoms(listOfAtoms: List[InterpreterAtom]): Unit =
     listOfAtoms.foreach {
       case ta @ InterpreterAtomBatch(path, list) =>
         rctx.streams(path).enqueue(ta)

@@ -319,7 +319,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
           futures = futures :+ ask(tableNameToPortal(op.tableName))(RollbackOp(op.tableName, op.key, op.txnId))
         }
         awaitAll[Result](futures: _*) {
-          println("====== Rollback txn " + preCommResult.txnID + " sql " + preCommResult.sql)
+          println("====== Abort txn " + preCommResult.txnID + " sql " + preCommResult.sql)
           emit("rollback")
         }
       }
