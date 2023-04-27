@@ -98,6 +98,32 @@ class FlowBuilderTest:
       .receiveAssert(9)
 
   @Test
+  def testSplitAndUnion(): Unit =
+    import portals.api.dsl.DSL.*
+
+    val testData = List.range(0, 4).grouped(1).toList
+
+    val map0 = Map(0 -> "zero", 2 -> "two")
+    val map1 = Map(1 -> "one", 3 -> "three")
+
+    val flows = TestUtils.flowBuilder[Int, String] { x =>
+      val (split0, split1) = x.split(
+        x => x % 2 == 0,
+        x => x % 2 == 1,
+      )
+      val msplit0 = split0.map(map0)
+      val msplit1 = split1.map(map1)
+      msplit0.union(msplit1)
+    }
+
+    val tester = TestUtils.executeWorkflow(flows, testData)
+
+    assertEquals(true, tester.contains("zero"))
+    assertEquals(true, tester.contains("one"))
+    assertEquals(true, tester.contains("two"))
+    assertEquals(true, tester.contains("three"))
+
+  @Test
   def testWithAndThen(): Unit =
     import portals.api.dsl.DSL.*
 

@@ -92,6 +92,22 @@ trait FlowBuilder[T, U, CT, CU]:
   ): FlowBuilder[T, U, CU, CCU] =
     flows.head.union(flows.tail.toList).task(task)
 
+  /** Split a flow into two disjoint flows by the provided predicates `p1` and
+    * `p2`.
+    *
+    * @param p1
+    *   the first splitting predicate
+    * @param p2
+    *   the second splitting predicate
+    * @return
+    *   two flow builders, one for each split
+    */
+  def split(
+      p1: PartialFunction[CU, Boolean],
+      p2: PartialFunction[CU, Boolean]
+  ): (FlowBuilder[T, U, CU, CU], FlowBuilder[T, U, CU, CU]) =
+    (this.filter { x => p1.apply(x) }, this.filter { x => p2.apply(x) })
+
   //////////////////////////////////////////////////////////////////////////////
   // Stateful transformations
   //////////////////////////////////////////////////////////////////////////////
