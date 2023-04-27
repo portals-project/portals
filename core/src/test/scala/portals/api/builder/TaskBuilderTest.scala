@@ -24,6 +24,23 @@ import portals.util.Key
 
 @RunWith(classOf[JUnit4])
 class TaskBuilderTest:
+  import portals.api.dsl.DSL.*
+
+  @Test
+  def testTasks(): Unit =
+    val testData = List.range(0, 4).grouped(1).toList
+
+    val task = Tasks
+      .map[Int, Int] { x => x + 1 }
+
+    val tester = TestUtils.executeTask(task, testData)
+
+    // 1, 2, 3, 4, ...
+    tester
+      .receiveAssert(1)
+      .receiveAssert(2)
+      .receiveAssert(3)
+      .receiveAssert(4)
 
   @Test
   def testSteppers(): Unit =
