@@ -191,7 +191,7 @@ trait FlowBuilder[T, U, CT, CU]:
     * more as can the normal tasks.
     *
     * @see
-    *   [[portals.api.builder.VSMTask]]
+    *   [[portals.api.builder.TaskExtensions.VSMTask]]
     *
     * @example
     *   {{{
