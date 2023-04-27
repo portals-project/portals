@@ -123,7 +123,7 @@ class FlowBuilderTest:
     import portals.api.dsl.DSL.*
 
     val testData = List.range(0, 3).grouped(1).toList
-    val testDataKeys = List.fill(3)(0).map(Key[Long](_)).grouped(1).toList
+    val testDataKeys = List.fill(3)(0).map(Key(_)).grouped(1).toList
 
     object VSM:
       def init: VSMTask[Int, Int] = VSMTasks.processor {

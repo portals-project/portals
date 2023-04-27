@@ -38,7 +38,7 @@ private[portals] trait KeyTaskContext[T, U, Req, Rep] extends GenericTaskContext
   /** Internal API. Access and modify the key of a task. WARNING: can break the
     * system.
     */
-  private[portals] var key: Key[Long]
+  private[portals] var key: Key
 
 private[portals] trait ProcessorTaskContext[T, U]
     extends GenericTaskContext[T, U, _, _]

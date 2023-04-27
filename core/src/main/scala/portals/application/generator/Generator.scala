@@ -19,7 +19,7 @@ private[portals] object GeneratorImpls:
   /** FromIteratorOfIterators */
   case class FromIteratorOfIterators[T](
       itit: Iterator[Iterator[T]],
-      keys: Iterator[Iterator[Key[Long]]],
+      keys: Iterator[Iterator[Key]],
   ) extends Generator[T]:
     def generate(): WrappedEvent[T] = _iter.next()
 
@@ -41,7 +41,7 @@ private[portals] object GeneratorImpls:
   /** FromIteratorOfIteratorsWithKeyExtractor */
   case class FromIteratorOfIteratorsWithKeyExtractor[T](
       itit: Iterator[Iterator[T]],
-      keyExtractor: T => Key[Long] = (x: T) => Key(x.hashCode()),
+      keyExtractor: T => Key = (x: T) => Key(x.hashCode()),
   ) extends Generator[T]:
     def generate(): WrappedEvent[T] = _iter.next()
 
@@ -63,7 +63,7 @@ private[portals] object GeneratorImpls:
   @deprecated
   class ExternalRef[T]():
     def submit(t: T): Unit = cb(Event(Key(t.hashCode()), t))
-    def submit(t: T, key: Key[Long]): Unit = cb(Event(key, t))
+    def submit(t: T, key: Key): Unit = cb(Event(key, t))
     def error(t: Throwable): Unit = cb(Error(t))
     def fuse(): Unit = cb(Atom)
     def seal(): Unit = cb(Seal)
@@ -123,13 +123,13 @@ object Generators:
   def fromIterator[T](it: Iterator[T]): Generator[T] =
     fromIteratorOfIterators(Iterator.single(it))
 
-  def fromIterator[T](it: Iterator[T], keys: Iterator[Key[Long]]): Generator[T] =
+  def fromIterator[T](it: Iterator[T], keys: Iterator[Key]): Generator[T] =
     fromIteratorOfIterators(Iterator.single(it), Iterator.single(keys))
 
   def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]]): Generator[T] =
     FromIteratorOfIteratorsWithKeyExtractor(itit)
 
-  def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]], keys: Iterator[Iterator[Key[Long]]]): Generator[T] =
+  def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]], keys: Iterator[Iterator[Key]]): Generator[T] =
     FromIteratorOfIterators(itit, keys)
 
   def fromRange(start: Int, end: Int, step: Int): Generator[Int] =
