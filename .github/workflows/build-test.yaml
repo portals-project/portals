@@ -25,4 +25,5 @@ jobs:
       run: sbt scalafmtCheckAll
     - name: Scalafmt sbt
       run: sbt scalafmtSbtCheck
-
+    - name: Build docs
+      run: sbt doc
