@@ -218,6 +218,14 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
                 if (ref.getIndex() == pkIndex) {
                     return Collections.singletonList((RexLiteral) rexCall.operands.get(1));
                 }
+            } else if (rexCall.operands.get(0) instanceof RexCall && ((RexCall) rexCall.operands.get(0)).op == SqlStdOperatorTable.CAST) {
+                RexCall cast = (RexCall) rexCall.operands.get(0);
+                if (cast.operands.get(0) instanceof RexInputRef) {
+                    RexInputRef ref = (RexInputRef) cast.operands.get(0);
+                    if (ref.getIndex() == pkIndex) {
+                        return Collections.singletonList((RexLiteral) rexCall.operands.get(1));
+                    }
+                }
             }
         } else if (rexCall.op == SqlStdOperatorTable.OR) {
             List<RexLiteral> ans = new ArrayList<>();

@@ -8,7 +8,7 @@ import portals.api.builder.ApplicationBuilder
 import portals.api.builder.FlowBuilder
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.Portal
-import portals.application.task.PerKeyState
+import portals.application.task.{PerKeyState, PerTaskState}
 import portals.application.AtomicPortalRef
 import portals.util.Future
 
@@ -21,6 +21,14 @@ case class TableInfo(
     fieldNames: Array[String],
     fieldTypes: Array[SqlTypeName]
 )
+
+class PersistentLinkedBlockingQueue[T](qName: String) extends LinkedBlockingQueue[T] {
+  val state = PerTaskState(qName, this)
+}
+
+class PersistentList[T](name: String) extends java.util.ArrayList[T] {
+  val state = PerTaskState(name, this)
+}
 
 @experimental
 object QueryableWorkflow:
@@ -113,24 +121,28 @@ object QueryableWorkflow:
 extension [T, U](wb: FlowBuilder[T, U, String, String]) {
 
   def id(): FlowBuilder[T, U, String, String] = wb
+
   @experimental
-  def querier(tableInfos: TableInfo*): FlowBuilder[T, U, String, String] = {
+  def querier(tableInfos: TableInfo*): FlowBuilder[T, U, String, String] = _querier(tableInfos: _*)(true)
+
+  @experimental
+  def _querier(tableInfos: TableInfo*)(printResult: Boolean): FlowBuilder[T, U, String, String] = {
     import scala.jdk.CollectionConverters.*
     import java.math.BigDecimal
     import portals.api.dsl.ExperimentalDSL.*
 
     wb.asker[String](tableInfos.map(_.portal): _*) { sql =>
-      val futureReadyCond = new LinkedBlockingQueue[Integer]()
-      val awaitForFutureCond = new LinkedBlockingQueue[Integer]()
-      val awaitForFinishCond = new LinkedBlockingQueue[Integer]()
-      val tableOptCntCond = new LinkedBlockingQueue[Integer]()
-      val result = new java.util.ArrayList[Array[Object]]()
-      val futures = new java.util.ArrayList[FutureWithResult]()
-      var portalFutures = List[Future[Result]]()
+      val futureReadyCond = PersistentLinkedBlockingQueue[Integer]("futureReadyCond")
+      val awaitForFutureCond = PersistentLinkedBlockingQueue[Integer]("awaitForFutureCond")
+      val awaitForFinishCond = PersistentLinkedBlockingQueue[Integer]("awaitForFinishCond")
+      val tableOptCntCond = PersistentLinkedBlockingQueue[Integer]("tableOptCntCond")
+      val result = PersistentList[Array[Object]]("result")
+      val futures = PersistentList[FutureWithResult]("futures")
+      val portalFutures = PersistentList[Future[Result]]("portalFutures")
 
       val calcite = new Calcite()
       calcite.printPlan = false
-      
+
       // insert
       tableInfos.foreach(ti => {
         calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
@@ -139,7 +151,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
           .setInsertRow(data => {
             // TODO: assert pk always Int
             val future = ask(ti.portal)(InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int]))
-            portalFutures = portalFutures :+ future
+            portalFutures.add(future)
             new FutureWithResult(future, null)
           })
         calcite
@@ -147,7 +159,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
           .setGetFutureByRowKeyFunc(key => {
             val future =
               ask(ti.portal)(SelectOp(ti.tableName, key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
-            portalFutures = portalFutures :+ future
+            portalFutures.add(future)
             new FutureWithResult(future, null)
           })
       })
@@ -176,19 +188,19 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
         // wait for the last one to awaitAll
         if i != tableOptCnt then awaitForFutureCond.put(1)
         else
-          awaitAll[Result](portalFutures: _*) {
+          awaitAll[Result](portalFutures.asScala.toList: _*) {
             futures.forEach(f => {
               val data = f.future.asInstanceOf[Future[Result]].value
               f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
             })
 
-            
             awaitForFutureCond.put(1) // allow SQL execution to start
 
             awaitForFinishCond.take() // wait for SQL execution to finish
 
-            println("====== Result for " + sql + " ======")
-            result.forEach(row => println(java.util.Arrays.toString(row)))
+            if printResult then
+              println("====== Result for " + sql + " ======")
+              result.forEach(row => println(java.util.Arrays.toString(row)))
 
             result.forEach(row => {
               emit(java.util.Arrays.toString(row))
@@ -209,14 +221,13 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
     rndTxnIDGenerator.setSeed(514)
 
     wb.asker[FirstPhaseResult](tableInfos.map(_.portal): _*) { sql =>
-      val futureReadyCond = new LinkedBlockingQueue[Integer]()
-      val awaitForFutureCond = new LinkedBlockingQueue[Integer]()
-      val awaitForFinishCond = new LinkedBlockingQueue[Integer]()
-      val tableScanCntCond = new LinkedBlockingQueue[Integer]()
-      val result = new java.util.ArrayList[Array[Object]]()
-      val futures = new java.util.ArrayList[FutureWithResult]()
-
-      var portalFutures = List[Future[Result]]()
+      val futureReadyCond = PersistentLinkedBlockingQueue[Integer]("futureReadyCond")
+      val awaitForFutureCond = PersistentLinkedBlockingQueue[Integer]("awaitForFutureCond")
+      val awaitForFinishCond = PersistentLinkedBlockingQueue[Integer]("awaitForFinishCond")
+      val tableOptCntCond = PersistentLinkedBlockingQueue[Integer]("tableOptCntCond")
+      val result = PersistentList[Array[Object]]("result")
+      val futures = PersistentList[FutureWithResult]("futures")
+      val portalFutures = PersistentList[Future[Result]]("portalFutures")
 
       val calcite = new Calcite()
       calcite.printPlan = false
@@ -237,7 +248,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
                 InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int], txnId)
               )
             )
-            portalFutures = portalFutures :+ future
+            portalFutures.add(future)
             new FutureWithResult(future, null)
           })
         calcite
@@ -245,7 +256,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
           .setGetFutureByRowKeyFunc(key => {
             val intKey = key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()
             val future = ask(ti.portal)(PreCommitOp(ti.tableName, intKey, txnId, SelectOp(ti.tableName, intKey, txnId)))
-            portalFutures = portalFutures :+ future
+            portalFutures.add(future)
             new FutureWithResult(future, null)
           })
       })
@@ -255,12 +266,12 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
         futureReadyCond,
         awaitForFutureCond,
         awaitForFinishCond,
-        tableScanCntCond,
+        tableOptCntCond,
         futures,
         result
       )
 
-      val tableScanCnt = tableScanCntCond.take
+      val tableScanCnt = tableOptCntCond.take
 //      println("tableScanCnt: " + tableScanCnt)
 
       val emit = { (x: FirstPhaseResult) =>
@@ -273,7 +284,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
         // wait for the last one to awaitAll
         if i != tableScanCnt then awaitForFutureCond.put(1)
         else
-          awaitAll[Result](portalFutures: _*) {
+          awaitAll[Result](portalFutures.asScala.toList: _*) {
             val results: List[Result] = futures.asScala.map(_.future.asInstanceOf[Future[Result]].value.get).toList
             val succeedOps = results.filter(_.status == STATUS_OK).map(_.data.asInstanceOf[SQLQueryEvent])
 
