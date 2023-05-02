@@ -17,3 +17,4 @@ Examples can be found in the [examples](examples/src/main/scala/portals/examples
 
 ## Tests
 The tests are located in the [test](core/src/test/scala/portals) directory. You can run the tests by running the command `sbt test`.
+
