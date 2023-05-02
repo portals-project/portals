@@ -16,14 +16,14 @@ object EventFiltering:
   val app: Application = {
     val builder = ApplicationBuilder("app")
 
-    val messages = List("Hello, World!", "This is a secret message", "Goodbye!")
+    val messages = List("Hello, World!", "This Event seems interesting", "Goodbye!")
 
     val generator = builder.generators.fromList(messages)
 
     val _ = builder
       .workflows[String, String]("workflow")
       .source(generator.stream)
-      .filter { !_.contains("secret") }
+      .filter { _.contains("interesting") }
       .logger()
       .sink()
       .freeze()
