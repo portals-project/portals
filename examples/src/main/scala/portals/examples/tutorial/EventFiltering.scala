@@ -6,8 +6,8 @@ import portals.system.Systems
 
 /** Event Filtering
   *
-  * This example creates a workflow that filters out events containing the
-  * word "interesting". And only logs those events.
+  * This example creates a workflow that filters out events containing the word
+  * "interesting". And only logs those events.
   */
 object EventFiltering:
   import portals.api.dsl.DSL.*
