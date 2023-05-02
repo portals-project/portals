@@ -7,8 +7,7 @@ import portals.system.Systems
 /** Event Filtering
   *
   * This example creates a workflow that filters out events containing the
-  * string "secret" and sends them to a separate sink. The remaining events are
-  * sent to the default logger sink.
+  * word "interesting". And only logs those events.
   */
 object EventFiltering:
   import portals.api.dsl.DSL.*
