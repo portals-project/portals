@@ -49,6 +49,7 @@ object PortalsJS:
       @targetName("toScalaF2")
       inline def toScala: T => U => V = t => u => f(t)(u)
     }
+
     opaque type ContextFunction1JS[T, U] = Function1[T, U]
     extension [T, U](f: ContextFunction1JS[T, U]) {
       @targetName("toScalaCF1")
@@ -132,11 +133,11 @@ object PortalsJS:
     def build(): Application = builder.build()
     def registry: RegistryBuilderJS = builder.registry.toJS
     def workflows[T, U]: WorkflowBuilderJS[T, U] = builder.workflows[T, U].toJS
+    def splitters: SplitterBuilderJS = builder.splitters.toJS
     def splits: SplitBuilderJS = builder.splits.toJS
     def generators: GeneratorBuilderJS = builder.generators.toJS
     def sequencers: SequencerBuilderJS = builder.sequencers.toJS
     def connections: ConnectionBuilderJS = builder.connections.toJS
-    @JSExport("portals")
     def portal: PortalBuilderJS = builder.portals.toJS
 
   @JSExport
@@ -154,7 +155,6 @@ object PortalsJS:
 
   @JSExportAll
   class FlowBuilderJS[T, U, CT, CU](val fb: FlowBuilder[T, U, CT, CU]):
-    import scala.scalajs.js.JSConverters._
 
     import Types.*
 
@@ -185,10 +185,9 @@ object PortalsJS:
     def processor[CCU](f: ContextFunction2JS[ProcessorTaskContext[CU, CCU], CU, Unit]): FlowBuilderJS[T, U, CU, CCU] =
       fb.processor(f.toScala).toJS
 
-    def flatMap[CCU](
-        f: ContextFunction2JS[MapTaskContext[CU, CCU], CU, Array[CCU]]
-    ): FlowBuilderJS[T, U, CU, CCU] =
+    def flatMap[CCU](f: ContextFunction2JS[MapTaskContext[CU, CCU], CU, Array[CCU]]): FlowBuilderJS[T, U, CU, CCU] =
       fb.flatMap((c: MapTaskContext[CU, CCU]) ?=> u => f.toScala(using c)(u).toScala).toJS
+
     def filter(f: Function1JS[CU, Boolean]): FlowBuilderJS[T, U, CU, CU] =
       fb.filter(f.toScala).toJS
 
