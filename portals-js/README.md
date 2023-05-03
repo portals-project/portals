@@ -11,7 +11,10 @@ sbt fullOptJS
 ```
 
 ## Obfuscation
-Use either https://obfuscator.io/ or directly with https://github.com/javascript-obfuscator/javascript-obfuscator
+```
+npm install javascript-obfuscator fs
+node portals-js/src/main/resources/obfuscator.js
+```
 
 ## Test and Run
 Open the `src/main/resources/index.html` file in a browser, and open the console editor.
