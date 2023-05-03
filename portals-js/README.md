@@ -4,10 +4,10 @@
 The compiled files are in `portals-js/target/scala-X/portals-js-fastopt/main.js`; `portals-js/target/scala-X/portals-js-opt/main.js`.
 
 ```
-sbt compile
-sbt fastLinkJS
-sbt fastOptJS
-sbt fullOptJS
+sbt compile;
+sbt fastLinkJS;
+sbt fastOptJS;
+sbt fullOptJS;
 ```
 
 ## Obfuscation
