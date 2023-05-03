@@ -1,6 +1,9 @@
 package portals.js
 
-import scalajs.js.annotation.{JSExport, JSExportAll, JSExportStatic, JSExportTopLevel}
+import scalajs.js.annotation.JSExport
+import scalajs.js.annotation.JSExportAll
+import scalajs.js.annotation.JSExportStatic
+import scalajs.js.annotation.JSExportTopLevel
 
 @JSExportTopLevel("PortalsJS")
 object PortalsJS:
@@ -22,53 +25,48 @@ object PortalsJS:
   import portals.util.Key
 
   //////////////////////////////////////////////////////////////////////////////
-  // Exported Conversions
-  //////////////////////////////////////////////////////////////////////////////
-
-  @JSExport
-  def List[T](x: T*): List[T] = x.toList
-
-  //////////////////////////////////////////////////////////////////////////////
   // Types
   //////////////////////////////////////////////////////////////////////////////
 
   object Types:
 
-    extension[T] (array: Array[T]) {
+    extension [T](array: Array[T]) {
       def toScala: List[T] = array.toList
     }
 
-    extension[T] (iterator: Iterator[T]) {
+    extension [T](iterator: Iterator[T]) {
       def toScala: scala.Iterator[T] = iterator.toIterator
     }
 
     opaque type Function1JS[T, U] = Function1[T, U]
-    extension[T, U] (f: Function1JS[T, U]) {
+    extension [T, U](f: Function1JS[T, U]) {
       @targetName("toScalaF1")
       inline def toScala: T => U = f
     }
 
     opaque type Function2JS[T, U, V] = Function1[T, Function1[U, V]]
-    extension[T, U, V] (f: Function2JS[T, U, V]) {
+    extension [T, U, V](f: Function2JS[T, U, V]) {
       @targetName("toScalaF2")
       inline def toScala: T => U => V = t => u => f(t)(u)
     }
     opaque type ContextFunction1JS[T, U] = Function1[T, U]
-    extension[T, U] (f: ContextFunction1JS[T, U]) {
+    extension [T, U](f: ContextFunction1JS[T, U]) {
       @targetName("toScalaCF1")
       inline def toScala: T ?=> U = t ?=> f(t)
     }
 
     opaque type ContextFunction2JS[T, U, V] = Function1[T, Function1[U, V]]
-    extension[T, U, V] (f: ContextFunction2JS[T, U, V]) {
+    extension [T, U, V](f: ContextFunction2JS[T, U, V]) {
       @targetName("toScalaCF2")
       inline def toScala: T ?=> U => V = t ?=> u => f(t)(u)
     }
 
-    opaque type ContextFunction3JS[T, U, V, W] = Function1[T, Function1[U, Function1[V, W]]]
-    extension[T, U, V, W] (f: ContextFunction3JS[T, U, V, W]) {
-      @targetName("toScalaCF3")
-      inline def toScala: T ?=> U => V => W = t ?=> u => v => f(t)(u)(v)
+    type WrappedType[C, T, U] = Function1[C, Function1[T, U]]
+    type WithWrapperF[C, T, U] = Function1[C, Function1[WrappedType[C, T, U], Function1[T, U]]]
+
+    object WithWrapperF {
+      def toScala[C, T, U](f: WithWrapperF[C, T, U]): C ?=> (C ?=> T => U) => T => U = c ?=>
+        w => t => f(c)(cc ?=> tt => w(tt))(t)
     }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -134,7 +132,6 @@ object PortalsJS:
     def build(): Application = builder.build()
     def registry: RegistryBuilderJS = builder.registry.toJS
     def workflows[T, U]: WorkflowBuilderJS[T, U] = builder.workflows[T, U].toJS
-    def splitters: SplitterBuilderJS = builder.splitters.toJS
     def splits: SplitBuilderJS = builder.splits.toJS
     def generators: GeneratorBuilderJS = builder.generators.toJS
     def sequencers: SequencerBuilderJS = builder.sequencers.toJS
@@ -157,8 +154,9 @@ object PortalsJS:
 
   @JSExportAll
   class FlowBuilderJS[T, U, CT, CU](val fb: FlowBuilder[T, U, CT, CU]):
-    import Types.*
     import scala.scalajs.js.JSConverters._
+
+    import Types.*
 
     def freeze(): Workflow[T, U] =
       fb.freeze()
@@ -188,8 +186,8 @@ object PortalsJS:
       fb.processor(f.toScala).toJS
 
     def flatMap[CCU](
-                      f: ContextFunction2JS[MapTaskContext[CU, CCU], CU, Array[CCU]]
-                    ): FlowBuilderJS[T, U, CU, CCU] =
+        f: ContextFunction2JS[MapTaskContext[CU, CCU], CU, Array[CCU]]
+    ): FlowBuilderJS[T, U, CU, CCU] =
       fb.flatMap((c: MapTaskContext[CU, CCU]) ?=> u => f.toScala(using c)(u).toScala).toJS
     def filter(f: Function1JS[CU, Boolean]): FlowBuilderJS[T, U, CU, CU] =
       fb.filter(f.toScala).toJS
@@ -210,6 +208,7 @@ object PortalsJS:
 
     def checkExpectedType[CCU >: CU <: CU](): FlowBuilderJS[T, U, CT, CU] =
       fb.checkExpectedType().toJS
+
     def withName(name: String): FlowBuilderJS[T, U, CT, CU] =
       fb.withName(name).toJS
 
@@ -231,17 +230,9 @@ object PortalsJS:
     ): FlowBuilderJS[T, U, CT, CU] =
       fb.withOnAtomComplete(onAtomComplete.toScala).toJS
 
-    type WrappedType[C, T, U] = Function1[C, Function1[T, U]]
-    type WithWrapperF[C, T, U] = Function1[C, Function1[WrappedType[C, T, U], Function1[T, U]]]
-
-    object WithWrapperF {
-      def toScala[C, T, U](f: WithWrapperF[C, T, U]): C ?=> (C ?=> T => U) => T => U = c ?=>
-        w => t => f(c)(cc ?=> tt => w(tt))(t)
-    }
-
     def withWrapper(
-                     f: WithWrapperF[ProcessorTaskContext[CT, CU], CT, Unit]
-                   ): FlowBuilderJS[T, U, CT, CU] =
+        f: WithWrapperF[ProcessorTaskContext[CT, CU], CT, Unit]
+    ): FlowBuilderJS[T, U, CT, CU] =
       fb.withWrapper(WithWrapperF.toScala(f)).toJS
 
     def withStep(task: GenericTask[CT, CU, Nothing, Nothing]): FlowBuilderJS[T, U, CT, CU] =
@@ -253,7 +244,8 @@ object PortalsJS:
     def withAndThen[CCU](task: GenericTask[CU, CCU, Nothing, Nothing]): FlowBuilderJS[T, U, CT, CCU] =
       fb.withAndThen(task).toJS
 
-    def allWithOnAtomComplete[WT, WU](onAtomComplete: ContextFunction1JS[ProcessorTaskContext[CT, CU], Unit]
+    def allWithOnAtomComplete[WT, WU](
+        onAtomComplete: ContextFunction1JS[ProcessorTaskContext[CT, CU], Unit]
     ): FlowBuilderJS[T, U, CT, CU] =
       fb.allWithOnAtomComplete(onAtomComplete.toScala).toJS
 
@@ -279,23 +271,6 @@ object PortalsJS:
     ): FlowBuilderJS[T, U, CU, CCU] = {
       fb.replier[CCU, Req, Rep](portals)(f1.toScala)(f2.toScala).toJS
     }
-
-    /*
-      def askerreplier[CCU, Req, Rep](
-          askerportals: AtomicPortalRefKind[Req, Rep]*
-      )(
-          replierportals: AtomicPortalRefKind[Req, Rep]*
-      )(
-          f1: ContextFunction2JS[AskerTaskContext[CU, CCU, Req, Rep], CU, Unit]
-      )(
-          f2: ContextFunction2JS[ReplierTaskContext[CU, CCU, Req, Rep], Req, Unit]
-      ): FlowBuilderJS[T, U, CU, CCU] =
-        fb.askerreplier(portals)(f1.toScala)(f2.toScala).toJS
-
-    def asker[CCU]: FlowBuilderAskerJS[CCU] = new FlowBuilderAskerJS[CCU]
-    def replier[CCU]: FlowBuilderReplierJS[CCU] = new FlowBuilderReplierJS[CCU]
-    */
-
 
   end FlowBuilderJS
 
@@ -364,7 +339,6 @@ object PortalsJS:
       gb.fromListOfLists(listlist, keys)
     def fromRange(start: Int, end: Int, step: Int): AtomicGeneratorRef[Int] =
       gb.fromRange(start, end, step)
-    // private[portals] def generator[T](g: Generator[T]): AtomicGeneratorRef[T]
 
   extension (gb: GeneratorBuilder) {
     def toJS: GeneratorBuilderJS = GeneratorBuilderJS(gb)
@@ -439,24 +413,3 @@ object PortalsJS:
   extension (pb: PortalBuilder) {
     def toJS: PortalBuilderJS = PortalBuilderJS(pb)
   }
-
-  /*
-  //////////////////////////////////////////////////////////////////////////////
-  // Task Builder
-  //////////////////////////////////////////////////////////////////////////////
-  // TODO: ask if necessary
-  @JSExportAll
-  object TaskBuilderJS extends TaskBuilder:
-    // define private empty method to avoid warning
-    private def empty(): Unit = ()
-  extension (tb: TaskBuilder) {
-    def toJS: TaskBuilderJS = TaskBuilderJS(tb)
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // DSL
-  //////////////////////////////////////////////////////////////////////////////
-  // Export in ScalaJS the DSL object from portals.api.dsl.DSL
-  @JSExport
-  object DSLJS extends DSL
-*/
