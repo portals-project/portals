@@ -266,6 +266,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     }
 
   protected def stepPortal(path: String, portal: InterpreterPortal): Unit =
+//    println("step portal " + path)
     // dequeue the head event of the Portal
     portal.dequeue().get match
       // 1) if it is a TestAskBatch, then execute the replying workflow
@@ -281,6 +282,8 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
       case _ => ??? // should not happen
 
   protected def stepWorkflow(path: String, wf: InterpreterWorkflow): Unit =
+//    println("step workflow " + path)
+
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
@@ -289,6 +292,8 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     progressTracker.incrementProgress(path, from)
 
   protected def stepSequencer(path: String, seqr: InterpreterSequencer): Unit =
+//    println("step sequencer " + path)
+
     val from = graphTracker.getInputs(path).get.find(from => hasInput(path, from)).get
     val idx = progressTracker.getProgress(path, from).get
     val inputAtom = rctx.streams(from).read(idx)
@@ -297,6 +302,8 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     progressTracker.incrementProgress(path, from)
 
   protected def stepGenerator(path: String, genr: InterpreterGenerator): Unit =
+//    println("step generator " + path)
+
     val outputAtoms = genr.process()
     distributeAtoms(outputAtoms)
 

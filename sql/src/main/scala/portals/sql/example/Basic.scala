@@ -87,8 +87,13 @@ object SQLExample extends App:
       .freeze()
   }
 
-//  val system = Systems.interpreter()
-  val system = new RandomInterpreter()
+  val system = Systems.interpreter()
+//  val system = new RandomInterpreter()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()
+
+//  println(CalciteStat.getAvgParsingTime)
+//  println(CalciteStat.getAvgValidationTime)
+//  println(CalciteStat.getAvgPlanningTime)
+//  println(CalciteStat.getAvgExecutionTime)

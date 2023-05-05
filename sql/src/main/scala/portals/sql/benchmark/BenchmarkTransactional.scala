@@ -2,9 +2,12 @@ package portals.sql.benchmark
 
 import java.util
 import java.util.concurrent.LinkedBlockingQueue
+
 import scala.annotation.experimental
+
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.calcite.util.NlsString
+
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.application.generator.Generator
@@ -16,11 +19,11 @@ import portals.system.InterpreterSystem
 import portals.system.Systems
 import portals.util.Future
 import portals.util.Key
+
 import cask.*
-import portals.runtime.interpreter.InterpreterRuntime
 
 @experimental
-object Server extends MainRoutes {
+object Server1 extends MainRoutes {
 
   var inputChan: REPLGenerator = _
   var intSys: InterpreterSystem = _
@@ -122,14 +125,14 @@ object Server extends MainRoutes {
 
       Workflows[String, String]("askerWf")
         .source(generator.stream)
-        ._querier(table)(false)
+        .querierTransactional(table)
         .sink()
         .freeze()
     }
 
     intSys = Systems.interpreter()
-//    intSys = new RandomInterpreter(Some(1))
     intSys.launch(app)
     intSys.stepUntilComplete()
   }
 }
+

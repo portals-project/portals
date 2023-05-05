@@ -56,6 +56,8 @@ object QueryableWorkflow:
     classOf[String] -> SqlTypeName.VARCHAR,
   )
 
+
+
   // TODO: default primary key to be the first field
   def createTable[T: ClassTag](
       tableName: String,
@@ -89,12 +91,12 @@ object QueryableWorkflow:
 
         q match
           case PreCommitOp(tableName, key, txnId, op) =>
-            if _txn.get() == -1 || _txn.get() == txnId then
-              println("precommit txn " + txnId + " key " + key + " success")
+            if (_txn.get() == -1 || _txn.get() == txnId) then
+//              println("precommit txn " + txnId + " key " + key + " success")
               _txn.set(txnId)
               reply(Result(STATUS_OK, op))
             else
-              println("precommit txn " + txnId + " key " + key + " fail")
+//              println("precommit txn " + txnId + " key " + key + " fail")
               reply(Result("error", List()))
           case SelectOp(tableName, key, txnId) =>
             val data = state.get()
@@ -205,6 +207,7 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
             result.forEach(row => {
               emit(java.util.Arrays.toString(row))
             })
+
           }
       }
     }
@@ -318,19 +321,18 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
 
           println("====== Result for " + preCommResult.sql + " ======")
           preCommResult.result.forEach(row => {
-            //                emit(util.Arrays.toString(row))
-            println(java.util.Arrays.toString(row))
+//            println(java.util.Arrays.toString(row))
             emit(java.util.Arrays.toString(row))
           })
         }
       } else {
-        println("txn " + preCommResult.txnID + " precommit failed")
+//        println("txn " + preCommResult.txnID + " precommit failed")
         var futures = List[Future[Result]]()
         preCommResult.succeedOps.foreach { op =>
           futures = futures :+ ask(tableNameToPortal(op.tableName))(RollbackOp(op.tableName, op.key, op.txnId))
         }
         awaitAll[Result](futures: _*) {
-          println("====== Abort txn " + preCommResult.txnID + " sql " + preCommResult.sql)
+//          println("====== Abort txn " + preCommResult.txnID + " sql " + preCommResult.sql)
           emit("rollback")
         }
       }

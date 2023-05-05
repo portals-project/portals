@@ -125,7 +125,8 @@ public class Calcite {
 
     private CalciteSchema schema;
     private RelDataTypeFactory typeFactory;
-    private ThreadPoolExecutor executor;
+    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(100, 100, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+//    private ThreadPoolExecutor executor;
     private Map<String, MPFTable> registeredTable = new HashMap<>();
 
     public MPFTable getTable(String tableName) {
@@ -138,7 +139,7 @@ public class Calcite {
         // Create the root schema describing the data model
         schema = CalciteSchema.createRootSchema(true);
         // Instantiate task executor
-        executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+//        executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
     }
 
     //    public QTable(String tableName, List<SqlTypeName> columnTypes, List<String> columnNames, int pkIndex, Consumer<Object> queryRow, Consumer<Object[]> insertRow) {
@@ -197,8 +198,13 @@ public class Calcite {
 //        System.out.println("====== Execute SQL: " + sql + " ======");
 
         // Parse the query into an AST
+        long parsingStartTime = System.nanoTime();
+
         SqlParser parser = SqlParser.create(sql);
         SqlNode sqlNode = parser.parseQuery();
+
+        long parsingEndTime = System.nanoTime();
+        CalciteStat.recordParsing(parsingEndTime - parsingStartTime);
 
         // Configure and instantiate validator
         Properties props = new Properties();
@@ -224,6 +230,9 @@ public class Calcite {
         // Validate the initial AST
         SqlNode validNode = validator.validate(sqlNode);
 
+        long validationEndTime = System.nanoTime();
+        CalciteStat.recordValidation(validationEndTime - parsingEndTime);
+
         // Configure and instantiate the converter of the AST to Logical plan (requires opt cluster)
         RelOptCluster cluster = newCluster(typeFactory);
         SqlToRelConverter relConverter = new SqlToRelConverter(
@@ -247,6 +256,8 @@ public class Calcite {
                             SqlExplainLevel.EXPPLAN_ATTRIBUTES));
         }
 
+        long executionEndTime = 0;
+
         if (logPlan instanceof LogicalTableModify) {
             LogicalTableModify modify = (LogicalTableModify) logPlan;
             if (modify.getOperation() == TableModify.Operation.DELETE) {
@@ -264,21 +275,40 @@ public class Calcite {
 //                registeredTable.get(tableName).delete(right.getValue());
                 // TODO: key will be on the right, call delete manually (delete(tableName, key))
             } else if (modify.getOperation() == TableModify.Operation.INSERT) {
-//                (RexInputRef) cond.operands.get(0);
-                enumerableConventionPlanExecution(logPlan, cluster);
+                Bindable executablePlan = enumerableConventionPlanExecution(logPlan, cluster);
+                executionEndTime = System.nanoTime();
+                CalciteStat.recordPlanning(executionEndTime - validationEndTime);
+
+                // Run the executable plan using a context simply providing access to the schema
+                for (Object row : executablePlan.bind(new SchemaOnlyDataContext(schema))) {
+                    result.add(new Object[]{row});
+                }
+                awaitForSQLCompletionCond.put(1);
             } else if (modify.getOperation() == TableModify.Operation.UPDATE) {
                 throw new RuntimeException("Unsupported operation: " + modify.getOperation());
             }
         } else {
-            bindableConventionPlanExecution(logPlan, cluster);
+            BindableRel phyPlan = bindableConventionPlanExecution(logPlan, cluster);
+            executionEndTime = System.nanoTime();
+            CalciteStat.recordPlanning(executionEndTime - validationEndTime);
+
+            // Run the executable plan using a context simply providing access to the schema
+            for (Object[] row : phyPlan.bind(new SchemaOnlyDataContext(schema))) {
+//            System.out.println(Arrays.toString(row));
+                result.add(row);
+            }
+            awaitForSQLCompletionCond.put(1);
         }
+
+        CalciteStat.recordExecution(System.nanoTime() - executionEndTime);
+
+        init();
     }
 
     private int getTableOpCnt(RelNode logPlan) {
         if (logPlan instanceof LogicalTableModify) {
             return ((LogicalValues) logPlan.getInput(0)).tuples.size();
-        }
-        else if (logPlan instanceof LogicalTableScan || logPlan instanceof LogicalValues) {
+        } else if (logPlan instanceof LogicalTableScan || logPlan instanceof LogicalValues) {
             return 1;
         } else {
             int cnt = 0;
@@ -299,7 +329,7 @@ public class Calcite {
      * @param logPlan
      * @param cluster
      */
-    private void enumerableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster) throws InterruptedException {
+    private Bindable enumerableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster) throws InterruptedException {
         RelOptPlanner planner = cluster.getPlanner();
         planner.addRule(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
         planner.addRule(CoreRules.PROJECT_TO_CALC);
@@ -336,26 +366,14 @@ public class Calcite {
         }
 
         // Obtain the executable plan
-        Bindable executablePlan = EnumerableInterpretable.toBindable(
+        return EnumerableInterpretable.toBindable(
                 new HashMap<>(),
                 null,
                 phyPlan,
                 EnumerableRel.Prefer.ARRAY);
-        // Run the executable plan using a context simply providing access to the schema
-        for (Object row : executablePlan.bind(new SchemaOnlyDataContext(schema))) {
-//            if (row instanceof Object[]) {
-//                System.out.println(Arrays.toString((Object[]) row));
-//            } else {
-//                System.out.println(row);
-//            }
-            result.add(new Object[]{row});
-        }
-        awaitForSQLCompletionCond.put(1);
-
-        init();
     }
 
-    private void bindableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster) throws InterruptedException {
+    private BindableRel bindableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster) throws InterruptedException {
         // Initialize optimizer/planner with the necessary rules
         RelOptPlanner planner = cluster.getPlanner();
         planner.addRule(CoreRules.FILTER_SCAN);
@@ -383,14 +401,7 @@ public class Calcite {
                             SqlExplainLevel.NON_COST_ATTRIBUTES));
         }
 
-        // Run the executable plan using a context simply providing access to the schema
-        for (Object[] row : phyPlan.bind(new SchemaOnlyDataContext(schema))) {
-//            System.out.println(Arrays.toString(row));
-            result.add(row);
-        }
-        awaitForSQLCompletionCond.put(1);
-
-        init();
+        return phyPlan;
     }
 
     private void init() {
@@ -482,8 +493,8 @@ class MyList<T> extends ArrayList<T> {
         // future is complete, we can return
         if (calcite.debug) System.out.println("add " + t);
         // but we intercept and add the result
-        return super.add(t); // comment this will cause the "row affected" to be 0
-//        return true;
+//        return super.add(t); // comment this will cause the "row affected" to be 0
+        return true;
     }
 }
 
@@ -492,3 +503,4 @@ class ExecutionAbortException extends RuntimeException {
         super(message);
     }
 }
+
