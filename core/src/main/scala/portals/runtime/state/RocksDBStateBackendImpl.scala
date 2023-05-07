@@ -3,7 +3,7 @@ package portals.runtime.state
 import java.io.File
 import org.apache.commons.io.FileUtils
 import org.rocksdb
-import portals.util.Serializer 
+import portals.util.JavaSerializer
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -11,18 +11,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
 
-object JavaSerializer extends Serializer {
-  override def serialize[T](obj: T): Array[Byte] =
-    val bytes = new ByteArrayOutputStream()
-    val out = new ObjectOutputStream(bytes)
-    out.writeObject(obj)
-    out.close()
-    bytes.toByteArray
 
-  override def deserialize[T](bytes: Array[Byte]): T =
-    val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
-    in.readObject().asInstanceOf[T]
-}
 
 private[portals] class RocksDBStateBackendImpl extends StateBackend:
   private val customRocksDB = CustomRocksDB()
@@ -52,8 +41,9 @@ private[portals] class RocksDBStateBackendImpl extends StateBackend:
 
 
 
-  override def snapshot(): Snapshot =
-    val checkpointEpoch = (System.currentTimeMillis() % Int.MaxValue).toInt
+  override def snapshot(): Snapshot = ???
+    /*
+    val checkpointEpoch = System.currentTimeMillis().toInt
     customRocksDB.checkpoint(checkpointEpoch)
     val snapshotRocksDB = CustomRocksDB(customRocksDB.checkpointdir(checkpointEpoch))
     new Snapshot {
@@ -71,23 +61,26 @@ private[portals] class RocksDBStateBackendImpl extends StateBackend:
             (key, value)
           }
         }
-
-      // Call this method to clean up the snapshot resources when you're done with it
-      def close(): Unit = {
-        snapshotRocksDB.getRocksDB().close()
-        FileUtils.deleteDirectory(File(snapshotRocksDB.getPath()))
-      }
-    }
-
-  override def incrementalSnapshot(): Snapshot = 
+    */
+  override def incrementalSnapshot(): Snapshot = ???
     // Implement incremental snapshot if needed, otherwise leave as it is
-    new Snapshot { def iterator = Iterator.empty }
+    // new Snapshot { def iterator = Iterator.empty }
 
 
 object CustomRocksDB {
   def apply(): CustomRocksDB =
-    val dbFile: String = File.createTempFile("tmpxxx", "").getAbsolutePath + "portals-db"
-    new CustomRocksDB(dbFile)
+    val dbFileName = "portals-db"
+    val dbFilePath = System.getenv("DB_FILE_PATH") // read in env variable
+
+    val dbFile = if (dbFilePath != null && !dbFilePath.trim().isEmpty()) {
+      new File(dbFilePath, dbFileName)
+    } else {
+      new File(dbFileName)
+    }
+
+
+    val dbAbsolutePath = dbFile.getAbsolutePath()
+    new CustomRocksDB(dbAbsolutePath)
   def apply(path: String): CustomRocksDB = new CustomRocksDB(path)
 }
 

@@ -4,7 +4,7 @@ lazy val logbackversion = "1.2.11"
 lazy val akkaVersion = "2.6.20"
 lazy val pprintversion = "0.7.0"
 lazy val nexmarkVersion = "2.41.0"
-val rocksDBVersion = "6.28.2"
+lazy val rocksDBVersion = "8.1.1.1"
 
 ThisBuild / organization := "org.portals-project"
 ThisBuild / organizationName := "Portals-Project"
@@ -27,12 +27,7 @@ lazy val portals = project
     libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
     libraryDependencies += "com.lihaoyi" %% "pprint" % pprintversion,
     libraryDependencies += "commons-io" % "commons-io" % "2.8.0",
-    libraryDependencies ++= Seq(
-      sys.props("os.arch") match {
-        case "aarch64" => "io.maryk.rocksdb" % "rocksdbjni" % "6.25.3" // Apple M1
-        case _         => "org.rocksdb" % "rocksdbjni" % rocksDBVersion
-      }
-    ),
+    libraryDependencies += "org.rocksdb" % "rocksdbjni" % rocksDBVersion,
   )
 
 lazy val benchmark = project
