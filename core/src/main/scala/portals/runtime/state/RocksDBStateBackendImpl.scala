@@ -1,17 +1,16 @@
 package portals.runtime.state
 
-import java.io.File
-import org.apache.commons.io.FileUtils
-import org.rocksdb
-import portals.util.JavaSerializer
-
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
 
+import org.apache.commons.io.FileUtils
+import org.rocksdb
 
+import portals.util.JavaSerializer
 
 private[portals] class RocksDBStateBackendImpl extends StateBackend:
   private val customRocksDB = CustomRocksDB()
@@ -38,16 +37,13 @@ private[portals] class RocksDBStateBackendImpl extends StateBackend:
     }
   }
 
-
-
-
   override def snapshot(): Snapshot = ???
-    /*
+  /*
     val checkpointEpoch = System.currentTimeMillis().toInt
     customRocksDB.checkpoint(checkpointEpoch)
     val snapshotRocksDB = CustomRocksDB(customRocksDB.checkpointdir(checkpointEpoch))
     new Snapshot {
-      override def iterator: Iterator[(Any, Any)] = 
+      override def iterator: Iterator[(Any, Any)] =
         val it = snapshotRocksDB.getRocksDB().newIterator()
         new Iterator[(Any, Any)] {
           override def hasNext: Boolean = {
@@ -61,11 +57,10 @@ private[portals] class RocksDBStateBackendImpl extends StateBackend:
             (key, value)
           }
         }
-    */
+   */
   override def incrementalSnapshot(): Snapshot = ???
-    // Implement incremental snapshot if needed, otherwise leave as it is
-    // new Snapshot { def iterator = Iterator.empty }
-
+  // Implement incremental snapshot if needed, otherwise leave as it is
+  // new Snapshot { def iterator = Iterator.empty }
 
 object CustomRocksDB {
   def apply(): CustomRocksDB =
@@ -77,7 +72,6 @@ object CustomRocksDB {
     } else {
       new File(dbFileName)
     }
-
 
     val dbAbsolutePath = dbFile.getAbsolutePath()
     new CustomRocksDB(dbAbsolutePath)
