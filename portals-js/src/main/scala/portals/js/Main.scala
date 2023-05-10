@@ -412,3 +412,37 @@ object PortalsJS:
   extension (pb: PortalBuilder) {
     def toJS: PortalBuilderJS = PortalBuilderJS(pb)
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Task Builder
+  //////////////////////////////////////////////////////////////////////////////
+
+  @JSExportAll
+  class TaskBuilderJS(tb: TaskBuilder.type):
+    import Types.*
+
+    def processor[T, U](
+        onNext: ContextFunction2JS[ProcessorTaskContext[T, U], T, Unit]
+    ): GenericTask[T, U, Nothing, Nothing] =
+      tb.processor(onNext.toScala)
+
+    def identity[T]: GenericTask[T, T, _, _] =
+      tb.identity[T]
+
+    def map[T, U](f: ContextFunction2JS[MapTaskContext[T, U], T, U]): GenericTask[T, U, Nothing, Nothing] =
+      tb.map(f.toScala)
+
+    def flatMap[T, U](
+        f: ContextFunction2JS[MapTaskContext[T, U], T, IterableOnce[U]]
+    ): GenericTask[T, U, Nothing, Nothing] =
+      tb.flatMap(f.toScala)
+
+    def filter[T](f: Function1JS[T, Boolean]): GenericTask[T, T, Nothing, Nothing] =
+      tb.filter(f.toScala)
+
+    def key[T](f: Function1JS[T, Long]): GenericTask[T, T, Nothing, Nothing] =
+      tb.key(f.toScala)
+
+  extension (tb: TaskBuilder.type) {
+    def toJS: TaskBuilderJS = TaskBuilderJS(tb)
+  }
