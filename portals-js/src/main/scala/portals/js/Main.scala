@@ -1,5 +1,4 @@
-package portals
-package js
+package portals.js
 
 import scalajs.js.annotation.JSExport
 import scalajs.js.annotation.JSExportAll
@@ -141,7 +140,6 @@ object PortalsJS:
     def connections: ConnectionBuilderJS = builder.connections.toJS
     def portal: PortalBuilderJS = builder.portals.toJS
     def tasks: TaskBuilderJS = TaskBuilder.toJS
-
 
   @JSExport
   def ApplicationBuilder(name: String): ApplicationBuilderJS = ApplicationBuilderJS(name)
