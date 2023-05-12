@@ -1,4 +1,5 @@
-package portals.js
+package portals
+package js
 
 import scalajs.js.annotation.JSExport
 import scalajs.js.annotation.JSExportAll
@@ -139,6 +140,8 @@ object PortalsJS:
     def sequencers: SequencerBuilderJS = builder.sequencers.toJS
     def connections: ConnectionBuilderJS = builder.connections.toJS
     def portal: PortalBuilderJS = builder.portals.toJS
+    def tasks: TaskBuilderJS = TaskBuilder.toJS
+
 
   @JSExport
   def ApplicationBuilder(name: String): ApplicationBuilderJS = ApplicationBuilderJS(name)
@@ -411,4 +414,38 @@ object PortalsJS:
 
   extension (pb: PortalBuilder) {
     def toJS: PortalBuilderJS = PortalBuilderJS(pb)
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Task Builder
+  //////////////////////////////////////////////////////////////////////////////
+
+  @JSExportAll
+  class TaskBuilderJS():
+    import Types.*
+
+    def processor[T, U](
+        onNext: ContextFunction2JS[ProcessorTaskContext[T, U], T, Unit]
+    ): GenericTask[T, U, Nothing, Nothing] =
+      TaskBuilder.processor(onNext.toScala)
+
+    def identity[T]: GenericTask[T, T, _, _] =
+      TaskBuilder.identity[T]
+
+    def map[T, U](f: ContextFunction2JS[MapTaskContext[T, U], T, U]): GenericTask[T, U, Nothing, Nothing] =
+      TaskBuilder.map(f.toScala)
+
+    def flatMap[T, U](
+        f: ContextFunction2JS[MapTaskContext[T, U], T, IterableOnce[U]]
+    ): GenericTask[T, U, Nothing, Nothing] =
+      TaskBuilder.flatMap(f.toScala)
+
+    def filter[T](f: Function1JS[T, Boolean]): GenericTask[T, T, Nothing, Nothing] =
+      TaskBuilder.filter(f.toScala)
+
+    def key[T](f: Function1JS[T, Long]): GenericTask[T, T, Nothing, Nothing] =
+      TaskBuilder.key(f.toScala)
+
+  extension (tb: TaskBuilder.type) {
+    def toJS: TaskBuilderJS = TaskBuilderJS()
   }
