@@ -5,6 +5,7 @@ lazy val akkaVersion = "2.6.20"
 lazy val pprintversion = "0.7.0"
 lazy val nexmarkVersion = "2.41.0"
 lazy val rocksDBVersion = "8.1.1.1"
+lazy val commonsIOVersion = "2.8.0"
 
 ThisBuild / organization := "org.portals-project"
 ThisBuild / organizationName := "Portals-Project"
@@ -26,7 +27,7 @@ lazy val portals = project
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
     libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
     libraryDependencies += "com.lihaoyi" %% "pprint" % pprintversion,
-    libraryDependencies += "commons-io" % "commons-io" % "2.8.0",
+    libraryDependencies += "commons-io" % "commons-io" % commonsIOVersion,
     libraryDependencies += "org.rocksdb" % "rocksdbjni" % rocksDBVersion,
   )
 
