@@ -1,12 +1,12 @@
 package portals.application.task
 
-import portals.application.task.TaskState
-import portals.runtime.state.RocksDBStateBackendImpl
 import portals.runtime.state.StateBackend
 import portals.util.Key
+import portals.util.Config
+import portals.util.StateBackendFactory
 
-private[portals] class TaskStateImpl extends TaskState[Any, Any]:
-  private[portals] var stateBackend: StateBackend = new RocksDBStateBackendImpl()
+private[portals] class TaskStateImpl extends TaskState[Any, Any] {
+  private[portals] var stateBackend: StateBackend = StateBackendFactory.createStateBackend()
 
   override def get(k: Any): Option[Any] = stateBackend.get(keyBuilder(k)).asInstanceOf[Option[Any]]
 
@@ -23,4 +23,4 @@ private[portals] class TaskStateImpl extends TaskState[Any, Any]:
   private[portals] var key: Key = _
 
   private def keyBuilder(k: Any): (String, Any) = (path + "$" + key.x.toString(), k)
-end TaskStateImpl // class
+}

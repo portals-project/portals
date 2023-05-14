@@ -6,6 +6,7 @@ lazy val pprintversion = "0.7.0"
 lazy val nexmarkVersion = "2.41.0"
 lazy val rocksDBVersion = "8.1.1.1"
 lazy val commonsIOVersion = "2.8.0"
+lazy val configVersion = "1.4.1"
 
 ThisBuild / organization := "org.portals-project"
 ThisBuild / organizationName := "Portals-Project"
@@ -29,6 +30,7 @@ lazy val portals = project
     libraryDependencies += "com.lihaoyi" %% "pprint" % pprintversion,
     libraryDependencies += "commons-io" % "commons-io" % commonsIOVersion,
     libraryDependencies += "org.rocksdb" % "rocksdbjni" % rocksDBVersion,
+    libraryDependencies += "com.typesafe" % "config" % configVersion,
   )
 
 lazy val benchmark = project

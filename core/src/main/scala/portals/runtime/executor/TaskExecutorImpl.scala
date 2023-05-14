@@ -7,7 +7,8 @@ import scala.util.Try
 import portals._
 import portals.application.task._
 import portals.application.task.MapTaskStateExtension._
-import portals.runtime.state.RocksDBStateBackendImpl
+import portals.util.StateBackendFactory
+
 import portals.runtime.WrappedEvents.*
 
 /** Internal API. Executor for Tasks.
@@ -23,7 +24,7 @@ private[portals] class TaskExecutorImpl:
   private val ctx = TaskContextImpl[Any, Any, Any, Any]()
   val oc = OutputCollectorImpl[Any, Any, Any, Any]()
   ctx.outputCollector = oc
-  private val state = RocksDBStateBackendImpl()
+  private val state = StateBackendFactory.createStateBackend()
   private var task: GenericTask[Any, Any, Any, Any] = _
   private var _replierTask: ReplierTaskKind[Any, Any, Any, Any] = _
 

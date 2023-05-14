@@ -10,7 +10,8 @@ import portals._
 import portals.application.task._
 import portals.application.task.MapTaskStateExtension._
 import portals.runtime.executor.TaskExecutorImpl
-import portals.runtime.state.RocksDBStateBackendImpl
+import portals.runtime.state.{RocksDBStateBackendImpl, MapStateBackendImpl}
+import portals.util.StateBackendFactory
 import portals.runtime.WrappedEvents.*
 
 /** Internal API. Executor for Tasks.
@@ -26,7 +27,7 @@ private[portals] class EagerTaskExecutorImpl:
   private val ctx = TaskContextImpl[Any, Any, Any, Any]()
   private val oc = EagerOutputCollector()
   ctx.outputCollector = oc
-  private val state = RocksDBStateBackendImpl()
+  private val state = StateBackendFactory.createStateBackend()
   private var task: GenericTask[Any, Any, Any, Any] = _
 
   /** Setup the task executor for a specific task. */
