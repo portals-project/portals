@@ -73,6 +73,7 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
         for (RexLiteral pkPredicate : pkPredicates) {
             // ask, return future
             FutureWithResult futureWithResult = getFutureByRowKeyFunc.apply(pkPredicate.getValue());
+            CalciteStat.recordMessage();
             calcite.futures.add(futureWithResult);
             calcite.tableFutures.putIfAbsent(tableName, new ArrayList<>());
             calcite.tableFutures.get(tableName).add(futureWithResult);

@@ -1,35 +1,36 @@
 package portals.sql.benchmark
 
-import java.util
-import java.util.concurrent.LinkedBlockingQueue
-
-import scala.annotation.experimental
-
+import cask.*
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.calcite.util.NlsString
-
+import portals.api.builder.WorkflowBuilder
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
+import portals.application.Workflow
 import portals.application.generator.Generator
 import portals.application.task.PerKeyState
 import portals.runtime.WrappedEvents
 import portals.runtime.WrappedEvents.WrappedEvent
+import portals.runtime.interpreter.InterpreterRuntime
 import portals.sql.*
-import portals.system.InterpreterSystem
-import portals.system.Systems
-import portals.util.Future
-import portals.util.Key
+import portals.system.{InterpreterSystem, Systems}
+import portals.util.{Future, Key}
 
-import cask.*
+import java.util
+import java.util.concurrent.LinkedBlockingQueue
+import scala.annotation.experimental
+import scala.util.Random
 
 @experimental
-object Server1 extends MainRoutes {
+object BenchmarkLocalDummy extends App {
 
   var inputChan: REPLGenerator[String] = _
   var intSys: InterpreterSystem = _
   var resultStr: String = ""
 
-  @get("/")
+  var opMap = Map[String, Long]()
+  var timeList = List[Long]()
+
   def stat() = {
     s"parsing: ${CalciteStat.getAvgParsingTime}\n" +
       s"validation: ${CalciteStat.getAvgValidationTime}\n" +
@@ -37,23 +38,26 @@ object Server1 extends MainRoutes {
       s"execution: ${CalciteStat.getAvgExecutionTime}\n"
   }
 
-  @post("/query")
-  def query(request: Request) = {
-    resultStr = ""
-    val queryText = request.text()
-//    println("body: " + request.text())
-    inputChan.add(queryText)
-    intSys.stepUntilComplete()
-    resultStr
+  def run() = {
+
+    val opPerLoop = 10000
+    val loop = 1
+
+    val base = "SELECT * FROM Userr WHERE id="
+    val rnd = Random()
+
+    for (i <- 1 to loop) {
+      for (j <- 1 to opPerLoop) {
+        val queryText = base + rnd.nextInt(10000)
+        inputChan.add(queryText)
+        opMap += (queryText -> System.nanoTime())
+      }
+      intSys.stepUntilComplete()
+    }
   }
 
   initApp()
-  initialize()
-
-  sealed class SQLQueryEvent
-  case class SelectOp(tableName: String, key: String) extends SQLQueryEvent
-  case class InsertOp(tableName: String, data: List[Any], key: String) extends SQLQueryEvent
-  case class SQLQueryResult(msg: String, result: Array[Object])
+  runAll()
 
   object User extends DBSerializable[User]:
     def fromObjectArray(arr: List[Any]): User =
@@ -103,36 +107,61 @@ object Server1 extends MainRoutes {
       s"User($id, $field0, $field1, $field2, $field3, $field4, $field5, $field6, $field7, $field8, $field9)"
   }
 
+  def timeListNPercentile(n: Int): Long = {
+    val sorted = timeList.sorted
+    sorted(sorted.length * n / 100)
+  }
+
   def initApp() = {
-    import scala.jdk.CollectionConverters.*
-
+    import ch.qos.logback.classic.{Level, Logger}
     import org.slf4j.LoggerFactory
-
-    import ch.qos.logback.classic.Level
-    import ch.qos.logback.classic.Logger
-
     import portals.api.dsl.ExperimentalDSL.*
     import portals.sql.*
+
+    import java.math.BigDecimal
+    import scala.jdk.CollectionConverters.*
 
     val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
     logger.setLevel(Level.INFO)
 
+//    var input: REPLGenerator = null
+
     val app = PortalsApp("app") {
       val table = QueryableWorkflow.createTable[User]("Userr", "id", User)
 
-      inputChan = new REPLGenerator()
+      inputChan = new REPLGenerator[String]()
       val generator = Generators.generator[String](inputChan)
 
-      Workflows[String, String]("askerWf")
-        .source(generator.stream)
-        .querierTransactional(table)
-        .sink()
-        .freeze()
+      def genWf(name: String): Workflow[String, String] =
+        Workflows[String, String]("askerWf" + name)
+          .source(generator.stream)
+//          .map(x => {
+//            timeList = timeList :+ (System.nanoTime() - opMap(x))
+//            x
+//          })
+          .sink()
+          .freeze()
+
+      genWf("1")
+//      genWf("2")
     }
 
     intSys = Systems.interpreter()
+    //    intSys = new RandomInterpreter(Some(1))
     intSys.launch(app)
-    intSys.stepUntilComplete()
+  }
+
+  def runAll() = {
+    val stTime = System.nanoTime()
+    run()
+    val edTime = System.nanoTime()
+
+    println("total time: " + (edTime - stTime).toDouble / 1_000_000_000 + "s")
+//    println("op/s: " + timeList.length.toDouble * 1_000_000_000 / (edTime - stTime))
+//    println("avg time: " + timeList.sum.toDouble / timeList.length / 1_000_000 + "ms")
+//    println("50% time: " + timeListNPercentile(50).toDouble / 1_000_000 + "ms")
+//    println("90% time: " + timeListNPercentile(90).toDouble / 1_000_000 + "ms")
+//    println("99% time: " + timeListNPercentile(99).toDouble / 1_000_000 + "ms")
+//    println(stat())
   }
 }
-

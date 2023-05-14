@@ -1,36 +1,37 @@
 package portals.sql.benchmark
 
-import java.util
-import java.util.concurrent.LinkedBlockingQueue
-import scala.annotation.experimental
-import scala.util.Random
+import cask.*
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.calcite.util.NlsString
 import portals.api.builder.WorkflowBuilder
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
+import portals.application.Workflow
 import portals.application.generator.Generator
 import portals.application.task.PerKeyState
-import portals.application.Workflow
-import portals.runtime.interpreter.InterpreterRuntime
 import portals.runtime.WrappedEvents
 import portals.runtime.WrappedEvents.WrappedEvent
+import portals.runtime.interpreter.InterpreterRuntime
 import portals.sql.*
-import portals.system.InterpreterSystem
-import portals.system.Systems
-import portals.util.Future
-import portals.util.Key
-import cask.*
+import portals.system.{InterpreterSystem, Systems}
+import portals.util.{Future, Key}
+
+import java.util
+import java.util.concurrent.LinkedBlockingQueue
+import scala.annotation.experimental
+import scala.util.Random
 
 @experimental
-object BenchmarkLocalTxn extends App {
+object BenchmarkLocalTxnAtom extends App {
 
-  var inputChan: REPLGenerator[String] = _
+  var inputChan: REPLGeneratorAtom[String] = _
   var intSys: InterpreterSystem = _
   var resultStr: String = ""
 
   var opMap = Map[String, Long]()
   var timeList = List[Long]()
+
+  var msgCnt = 0
 
   def stat() = {
     s"parsing: ${CalciteStat.getAvgParsingTime}\n" +
@@ -130,13 +131,14 @@ object BenchmarkLocalTxn extends App {
     val app = PortalsApp("app") {
       val table = QueryableWorkflow.createTable[User]("Userr", "id", User)
 
-      inputChan = new REPLGenerator()
+      inputChan = new REPLGeneratorAtom[String]()
       val generator = Generators.generator[String](inputChan)
 
       def genWf(name: String): Workflow[String, String] =
         Workflows[String, String]("askerWf" + name)
           .source(generator.stream)
-          .asker[FirstPhaseResult](table.portal) { sql =>
+          .asker[String](table.portal) { sql =>
+            //            println(name + " " + sql)
             val futureReadyCond = PersistentLinkedBlockingQueue[Integer]("futureReadyCond")
             val awaitForFutureCond = PersistentLinkedBlockingQueue[Integer]("awaitForFutureCond")
             val awaitForFinishCond = PersistentLinkedBlockingQueue[Integer]("awaitForFinishCond")
@@ -148,8 +150,6 @@ object BenchmarkLocalTxn extends App {
             val calcite = new Calcite()
             calcite.printPlan = false
 
-            val txnId = 111
-
             val ti = table
 
             calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
@@ -157,23 +157,15 @@ object BenchmarkLocalTxn extends App {
               .getTable(ti.tableName)
               .setInsertRow(data => {
                 // TODO: assert pk always Int
-                val future = ask(ti.portal)(
-                  PreCommitOp(
-                    ti.tableName,
-                    data(0).asInstanceOf[Int],
-                    txnId,
-                    InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int], txnId)
-                  )
-                )
+                val future = ask(ti.portal)(InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int]))
                 portalFutures.add(future)
                 new FutureWithResult(future, null)
               })
             calcite
               .getTable(ti.tableName)
               .setGetFutureByRowKeyFunc(key => {
-                val intKey = key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()
                 val future =
-                  ask(ti.portal)(PreCommitOp(ti.tableName, intKey, txnId, SelectOp(ti.tableName, intKey, txnId)))
+                  ask(ti.portal)(SelectOp(ti.tableName, key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
                 portalFutures.add(future)
                 new FutureWithResult(future, null)
               })
@@ -188,80 +180,33 @@ object BenchmarkLocalTxn extends App {
               result
             )
 
-            val tableScanCnt = tableOptCntCond.take
-            //      println("tableScanCnt: " + tableScanCnt)
+            val tableOptCnt = tableOptCntCond.take
 
-            val emit = { (x: FirstPhaseResult) =>
-              ctx.emit(x)
-            }
-
-            for (i <- 1 to tableScanCnt) {
-              futureReadyCond.take
-
-              // wait for the last one to awaitAll
-              if i != tableScanCnt then awaitForFutureCond.put(1)
-              else
-                awaitAll[Result](portalFutures.asScala.toList: _*) {
-                  val results: List[Result] =
-                    futures.asScala.map(_.future.asInstanceOf[Future[Result]].value.get).toList
-                  val succeedOps = results.filter(_.status == STATUS_OK).map(_.data.asInstanceOf[SQLQueryEvent])
-
-                  // TODO: made a partial commit example
-                  if succeedOps.size != futures.size() then {
-                    awaitForFutureCond.put(-1) // trigger execution failure
-                    emit(FirstPhaseResult(-1, txnId, sql, false, succeedOps))
-                  } else
-                    emit(
-                      FirstPhaseResult(
-                        -1,
-                        txnId,
-                        sql,
-                        true,
-                        succeedOps,
-                        futures,
-                        awaitForFutureCond,
-                        awaitForFinishCond,
-                        result
-                      )
-                    )
-                }
-            }
-          }
-          .asker[String](table.portal) { (preCommResult: FirstPhaseResult) =>
             val emit = { (x: String) =>
               ctx.emit(x)
             }
 
-            if preCommResult.success then {
-//              println("txn " + preCommResult.txnID + " precommit succeed")
-              var futures = List[Future[Result]]()
-              preCommResult.succeedOps.foreach { op =>
-                futures = futures :+ ask(table.portal)(op)
-              }
-              awaitAll[Result](futures: _*) {
-                for (i <- futures.indices) {
-                  preCommResult.preparedOps.get(i).futureResult = futures(i).value.get.data.asInstanceOf[Array[Object]]
-                }
-                preCommResult.awaitForFutureCond.put(1)
-                preCommResult.awaitForFinishCond.take()
+            for (i <- 1 to tableOptCnt) {
+              //        println("try future ready consume")
+              futureReadyCond.take
+              //        println("future ready consume done")
 
-//                println("====== Result for " + preCommResult.sql + " ======")
-                preCommResult.result.forEach(row => {
-                  //            println(java.util.Arrays.toString(row))
-                  emit(java.util.Arrays.toString(row))
-                })
-                timeList = timeList :+ (System.nanoTime() - opMap(preCommResult.sql))
-              }
-            } else {
-              //        println("txn " + preCommResult.txnID + " precommit failed")
-              var futures = List[Future[Result]]()
-              preCommResult.succeedOps.foreach { op =>
-                futures = futures :+ ask(table.portal)(RollbackOp(op.tableName, op.key, op.txnId))
-              }
-              awaitAll[Result](futures: _*) {
-                //          println("====== Abort txn " + preCommResult.txnID + " sql " + preCommResult.sql)
-                emit("rollback")
-              }
+              // wait for the last one to awaitAll
+              if i != tableOptCnt then awaitForFutureCond.put(1)
+              else
+                awaitAll[Result](portalFutures.asScala.toList: _*) {
+                  futures.forEach(f => {
+                    val data = f.future.asInstanceOf[Future[Result]].value
+                    f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
+                  })
+
+                  awaitForFutureCond.put(1) // allow SQL execution to start
+
+                  awaitForFinishCond.take() // wait for SQL execution to finish
+
+                  emit(sql)
+                  timeList = timeList :+ (System.nanoTime() - opMap(sql))
+                }
             }
           }
           .sink()

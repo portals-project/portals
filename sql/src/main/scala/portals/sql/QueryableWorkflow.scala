@@ -47,6 +47,8 @@ object QueryableWorkflow:
             key
           case RollbackOp(tableName, key, txnId) =>
             key
+          case CommitOp(tableName, key, txnId) =>
+            key
           case null => 0
     )
 
@@ -62,7 +64,8 @@ object QueryableWorkflow:
   def createTable[T: ClassTag](
       tableName: String,
       primaryField: String,
-      dBSerializable: DBSerializable[T]
+      dBSerializable: DBSerializable[T],
+      dataWfTransactional:Boolean = false
   )(using ab: ApplicationBuilder) = {
     // get all fields using reflection, then map to Sql type
     val clazz = implicitly[ClassTag[T]].runtimeClass
@@ -71,9 +74,69 @@ object QueryableWorkflow:
     val fieldTypes = fields.map(f => clsToSqlTypeMapping(f.getType))
 
     val portal = createDataWfPortal(tableName)
-    createDataWorkflow(tableName, portal, dBSerializable)
+
+    if dataWfTransactional then
+      createDataWorkflowTxn(tableName, portal, dBSerializable)
+    else
+      createDataWorkflow(tableName, portal, dBSerializable)
 
     TableInfo(tableName, primaryField, portal, fieldNames, fieldTypes)
+  }
+
+  def createDataWorkflowTxn[T](
+                                tableName: String,
+                                portal: AtomicPortalRef[SQLQueryEvent, Result],
+                                dbSerializable: DBSerializable[T],
+                                defaultValue: Any = Array(0)
+                              )(using ab: ApplicationBuilder) = {
+    Workflows[Nothing, Nothing](tableName + "Wf")
+      .source(Generators.empty.stream)
+      .replier[Nothing](portal) { _ =>
+        ()
+      } { q =>
+        lazy val state = PerKeyState[Option[T]](tableName, None)
+        lazy val unCommittedState = PerKeyState[Option[T]](tableName + "_uncommitted", None)
+        lazy val _txn = PerKeyState[Int]("txn", -1)
+
+        q match
+          case PreCommitOp(tableName, key, txnId, op) =>
+            if _txn.get() == -1 || _txn.get() == txnId then
+              //              println("precommit txn " + txnId + " key " + key + " success")
+              _txn.set(txnId)
+              reply(Result(STATUS_OK, op))
+            else
+            //              println("precommit txn " + txnId + " key " + key + " fail")
+              reply(Result("error", List()))
+          // NOTE: txn id only set at precommit stage
+          case SelectOp(tableName, key, txnId) =>
+            if unCommittedState.get().isDefined then
+              reply(Result(STATUS_OK, dbSerializable.toObjectArray(unCommittedState.get().get)))
+            else
+              val data = state.get()
+//              _txn.set(-1)
+              if (data.isDefined)
+              //              println("select " + key + " " + data.get)
+                reply(Result(STATUS_OK, dbSerializable.toObjectArray(data.get)))
+              else
+                reply(Result(STATUS_OK, Array(key.asInstanceOf[Object], 0.asInstanceOf[Object])))
+          case InsertOp(tableName, data, key, txnId) =>
+            unCommittedState.set(Some(dbSerializable.fromObjectArray(data)))
+            reply(Result(STATUS_OK, Array[Object]()))
+          case RollbackOp(tableName, key, txnId) =>
+//            println("rollback txn " + txnId + " key " + key)
+            unCommittedState.set(None)
+            _txn.set(-1)
+            reply(Result(STATUS_OK, Array[Object]()))
+          case CommitOp(tableName, key, txnId) =>
+//            println("commit txn " + txnId + " key " + key)
+            state.set(unCommittedState.get())
+            unCommittedState.set(None)
+            _txn.set(-1)
+            reply(Result(STATUS_OK, Array[Object]()))
+          case null => reply(Result("error", List()))
+      }
+      .sink()
+      .freeze()
   }
 
   def createDataWorkflow[T](
@@ -91,7 +154,7 @@ object QueryableWorkflow:
 
         q match
           case PreCommitOp(tableName, key, txnId, op) =>
-            if (_txn.get() == -1 || _txn.get() == txnId) then
+            if _txn.get() == -1 || _txn.get() == txnId then
 //              println("precommit txn " + txnId + " key " + key + " success")
               _txn.set(txnId)
               reply(Result(STATUS_OK, op))
@@ -294,10 +357,10 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
             // TODO: made a partial commit example
             if succeedOps.size != futures.size() then {
               awaitForFutureCond.put(-1) // trigger execution failure
-              emit(FirstPhaseResult(txnId, sql, false, succeedOps))
+              emit(FirstPhaseResult(-1, txnId, sql, false, succeedOps))
             } else
               emit(
-                FirstPhaseResult(txnId, sql, true, succeedOps, futures, awaitForFutureCond, awaitForFinishCond, result)
+                FirstPhaseResult(-1, txnId, sql, true, succeedOps, futures, awaitForFutureCond, awaitForFinishCond, result)
               )
           }
       }

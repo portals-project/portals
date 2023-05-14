@@ -203,10 +203,11 @@ object TransactionalConflictProbabilistic extends App:
                   // TODO: made a partial commit example
                   if succeedOps.size != futures.size() then {
                     awaitForFutureCond.put(-1) // trigger execution failure
-                    emit(FirstPhaseResult(txnId, sql, false, succeedOps))
+                    emit(FirstPhaseResult(-1, txnId, sql, false, succeedOps))
                   } else
                     emit(
                       FirstPhaseResult(
+                        -1,
                         txnId,
                         sql,
                         true,

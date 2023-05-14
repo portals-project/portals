@@ -7,6 +7,7 @@ import java.util.Map;
 
 public class CalciteStat {
     static Map<String, List<Long>> stat = new HashMap<>();
+    static int msgCnt = 0;
 
     public static void recordParsing(long time) {
         stat.computeIfAbsent("parsing", k -> new ArrayList<>()).add(time);
@@ -38,5 +39,13 @@ public class CalciteStat {
 
     public static double getAvgExecutionTime() {
         return stat.get("execution").stream().mapToLong(Long::longValue).average().orElse(0);
+    }
+    
+    public static void recordMessage() {
+        msgCnt += 1;
+    }
+    
+    public static int getMessageCnt() {
+        return msgCnt;
     }
 }

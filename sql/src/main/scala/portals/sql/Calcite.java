@@ -247,7 +247,9 @@ public class Calcite {
         RelNode logPlan = relConverter.convertQuery(validNode, false, true).rel;
 
         // report tableScanCnt
-        tableOpCntCond.put(getTableOpCnt(logPlan));
+        int cnt = getTableOpCnt(logPlan);
+//        System.out.println("Table scan count: " + cnt);
+        tableOpCntCond.put(cnt);
 
         // Display the logical plan
         if (printPlan) {
@@ -474,6 +476,7 @@ class MyList<T> extends ArrayList<T> {
     public boolean add(T t) {
 
         FutureWithResult futureWithResult = insertRow.apply((Object[]) t);
+        CalciteStat.recordMessage();
         calcite.futures.add(futureWithResult);
 
         // tell outside that they can get these futures and call awaitAll

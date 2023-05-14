@@ -7,18 +7,35 @@ import portals.util.Key
 
 import java.util.concurrent.LinkedBlockingQueue
 
-class REPLGenerator extends Generator[String]:
-  val _iter = new REPL().iterator
+class REPLGeneratorAtom[T] extends Generator[T]:
+  val _iter = new REPL[T]().iterator
+  var atom_next = false
+  
+  override def generate(): WrappedEvent[T] =
+    if atom_next then
+      atom_next = false
+      WrappedEvents.Atom
+    else
+      val nxt = _iter.next()
+      atom_next = true
+      WrappedEvents.Event(Key(nxt.hashCode()), nxt)
 
-  override def generate(): WrappedEvent[String] =
+  override def hasNext(): Boolean = atom_next || _iter.hasNext
+
+  def add(q: T): Unit = _iter.enqueue(q)
+
+class REPLGenerator[T] extends Generator[T]:
+  val _iter = new REPL[T]().iterator
+
+  override def generate(): WrappedEvent[T] =
     val nxt = _iter.next()
     WrappedEvents.Event(Key(nxt.hashCode()), nxt)
 
   override def hasNext(): Boolean = _iter.hasNext
 
-  def add(q: String): Unit = _iter.enqueue(q)
+  def add(q: T): Unit = _iter.enqueue(q)
 
-class REPL:
+class REPL[R]:
 
   class BlockingQueueIterator[T] extends Iterator[T] {
     val queue = new LinkedBlockingQueue[T]()
@@ -30,11 +47,5 @@ class REPL:
     def enqueue(e: T) = queue.offer(e)
   }
 
-  val iterator = new BlockingQueueIterator[String]()
-  val waitForMsg = new LinkedBlockingQueue[Int]()
-  val waitForProcessing = new LinkedBlockingQueue[Int]()
-  var requestCnt = 0
-  var prefix = ""
-
-  def setPrefix(s: String): Unit = prefix = s
+  val iterator = new BlockingQueueIterator[R]()
 

@@ -2,18 +2,15 @@ package portals.sql.benchmark
 
 import java.util
 import java.util.concurrent.LinkedBlockingQueue
-
 import scala.annotation.experimental
 import scala.util.Random
-
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.calcite.util.NlsString
-
 import portals.api.builder.WorkflowBuilder
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.application.generator.Generator
-import portals.application.task.PerKeyState
+import portals.application.task.{PerKeyState, PerTaskState}
 import portals.application.Workflow
 import portals.runtime.interpreter.InterpreterRuntime
 import portals.runtime.WrappedEvents
@@ -23,13 +20,12 @@ import portals.system.InterpreterSystem
 import portals.system.Systems
 import portals.util.Future
 import portals.util.Key
-
 import cask.*
 
 @experimental
 object BenchmarkLocal extends App {
 
-  var inputChan: REPLGenerator = _
+  var inputChan: REPLGenerator[String] = _
   var intSys: InterpreterSystem = _
   var resultStr: String = ""
 
@@ -43,19 +39,23 @@ object BenchmarkLocal extends App {
       s"execution: ${CalciteStat.getAvgExecutionTime}\n"
   }
 
-  def run() = {
+  val opPerLoop = 10
+  val loop = 5000
 
-    val opPerLoop = 100
-    val loop = 25
+  def run() = {
 
     val base = "SELECT * FROM Userr WHERE id="
     val rnd = Random()
 
+    var cnt = 0
     for (i <- 1 to loop) {
       for (j <- 1 to opPerLoop) {
-        val queryText = base + rnd.nextInt(10000)
+        val queryText = base + cnt
+        cnt += 1
         inputChan.add(queryText)
-        opMap += (queryText -> System.nanoTime())
+        if (rnd.nextInt(1000) == 0) {
+          opMap += (queryText -> System.nanoTime())
+        }
       }
       intSys.stepUntilComplete()
     }
@@ -145,7 +145,6 @@ object BenchmarkLocal extends App {
         Workflows[String, String]("askerWf" + name)
           .source(generator.stream)
           .asker[String](table.portal) { sql =>
-//            println(name + " " + sql)
             val futureReadyCond = PersistentLinkedBlockingQueue[Integer]("futureReadyCond")
             val awaitForFutureCond = PersistentLinkedBlockingQueue[Integer]("awaitForFutureCond")
             val awaitForFinishCond = PersistentLinkedBlockingQueue[Integer]("awaitForFinishCond")
@@ -212,7 +211,9 @@ object BenchmarkLocal extends App {
                   awaitForFinishCond.take() // wait for SQL execution to finish
 
                   emit(sql)
-                  timeList = timeList :+ (System.nanoTime() - opMap(sql))
+
+                  if opMap.contains(sql) then
+                    timeList = timeList :+ (System.nanoTime() - opMap(sql))
                 }
             }
           }
@@ -234,7 +235,7 @@ object BenchmarkLocal extends App {
     val edTime = System.nanoTime()
 
     println("total time: " + (edTime - stTime).toDouble / 1_000_000_000 + "s")
-    println("op/s: " + timeList.length.toDouble * 1_000_000_000 / (edTime - stTime))
+    println("op/s: " + (opPerLoop * loop).toDouble * 1_000_000_000 / (edTime - stTime))
     println("avg time: " + timeList.sum.toDouble / timeList.length / 1_000_000 + "ms")
     println("50% time: " + timeListNPercentile(50).toDouble / 1_000_000 + "ms")
     println("90% time: " + timeListNPercentile(90).toDouble / 1_000_000 + "ms")

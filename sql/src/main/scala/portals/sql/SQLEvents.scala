@@ -16,11 +16,14 @@ case class InsertOp(tableName: String, data: List[Any], key: Int, txnId: Int = -
 
 case class RollbackOp(tableName: String, key: Int, txnId: Int = -1) extends SQLQueryEvent
 
+case class CommitOp(tableName: String, key: Int, txnId: Int) extends SQLQueryEvent
+
 case class Result(status: String, data: Any)
 
 val STATUS_OK = "ok"
 
 case class FirstPhaseResult(
+    reqId: Int,
     txnID: Int,
     sql: String,
     success: Boolean,

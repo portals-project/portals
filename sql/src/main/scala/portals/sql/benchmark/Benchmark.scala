@@ -22,7 +22,7 @@ import portals.runtime.interpreter.InterpreterRuntime
 @experimental
 object Server extends MainRoutes {
 
-  var inputChan: REPLGenerator = _
+  var inputChan: REPLGenerator[String] = _
   var intSys: InterpreterSystem = _
   var resultStr: String = ""
 
