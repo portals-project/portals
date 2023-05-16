@@ -60,8 +60,6 @@ lazy val portalsjs = project
   .settings(
     name := "portals-js",
     libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.4.0",
-    // main method disabled
-    // scalaJSUseMainModuleInitializer := true,
     Compile / scalaJSLinkerConfig ~= { _.withSourceMap(false) },
   )
   .dependsOn(portals % "test->test;compile->compile")
