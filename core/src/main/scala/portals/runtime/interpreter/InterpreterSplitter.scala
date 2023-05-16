@@ -29,14 +29,14 @@ private[portals] class InterpreterSplitter(val splitter: AtomicSplitter[_])(usin
   def removeOutput(path: String): Unit = splitter.splitter.removeOutput(path)
 
   /** Create a list representation using the splitter events. */
-  def toSplitterAtom(atom: InterpreterAtom): List[WrappedEvent[Any]] =
+  private def toSplitterAtom(atom: InterpreterAtom): List[WrappedEvent[Any]] =
     atom match
       case InterpreterAtomBatch(path, list) =>
         list
       case _ => ???
 
   /** Create an atom representation from the splitter representation. */
-  def fromSplitterAtom(path: String, satom: List[WrappedEvent[Any]]): InterpreterAtom =
+  private def fromSplitterAtom(path: String, satom: List[WrappedEvent[Any]]): InterpreterAtom =
     InterpreterAtomBatch(path, satom)
 
   /** Process an atom on the test splitter. This will produce a list of new

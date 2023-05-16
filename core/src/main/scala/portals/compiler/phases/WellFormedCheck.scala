@@ -14,7 +14,7 @@ private[portals] object WellFormedCheck extends CompilerPhase[Application, Appli
       ++ application.generators.map(_.path)
       ++ application.streams.map(_.path)
       ++ application.sequencers.map(_.path)
-      // ++ application.splitters.map(_.path)
+      ++ application.splitters.map(_.path)
       ++ application.connections.map(_.path)
       ++ application.portals.map(_.path)
       ++ application.externalStreams.map(_.path)

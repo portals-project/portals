@@ -6,15 +6,7 @@ import org.junit.Assert._
 import org.junit.Ignore
 import org.junit.Test
 
-import portals.api.builder.filter
-import portals.api.builder.vsm
-import portals.api.builder.withAndThen
-import portals.api.builder.withLoop
-import portals.api.builder.withStep
-import portals.api.builder.withWrapper
-import portals.api.builder.TaskBuilder
-import portals.api.builder.VSMTask
-import portals.api.builder.VSMTasks
+import portals.api.builder.TaskExtensions.*
 import portals.api.dsl.DSL
 import portals.application.task.PerKeyState
 import portals.application.task.PerTaskState
@@ -24,6 +16,23 @@ import portals.util.Key
 
 @RunWith(classOf[JUnit4])
 class TaskBuilderTest:
+  import portals.api.dsl.DSL.*
+
+  @Test
+  def testTasks(): Unit =
+    val testData = List.range(0, 4).grouped(1).toList
+
+    val task = Tasks
+      .map[Int, Int] { x => x + 1 }
+
+    val tester = TestUtils.executeTask(task, testData)
+
+    // 1, 2, 3, 4, ...
+    tester
+      .receiveAssert(1)
+      .receiveAssert(2)
+      .receiveAssert(3)
+      .receiveAssert(4)
 
   @Test
   def testSteppers(): Unit =
@@ -92,7 +101,7 @@ class TaskBuilderTest:
     import portals.api.dsl.DSL.*
 
     val testData = List.range(0, 3).grouped(1).toList
-    val testDataKeys = List.fill(3)(0).map(Key[Long](_)).grouped(1).toList
+    val testDataKeys = List.fill(3)(0).map(Key(_)).grouped(1).toList
 
     object VSM:
       def init: VSMTask[Int, Int] = VSMTasks.processor {

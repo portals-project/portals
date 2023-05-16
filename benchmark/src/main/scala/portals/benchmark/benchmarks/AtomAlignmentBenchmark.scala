@@ -1,6 +1,7 @@
 package portals.benchmark.benchmarks
 
 import portals.api.builder.*
+import portals.api.builder.TaskExtensions.*
 import portals.api.dsl.DSL.*
 import portals.benchmark.*
 import portals.benchmark.systems.*

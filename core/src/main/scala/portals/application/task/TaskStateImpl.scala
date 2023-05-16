@@ -20,7 +20,7 @@ private[portals] class TaskStateImpl extends TaskState[Any, Any]:
 
   private[portals] var path: String = _
 
-  private[portals] var key: Key[Long] = _
+  private[portals] var key: Key = _
 
   private def keyBuilder(k: Any): (String, Any) = (path + "$" + key.x.toString(), k)
 end TaskStateImpl // class

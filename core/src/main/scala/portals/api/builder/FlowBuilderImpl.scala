@@ -2,6 +2,7 @@ package portals.api.builder
 
 import scala.annotation.experimental
 
+import portals.api.builder.TaskExtensions.*
 import portals.application.*
 import portals.application.task.AskerReplierTaskContext
 import portals.application.task.AskerTaskContext

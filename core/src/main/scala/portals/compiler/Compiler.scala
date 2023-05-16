@@ -1,7 +1,5 @@
 package portals.compiler
 
-import portals.compiler.physicalplan.*
-
 /** Compiler that transforms an input of type `T` into an output of type `U`.
   *
   * @tparam T

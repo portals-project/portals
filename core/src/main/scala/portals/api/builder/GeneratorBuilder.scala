@@ -68,7 +68,7 @@ trait GeneratorBuilder:
     * @return
     *   A reference to the generator.
     */
-  def fromIterator[T](it: Iterator[T], keys: Iterator[Key[Long]]): AtomicGeneratorRef[T]
+  def fromIterator[T](it: Iterator[T], keys: Iterator[Key]): AtomicGeneratorRef[T]
 
   /** Create a generator from an iterator of iterators of events.
     *
@@ -119,7 +119,7 @@ trait GeneratorBuilder:
     */
   def fromIteratorOfIterators[T](
       itit: Iterator[Iterator[T]],
-      keys: Iterator[Iterator[Key[Long]]]
+      keys: Iterator[Iterator[Key]]
   ): AtomicGeneratorRef[T]
 
   /** Create a generator from a list of events.
@@ -160,7 +160,7 @@ trait GeneratorBuilder:
     * @return
     *   A reference to the generator.
     */
-  def fromList[T](list: List[T], keys: List[Key[Long]]): AtomicGeneratorRef[T]
+  def fromList[T](list: List[T], keys: List[Key]): AtomicGeneratorRef[T]
 
   /** Create a generator from a list of lists of events.
     *
@@ -199,7 +199,7 @@ trait GeneratorBuilder:
     * )
     *   }}}
     */
-  def fromListOfLists[T](listlist: List[List[T]], keys: List[List[Key[Long]]]): AtomicGeneratorRef[T]
+  def fromListOfLists[T](listlist: List[List[T]], keys: List[List[Key]]): AtomicGeneratorRef[T]
 
   /** Create a generator from a range of integers which are grouped into `step`
     * sized atoms.
@@ -266,7 +266,7 @@ class GeneratorBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) 
     val _generator = Generators.fromIterator[T](it)
     this.build(_generator)
 
-  override def fromIterator[T](it: Iterator[T], keys: Iterator[Key[Long]]): AtomicGeneratorRef[T] =
+  override def fromIterator[T](it: Iterator[T], keys: Iterator[Key]): AtomicGeneratorRef[T] =
     val _generator = Generators.fromIterator[T](it, keys)
     this.build(_generator)
 
@@ -276,7 +276,7 @@ class GeneratorBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) 
 
   override def fromIteratorOfIterators[T](
       itit: Iterator[Iterator[T]],
-      keys: Iterator[Iterator[Key[Long]]]
+      keys: Iterator[Iterator[Key]]
   ): AtomicGeneratorRef[T] =
     val _generator = Generators.fromIteratorOfIterators(itit, keys)
     this.build(_generator)
@@ -287,10 +287,10 @@ class GeneratorBuilderImpl(name: String)(using bctx: ApplicationBuilderContext) 
   override def fromListOfLists[T](listlist: List[List[T]]): AtomicGeneratorRef[T] =
     this.fromIteratorOfIterators(listlist.map { _.iterator }.iterator)
 
-  override def fromList[T](list: List[T], keys: List[Key[Long]]): AtomicGeneratorRef[T] =
+  override def fromList[T](list: List[T], keys: List[Key]): AtomicGeneratorRef[T] =
     this.fromIterator(list.iterator, keys.iterator)
 
-  override def fromListOfLists[T](listlist: List[List[T]], keys: List[List[Key[Long]]]): AtomicGeneratorRef[T] =
+  override def fromListOfLists[T](listlist: List[List[T]], keys: List[List[Key]]): AtomicGeneratorRef[T] =
     this.fromIteratorOfIterators(listlist.map { _.iterator }.iterator, keys.map { _.iterator }.iterator)
 
   override def fromRange(start: Int, end: Int, step: Int): AtomicGeneratorRef[Int] =

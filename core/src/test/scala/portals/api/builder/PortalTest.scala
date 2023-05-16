@@ -4,11 +4,21 @@ import scala.annotation.experimental
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 import org.junit.Test
 
+import portals.api.dsl.DSL.ask
+import portals.api.dsl.DSL.await
+import portals.api.dsl.DSL.ctx
+import portals.api.dsl.DSL.reply
+import portals.api.dsl.DSL.Generators
+import portals.api.dsl.DSL.Portal
+import portals.api.dsl.DSL.PortalsApp
+import portals.api.dsl.DSL.Workflows
 import portals.application.task.AskerTaskContext
+import portals.application.task.PerTaskState
+import portals.application.Application
 import portals.application.AtomicPortalRef
 import portals.system.Systems
 import portals.test.*
@@ -390,3 +400,112 @@ class PortalTest:
     }
 
     testerTrigger.receiveAssert(128)
+
+  @Test
+  @experimental
+  def testMultipleAsks(): Unit =
+
+    val testerTrigger = new TestUtils.Tester[Int]()
+
+    case class FibQuery(n: Int)
+
+    case class FibResp(resp: Int)
+
+    import portals.api.dsl.DSL.*
+    import portals.api.dsl.ExperimentalDSL.*
+
+    val app: Application = PortalsApp("Fibonacci") {
+      val portal = Portal[FibQuery, FibResp]("portal")
+
+      val fibWorkflow = Workflows[Nothing, Nothing]("fibWf")
+        .source(Generators.empty.stream)
+        .askerreplier[Nothing, FibQuery, FibResp](portal)(portal)(_ => ()) { case FibQuery(n) =>
+          if n == 0 then reply(FibResp(0))
+          else if n == 1 || n == 2 then reply(FibResp(1))
+          else
+            val future1 = ask(portal)(FibQuery(n - 1))
+            val future2 = ask(portal)(FibQuery(n - 2))
+            awaitAll(future1, future2) {
+              reply(FibResp(future1.value.get.resp + future2.value.get.resp))
+            }
+        }
+        .sink()
+        .freeze()
+
+      val queryGenerator = Generators.fromRange(0, 10, 1)
+      val queryWorkflow = Workflows[Int, Int]("fibQueryWf")
+        .source(queryGenerator.stream)
+        .map(x => FibQuery(x))
+        .asker[Int](portal) { query =>
+          val future = ask(portal)(query)
+          await(future) {
+            ctx.emit(future.value.get.resp)
+          }
+        }
+        .task(testerTrigger.task)
+        .sink()
+        .freeze()
+    }
+
+    val system = Systems.interpreter()
+    system.launch(app)
+    system.stepUntilComplete()
+    system.shutdown()
+
+    testerTrigger.receiveAssert(0)
+    testerTrigger.receiveAssert(1)
+    testerTrigger.receiveAssert(1)
+    testerTrigger.receiveAssert(2)
+    testerTrigger.receiveAssert(3)
+    testerTrigger.receiveAssert(5)
+    testerTrigger.receiveAssert(8)
+    testerTrigger.receiveAssert(13)
+    testerTrigger.receiveAssert(21)
+    testerTrigger.receiveAssert(34)
+
+  @Test
+  @experimental
+  def testMultipleAsksToDifferentWorkflows(): Unit =
+    import portals.api.dsl.DSL.*
+    import portals.api.dsl.ExperimentalDSL.*
+
+    val tester = new TestUtils.Tester[Int]()
+
+    val app = PortalsApp("app") {
+      val portal1 = Portal[Int, Int]("portal1")
+      val portal2 = Portal[Int, Int]("portal2")
+
+      def genWf = (name: String, portal: AtomicPortalRef[Int, Int], multiplier: Int) => {
+        Workflows[Int, Nothing](name)
+          .source(Generators.fromRange(0, 10, 1).stream)
+          .replier[Nothing](portal) { _ => () } { x =>
+            reply(x * multiplier)
+          }
+          .sink()
+          .freeze()
+      }
+      genWf("wf1", portal1, 1)
+      genWf("wf2", portal2, 2)
+
+      val askerWF = Workflows[Int, Int]("askerWF")
+        .source(Generators.fromRange(0, 10, 1).stream)
+        .asker[Int](portal1, portal2) { ctx ?=> x =>
+          val future1 = ask(portal1)(x)
+          val future2 = ask(portal2)(x)
+          awaitAll(future1, future2) {
+            ctx.emit(future1.value.get + future2.value.get)
+          }
+        }
+        .task(tester.task)
+        .sink()
+        .freeze()
+    }
+
+    val system = Systems.interpreter()
+    system.launch(app)
+    system.stepUntilComplete()
+    system.shutdown()
+
+    List.range(0, 30, 3).foreach { x =>
+      tester.receiveAssert(x)
+    }
