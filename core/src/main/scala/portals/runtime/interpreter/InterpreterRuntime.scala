@@ -353,5 +353,3 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
   /** Perform runtime wellformedness checks on the application. */
   def check(application: Application): Unit =
     RuntimeCompilerPhases.wellFormedCheck(application)(using rctx)
-
-  def registry: InterpreterRuntimeContext = rctx
