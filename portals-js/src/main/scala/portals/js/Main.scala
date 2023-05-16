@@ -332,12 +332,12 @@ object PortalsJS:
       gb.fromIteratorOfIterators(itit.toScala.map(_.toScala), keys.toScala.map(_.toScala))
     def fromArray[T](array: Array[T]): AtomicGeneratorRef[T] =
       gb.fromList(array.toScala)
-    def fromArray[T](list: Array[T], keys: Array[Key]): AtomicGeneratorRef[T] =
-      gb.fromList(list.toScala, keys.toScala)
+    def fromArray[T](array: Array[T], keys: Array[Key]): AtomicGeneratorRef[T] =
+      gb.fromList(array.toScala, keys.toScala)
     def fromArrayOfArrays[T](arrayarray: Array[Array[T]]): AtomicGeneratorRef[T] =
       gb.fromListOfLists(arrayarray.toScala.map(_.toScala))
-    def fromArrayOfArrays[T](listlist: Array[Array[T]], keys: Array[Array[Key]]): AtomicGeneratorRef[T] =
-      gb.fromListOfLists(listlist.toScala.map(_.toScala), keys.toScala.map(_.toScala))
+    def fromArrayOfArrays[T](arrayarray: Array[Array[T]], keys: Array[Array[Key]]): AtomicGeneratorRef[T] =
+      gb.fromListOfLists(arrayarray.toScala.map(_.toScala), keys.toScala.map(_.toScala))
     def fromRange(start: Int, end: Int, step: Int): AtomicGeneratorRef[Int] =
       gb.fromRange(start, end, step)
 
