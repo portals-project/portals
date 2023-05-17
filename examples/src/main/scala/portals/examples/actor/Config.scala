@@ -16,7 +16,7 @@ class Config[T <: Tuple](hmap: Config.HMap[T]):
 
   def replace[K <: Singleton, V](key: K, value: V)(using
       ev: CanReplace[T, K, V]
-  ): Config[T] =
+  ): Config[Replace[T, K, V]] =
     Config(hmap.replace(key, value)(using ev))
 
   def get[K <: Singleton](key: K)(using
@@ -43,7 +43,7 @@ object Config:
 
     def replace[K <: Singleton, V](key: K, value: V)(using
         @implicitNotFound(CanReplace.MSG) ev: CanReplace[T, K, V]
-    ): HMap[T] =
+    ): HMap[Replace[T, K, V]] =
       new HMap(map + (key -> value))
 
   end HMap
