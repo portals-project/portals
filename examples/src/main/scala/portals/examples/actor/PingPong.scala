@@ -46,7 +46,7 @@ object PingPongMain extends App:
   import PingPong.PingPongActors.*
 
   val config = ActorConfig.default
-    .replace("logging", true)
+    .replace("logging", false)
 
   val app = PortalsApp("PingPong") {
     val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), initBehavior))

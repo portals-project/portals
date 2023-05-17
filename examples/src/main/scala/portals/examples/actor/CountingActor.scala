@@ -54,7 +54,7 @@ object CountingActorMain extends App:
   import CountingActor.CountingBehaviors.*
 
   val config = ActorConfig.default
-    .replace("logging", true)
+    .replace("logging", false)
 
   val app = PortalsApp("CountingActor") {
     val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), producerBehavior))
