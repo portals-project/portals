@@ -9,11 +9,11 @@ object CountingActor:
   inline val COUNTING_N = 1024
 
   sealed trait CountingActorCommand
-  case object Increment extends CountingActorCommand
-  case class Retrieve(replyTo: ActorRef[ProducerActorCommand]) extends CountingActorCommand
+  @experimental case object Increment extends CountingActorCommand
+  @experimental case class Retrieve(replyTo: ActorRef[ProducerActorCommand]) extends CountingActorCommand
 
   sealed trait ProducerActorCommand
-  case class RetrieveReply(value: Int) extends ProducerActorCommand
+  @experimental case class RetrieveReply(value: Int) extends ProducerActorCommand
 
   object CountingBehaviors:
     val countingBehavior: ActorBehavior[CountingActorCommand] =

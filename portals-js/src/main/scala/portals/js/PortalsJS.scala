@@ -18,6 +18,7 @@ object PortalsJS:
   import scalajs.js.Iterator
 
   import portals.api.builder.*
+  import portals.api.builder.TaskExtensions.*
   import portals.api.dsl.DSL
   import portals.api.dsl.DSL.*
   import portals.application.*
@@ -320,23 +321,23 @@ object PortalsJS:
     import Types.*
     def fromIterator[T](it: Iterator[T]): AtomicGeneratorRef[T] =
       gb.fromIterator(it.toScala)
-    def fromIterator[T](it: Iterator[T], keys: Iterator[Key[Long]]): AtomicGeneratorRef[T] =
+    def fromIterator[T](it: Iterator[T], keys: Iterator[Key]): AtomicGeneratorRef[T] =
       gb.fromIterator(it.toScala, keys.toScala)
     def fromIteratorOfIterators[T](itit: Iterator[Iterator[T]]): AtomicGeneratorRef[T] =
       gb.fromIteratorOfIterators(itit.toScala.map(_.toScala))
     def fromIteratorOfIterators[T](
         itit: Iterator[Iterator[T]],
-        keys: Iterator[Iterator[Key[Long]]]
+        keys: Iterator[Iterator[Key]]
     ): AtomicGeneratorRef[T] =
       gb.fromIteratorOfIterators(itit.toScala.map(_.toScala), keys.toScala.map(_.toScala))
     def fromArray[T](array: Array[T]): AtomicGeneratorRef[T] =
       gb.fromList(array.toScala)
-    def fromList[T](list: List[T], keys: List[Key[Long]]): AtomicGeneratorRef[T] =
-      gb.fromList(list, keys)
+    def fromArray[T](array: Array[T], keys: Array[Key]): AtomicGeneratorRef[T] =
+      gb.fromList(array.toScala, keys.toScala)
     def fromArrayOfArrays[T](arrayarray: Array[Array[T]]): AtomicGeneratorRef[T] =
       gb.fromListOfLists(arrayarray.toScala.map(_.toScala))
-    def fromListOfLists[T](listlist: List[List[T]], keys: List[List[Key[Long]]]): AtomicGeneratorRef[T] =
-      gb.fromListOfLists(listlist, keys)
+    def fromArrayOfArrays[T](arrayarray: Array[Array[T]], keys: Array[Array[Key]]): AtomicGeneratorRef[T] =
+      gb.fromListOfLists(arrayarray.toScala.map(_.toScala), keys.toScala.map(_.toScala))
     def fromRange(start: Int, end: Int, step: Int): AtomicGeneratorRef[Int] =
       gb.fromRange(start, end, step)
 
