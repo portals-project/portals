@@ -46,14 +46,6 @@ lazy val examples = project
   )
   .dependsOn(portals % "test->test;compile->compile")
 
-lazy val distributedExamples = project
-  .in(file("distributed-examples"))
-  .settings(
-    name := "portals-distributed-examples",
-    libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
-  )
-  .dependsOn(portals % "test->test;compile->compile")
-
 lazy val portalsjs = project
   .in(file("portals-js"))
   .enablePlugins(ScalaJSPlugin)
