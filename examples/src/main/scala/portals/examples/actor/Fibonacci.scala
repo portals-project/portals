@@ -61,9 +61,12 @@ object FibonacciMain extends App:
 
   val FIB_N = 21
 
+  val config = ActorConfig.default
+    .replace("logging", true)
+
   val app = PortalsApp("Fibonacci") {
     val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), initBehavior(FIB_N)))
-    val wf = ActorWorkflow(generator.stream)
+    val wf = ActorWorkflow(generator.stream, config)
   }
 
   /** synchronous interpreter */

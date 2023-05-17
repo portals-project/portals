@@ -45,9 +45,12 @@ object PingPongMain extends App:
   import ActorEvents.*
   import PingPong.PingPongActors.*
 
+  val config = ActorConfig.default
+    .replace("logging", true)
+
   val app = PortalsApp("PingPong") {
     val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), initBehavior))
-    val wf = ActorWorkflow(generator.stream)
+    val wf = ActorWorkflow(generator.stream, config)
   }
 
   /** synchronous interpreter */

@@ -15,6 +15,15 @@ import portals.application.AtomicStreamRef
 import portals.application.Workflow
 
 @experimental
+type ActorConfig = ActorConfig.default._type
+
+@experimental
+object ActorConfig:
+  val default =
+    Config.empty
+      .set("logging", true)
+
+@experimental
 sealed trait ActorState:
   def get(key: Any)(using ctx: ActorContext[_]): Option[Any]
   def set(key: Any, value: Any)(using ctx: ActorContext[_]): Unit
@@ -100,11 +109,11 @@ end ActorContext // trait
 private[portals] object ActorContext:
   import ActorEvents.*
 
-  def apply[T](ctx: ProcessorTaskContext[ActorMessage, ActorMessage]): ActorContext[T] =
+  def apply[T](ctx: ProcessorTaskContext[ActorMessage, ActorMessage], logging: Boolean): ActorContext[T] =
     new ActorContext[T] {
       var self: ActorRef[T] = null
       override val state: ActorState = ActorState()
-      override def log[U](msg: U): Unit = tctx.log.info(msg.toString())
+      override def log[U](msg: U): Unit = if logging then tctx.log.info(msg.toString())
       override def send[U](aref: ActorRef[U])(msg: U): Unit = tctx.emit(ActorSend[U](aref, msg))
       override def create[U](behavior: ActorBehavior[U]): ActorRef[U] = {
         val aref = ActorRef.fresh[U]()
@@ -178,11 +187,11 @@ private[portals] object ActorRuntime:
   import ActorBehaviors.*
   import ActorEvents.*
 
-  def apply(): Task[ActorMessage, ActorMessage] =
+  def apply(config: ActorConfig): Task[ActorMessage, ActorMessage] =
     InitTask { ctx =>
       given TaskContextImpl[ActorMessage, ActorMessage, Nothing, Nothing] = ctx
       val behavior = PerKeyState[ActorBehavior[Any]]("behavior", NoBehavior)
-      val actx = ActorContext[Any](ctx)
+      val actx = ActorContext[Any](ctx, config.get("logging"))
       TaskBuilder.stash { stash => // stash messages if behavior not yet created
         TaskBuilder.processor {
           case ActorSend(aref, msg) => {
@@ -222,13 +231,15 @@ object ActorWorkflow:
 
   import ActorEvents.*
 
-  def apply(stream: AtomicStreamRef[ActorMessage])(using ApplicationBuilder): Workflow[ActorMessage, ActorMessage] =
+  def apply(stream: AtomicStreamRef[ActorMessage], config: ActorConfig)(using
+      ApplicationBuilder
+  ): Workflow[ActorMessage, ActorMessage] =
     val sequencer = Sequencers.random[ActorMessage]()
 
     val workflow = Workflows[ActorMessage, ActorMessage]("workflow")
       .source(sequencer.stream)
       .key(_.aref.key)
-      .task(ActorRuntime())
+      .task(ActorRuntime(config))
       .sink()
       .freeze()
 
@@ -236,3 +247,8 @@ object ActorWorkflow:
     val _ = Connections.connect(workflow.stream, sequencer)
 
     workflow
+
+  def apply(stream: AtomicStreamRef[ActorMessage])(using
+      ApplicationBuilder
+  ): Workflow[ActorMessage, ActorMessage] =
+    apply(stream, ActorConfig.default)
