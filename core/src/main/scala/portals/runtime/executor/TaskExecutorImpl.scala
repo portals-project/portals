@@ -24,7 +24,7 @@ private[portals] class TaskExecutorImpl:
   private val ctx = TaskContextImpl[Any, Any, Any, Any]()
   val oc = OutputCollectorImpl[Any, Any, Any, Any]()
   ctx.outputCollector = oc
-  private val state = StateBackendFactory.createStateBackend()
+  private val state = StateBackendFactory.getStateBackend()
   private var task: GenericTask[Any, Any, Any, Any] = _
   private var _replierTask: ReplierTaskKind[Any, Any, Any, Any] = _
 

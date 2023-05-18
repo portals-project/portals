@@ -27,7 +27,7 @@ private[portals] class EagerTaskExecutorImpl:
   private val ctx = TaskContextImpl[Any, Any, Any, Any]()
   private val oc = EagerOutputCollector()
   ctx.outputCollector = oc
-  private val state = StateBackendFactory.createStateBackend()
+  private val state = StateBackendFactory.getStateBackend()
   private var task: GenericTask[Any, Any, Any, Any] = _
 
   /** Setup the task executor for a specific task. */

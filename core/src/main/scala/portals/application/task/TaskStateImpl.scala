@@ -6,7 +6,7 @@ import portals.util.Config
 import portals.util.StateBackendFactory
 
 private[portals] class TaskStateImpl extends TaskState[Any, Any] {
-  private[portals] var stateBackend: StateBackend = StateBackendFactory.createStateBackend()
+  private[portals] var stateBackend: StateBackend = StateBackendFactory.getStateBackend()
 
   override def get(k: Any): Option[Any] = stateBackend.get(keyBuilder(k)).asInstanceOf[Option[Any]]
 

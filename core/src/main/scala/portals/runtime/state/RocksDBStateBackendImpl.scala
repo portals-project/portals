@@ -7,6 +7,10 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
 
+import portals.util.JavaSerializer
+import java.io.IOException
+
+
 import org.apache.commons.io.FileUtils
 import org.rocksdb
 
@@ -62,20 +66,29 @@ private[portals] class RocksDBStateBackendImpl extends StateBackend:
   // Implement incremental snapshot if needed, otherwise leave as it is
   // new Snapshot { def iterator = Iterator.empty }
 
+
 object CustomRocksDB {
-  def apply(): CustomRocksDB =
+  def apply(): CustomRocksDB = {
     val dbFileName = "portals-db"
-    val dbFilePath = System.getenv("DB_FILE_PATH") // read in env variable
+    val dbFilePath = System.getenv("DB_FILE_PATH") // read env variable
 
     val dbFile = if (dbFilePath != null && !dbFilePath.trim().isEmpty()) {
       new File(dbFilePath, dbFileName)
     } else {
       new File(dbFileName)
     }
-
     val dbAbsolutePath = dbFile.getAbsolutePath()
-    new CustomRocksDB(dbAbsolutePath)
-  def apply(path: String): CustomRocksDB = new CustomRocksDB(path)
+
+    val uniquePath = generateUniquePath(dbAbsolutePath)
+
+    new CustomRocksDB(uniquePath)
+  }
+
+  private def generateUniquePath(basePath: String): String = {
+    val timestamp = System.currentTimeMillis()
+    val uniqueId = java.util.UUID.randomUUID().toString
+    s"$basePath/$timestamp-$uniqueId"
+  }
 }
 
 class CustomRocksDB(path: String) {
@@ -89,6 +102,7 @@ class CustomRocksDB(path: String) {
 
   private val options = new rocksdb.Options()
   options.setCreateIfMissing(true)
+  options.setMaxOpenFiles(1000)
 
   def checkpointdir(epoch: Int): String = path + "/" + epoch.toString
 

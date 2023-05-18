@@ -5,7 +5,11 @@ import portals.runtime.state.StateBackend
 import portals.util.Config
 
 object StateBackendFactory {
-  def createStateBackend(): StateBackend = {
+  private val instance: StateBackend = createStateBackend()
+
+  def getStateBackend(): StateBackend = instance
+
+  private def createStateBackend(): StateBackend = {
     val backendType: String = Config.getString("state.backend")
     backendType match {
       case "RocksDBStateBackendImpl" => new RocksDBStateBackendImpl()
