@@ -3,13 +3,10 @@ package portals.runtime.state
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
-
-import portals.util.JavaSerializer
-import java.io.IOException
-
 
 import org.apache.commons.io.FileUtils
 import org.rocksdb
@@ -65,7 +62,6 @@ private[portals] class RocksDBStateBackendImpl extends StateBackend:
   override def incrementalSnapshot(): Snapshot = ???
   // Implement incremental snapshot if needed, otherwise leave as it is
   // new Snapshot { def iterator = Iterator.empty }
-
 
 object CustomRocksDB {
   def apply(): CustomRocksDB = {

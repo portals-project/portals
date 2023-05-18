@@ -1,8 +1,8 @@
 package portals.application.task
 
 import portals.runtime.state.StateBackend
-import portals.util.Key
 import portals.util.Config
+import portals.util.Key
 import portals.util.StateBackendFactory
 
 private[portals] class TaskStateImpl extends TaskState[Any, Any] {

@@ -7,9 +7,8 @@ import scala.util.Try
 import portals._
 import portals.application.task._
 import portals.application.task.MapTaskStateExtension._
-import portals.util.StateBackendFactory
-
 import portals.runtime.WrappedEvents.*
+import portals.util.StateBackendFactory
 
 /** Internal API. Executor for Tasks.
   *

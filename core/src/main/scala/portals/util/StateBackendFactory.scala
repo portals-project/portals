@@ -1,6 +1,7 @@
 package portals.util
 
-import portals.runtime.state.{RocksDBStateBackendImpl, MapStateBackendImpl}
+import portals.runtime.state.MapStateBackendImpl
+import portals.runtime.state.RocksDBStateBackendImpl
 import portals.runtime.state.StateBackend
 import portals.util.Config
 

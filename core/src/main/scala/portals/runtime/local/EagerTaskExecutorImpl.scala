@@ -10,9 +10,10 @@ import portals._
 import portals.application.task._
 import portals.application.task.MapTaskStateExtension._
 import portals.runtime.executor.TaskExecutorImpl
-import portals.runtime.state.{RocksDBStateBackendImpl, MapStateBackendImpl}
-import portals.util.StateBackendFactory
+import portals.runtime.state.MapStateBackendImpl
+import portals.runtime.state.RocksDBStateBackendImpl
 import portals.runtime.WrappedEvents.*
+import portals.util.StateBackendFactory
 
 /** Internal API. Executor for Tasks.
   *
