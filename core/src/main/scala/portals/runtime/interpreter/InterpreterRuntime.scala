@@ -11,6 +11,9 @@ import portals.runtime.interpreter.InterpreterEvents.*
 import portals.runtime.PortalsRuntime
 import portals.runtime.WrappedEvents.*
 
+// TODO Change 
+import portals.util.StateBackendFactory
+
 /** Internal API. Holds runtime information of the executed applications. */
 private[portals] class InterpreterRuntimeContext():
   private var _applications: Map[String, Application] = Map.empty
@@ -130,7 +133,19 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
   private var _stepN: Long = 0
   private def stepN: Long = { _stepN += 1; _stepN }
 
+  
+
+
   private inline val GC_INTERVAL = 128 // GC Step Interval
+
+
+  private inline val CHECKPOINT_INTERVAL = 100 // TODO: make configurable
+  private var lastCheckpointTime: Long = 0
+  private def checkpoint(): Unit = {
+    // use statebackend function to checkpoint
+    StateBackendFactory.getStateBackend().snapshot()
+  }
+
 
   /** Launch an application. */
   def launch(application: Application): Unit =
@@ -313,6 +328,14 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     * Throws an exception if it cannot take a step.
     */
   def step(): Unit =
+    // checkpoint every CHECKPOINT_INTERVAL milliseconds
+    val currentTime = System.currentTimeMillis()
+    val elapsedTime = currentTime - lastCheckpointTime
+    if (elapsedTime >= CHECKPOINT_INTERVAL) {
+      checkpoint()
+      lastCheckpointTime = currentTime
+    }
+    // rest logic
     choosePortal() match
       case Some(path, portal) => stepPortal(path, portal)
       case None =>
@@ -332,8 +355,13 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
     if stepN % GC_INTERVAL == 0 then garbageCollection()
 
   /** Takes steps until it cannot take more steps. */
-  def stepUntilComplete(): Unit =
-    while canStep() do step()
+  def stepUntilComplete(): Unit ={
+    while (canStep()) {
+      step()
+    }
+    // Perform a final checkpoint when all processing is complete
+    checkpoint()
+  }
 
   /** If the runtime can take another step, returns true if it can process
     * something. It returns false if it has finished processing, i.e. all atomic
