@@ -2,15 +2,19 @@ package portals.sql.benchmark
 
 import java.util
 import java.util.concurrent.LinkedBlockingQueue
+
 import scala.annotation.experimental
 import scala.util.Random
+
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.calcite.util.NlsString
+
 import portals.api.builder.WorkflowBuilder
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.application.generator.Generator
-import portals.application.task.{PerKeyState, PerTaskState}
+import portals.application.task.PerKeyState
+import portals.application.task.PerTaskState
 import portals.application.Workflow
 import portals.runtime.interpreter.InterpreterRuntime
 import portals.runtime.WrappedEvents
@@ -20,10 +24,11 @@ import portals.system.InterpreterSystem
 import portals.system.Systems
 import portals.util.Future
 import portals.util.Key
+
 import cask.*
 
 @experimental
-object BenchmarkLocal extends App {
+object BenchmarkLocalNativeSQL extends App {
 
   var inputChan: REPLGenerator[String] = _
   var intSys: InterpreterSystem = _
@@ -39,8 +44,8 @@ object BenchmarkLocal extends App {
       s"execution: ${CalciteStat.getAvgExecutionTime}\n"
   }
 
-  val opPerLoop = 1
-  val loop = 500
+  val opPerLoop = 100
+  val loop = 10000
 
   def run() = {
 
@@ -118,17 +123,13 @@ object BenchmarkLocal extends App {
   }
 
   def initApp() = {
-    import scala.jdk.CollectionConverters.*
-
+    import ch.qos.logback.classic.{Level, Logger}
     import org.slf4j.LoggerFactory
-
-    import ch.qos.logback.classic.Level
-    import ch.qos.logback.classic.Logger
-
     import portals.api.dsl.ExperimentalDSL.*
     import portals.sql.*
 
     import java.math.BigDecimal
+    import scala.jdk.CollectionConverters.*
 
     val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
     logger.setLevel(Level.INFO)
@@ -154,67 +155,63 @@ object BenchmarkLocal extends App {
             val portalFutures = PersistentList[Future[Result]]("portalFutures")
 
             val calcite = new Calcite()
-            calcite.printPlan = false
-
+//            calcite.parseSQL(sql)
+//            calcite.printPlan = false
+//
             val ti = table
-
             calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
-            calcite
-              .getTable(ti.tableName)
-              .setInsertRow(data => {
-                // TODO: assert pk always Int
-                val future = ask(ti.portal)(InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int]))
-                portalFutures.add(future)
-                new FutureWithResult(future, null)
-              })
-            calcite
-              .getTable(ti.tableName)
-              .setGetFutureByRowKeyFunc(key => {
-                val future =
-                  ask(ti.portal)(SelectOp(ti.tableName, key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
-                portalFutures.add(future)
-                new FutureWithResult(future, null)
-              })
+//            calcite.parseAndPlanLogic(sql)
+            calcite.parseSQL(sql)
 
-            calcite.executeSQL(
-              sql,
-              futureReadyCond,
-              awaitForFutureCond,
-              awaitForFinishCond,
-              tableOptCntCond,
-              futures,
-              result
-            )
+//
+//            calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
+//            calcite
+//              .getTable(ti.tableName)
+//              .setInsertRow(data => {
+//                // TODO: assert pk always Int
+//                val future = ask(ti.portal)(InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int]))
+//                portalFutures.add(future)
+//                new FutureWithResult(future, null)
+//              })
+//            calcite
+//              .getTable(ti.tableName)
+//              .setGetFutureByRowKeyFunc(key => {
+//                val future =
+//                  ask(ti.portal)(SelectOp(ti.tableName, key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
+//                portalFutures.add(future)
+//                new FutureWithResult(future, null)
+//              })
+//
+//            calcite.executeSQL(
+//              sql,
+//              futureReadyCond,
+//              awaitForFutureCond,
+//              awaitForFinishCond,
+//              tableOptCntCond,
+//              futures,
+//              result
+//            )
 
-            val tableOptCnt = tableOptCntCond.take
+//            val tableOptCnt = tableOptCntCond.take
+
+            val future =
+              ask(ti.portal)(SelectOp(ti.tableName, 1)) // 1 -> key
+            portalFutures.add(future)
 
             val emit = { (x: String) =>
               ctx.emit(x)
             }
 
-            for (i <- 1 to tableOptCnt) {
-              //        println("try future ready consume")
-              futureReadyCond.take
-              //        println("future ready consume done")
+            // wait for the last one to awaitAll
+            awaitAll[Result](portalFutures.asScala.toList: _*) {
+              futures.forEach(f => {
+                val data = f.future.asInstanceOf[Future[Result]].value
+                f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
+              })
 
-              // wait for the last one to awaitAll
-              if i != tableOptCnt then awaitForFutureCond.put(1)
-              else
-                awaitAll[Result](portalFutures.asScala.toList: _*) {
-                  futures.forEach(f => {
-                    val data = f.future.asInstanceOf[Future[Result]].value
-                    f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
-                  })
+              emit(sql)
 
-                  awaitForFutureCond.put(1) // allow SQL execution to start
-
-                  awaitForFinishCond.take() // wait for SQL execution to finish
-
-                  emit(sql)
-
-                  if opMap.contains(sql) then
-                    timeList = timeList :+ (System.nanoTime() - opMap(sql))
-                }
+              if opMap.contains(sql) then timeList = timeList :+ (System.nanoTime() - opMap(sql))
             }
           }
           .sink()
@@ -233,8 +230,6 @@ object BenchmarkLocal extends App {
     val stTime = System.nanoTime()
     run()
     val edTime = System.nanoTime()
-
-    println(timeList.mkString(","))
 
     println("total time: " + (edTime - stTime).toDouble / 1_000_000_000 + "s")
     println("op/s: " + (opPerLoop * loop).toDouble * 1_000_000_000 / (edTime - stTime))

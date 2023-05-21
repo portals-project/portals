@@ -46,7 +46,7 @@ object BenchmarkBankTransfer extends App {
                       var senderBalance: Int, var receiverBalance: Int, var phase: Int) // 0: select 1: insert 2: commit
 
   val workload = 50000
-  val sampleEvery = 250
+  val sampleEvery = 50
   val baseBackOff = 3
   val backoff = 10
   val concurrency = 100
@@ -392,6 +392,8 @@ object BenchmarkBankTransfer extends App {
     run()
     val edTime = System.nanoTime()
 
+    println(timeList.mkString(","))
+    
     println("abort rate: " + abortCnt.toDouble / timeList.length / sampleEvery)
     println("total time: " + (edTime - stTime).toDouble / 1_000_000_000 + "s")
     println("op/s: " + workload.toDouble * 1_000_000_000 / (edTime - stTime))

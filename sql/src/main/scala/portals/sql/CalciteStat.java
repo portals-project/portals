@@ -8,9 +8,18 @@ import java.util.Map;
 public class CalciteStat {
     static Map<String, List<Long>> stat = new HashMap<>();
     static int msgCnt = 0;
+    static int parsingCnt = 0;
+    static int validationCnt = 0;
+    static int planningCnt = 0;
+    static int executionCnt = 0;
+    
+    static int recordInterval = 100;
 
     public static void recordParsing(long time) {
-        stat.computeIfAbsent("parsing", k -> new ArrayList<>()).add(time);
+        parsingCnt += 1;
+        if (parsingCnt % recordInterval == 0) {
+            stat.computeIfAbsent("parsing", k -> new ArrayList<>()).add(time);
+        }
     }
 
     public static double getAvgParsingTime() {
@@ -18,7 +27,10 @@ public class CalciteStat {
     }
 
     public static void recordValidation(long time) {
-        stat.computeIfAbsent("validation", k -> new ArrayList<>()).add(time);
+        validationCnt += 1;
+        if (validationCnt % recordInterval == 0) {
+            stat.computeIfAbsent("validation", k -> new ArrayList<>()).add(time);
+        }
     }
 
     public static double getAvgValidationTime() {
@@ -26,7 +38,10 @@ public class CalciteStat {
     }
 
     public static void recordPlanning(long time) {
-        stat.computeIfAbsent("planning", k -> new ArrayList<>()).add(time);
+        planningCnt += 1;
+        if (planningCnt % recordInterval == 0) {
+            stat.computeIfAbsent("planning", k -> new ArrayList<>()).add(time);
+        }
     }
 
     public static double getAvgPlanningTime() {
@@ -34,7 +49,10 @@ public class CalciteStat {
     }
 
     public static void recordExecution(long time) {
-        stat.computeIfAbsent("execution", k -> new ArrayList<>()).add(time);
+        executionCnt += 1;
+        if (executionCnt % recordInterval == 0) {
+            stat.computeIfAbsent("execution", k -> new ArrayList<>()).add(time);
+        }
     }
 
     public static double getAvgExecutionTime() {

@@ -170,6 +170,61 @@ public class Calcite {
 
     List<Object[]> result;
 
+    public void parseSQL(String sql) throws SqlParseException {
+        SqlParser parser = SqlParser.create(sql);
+        SqlNode sqlNode = parser.parseStmt();
+    }
+    
+    public void parseAndPlanLogic(String sql) throws SqlParseException {
+        long parsingStartTime = System.nanoTime();
+        SqlParser parser = SqlParser.create(sql);
+        SqlNode sqlNode = parser.parseStmt();
+
+        long parsingEndTime = System.nanoTime();
+        CalciteStat.recordParsing(parsingEndTime - parsingStartTime);
+
+        // Configure and instantiate validator
+        Properties props = new Properties();
+        props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "false");
+        CalciteConnectionConfig config = new CalciteConnectionConfigImpl(props);
+        CalciteCatalogReader catalogReader = new CalciteCatalogReader(schema,
+                Collections.singletonList(""),
+                typeFactory, config);
+
+        // NOTE: 新增代码
+        // 从 org.apache.calcite.prepare.CalcitePrepareImpl.createSqlValidator 抄来的
+        final SqlOperatorTable opTab0 = SqlStdOperatorTable.instance();
+        final List<SqlOperatorTable> list = new ArrayList<>();
+        list.add(opTab0);
+        list.add(catalogReader);
+        final SqlOperatorTable opTab = SqlOperatorTables.chain(list);
+
+        // NOTE：这里的 newValidator param1 不能用默认的 SqlStdOperatorTable.instance()，其中只有自带的函数
+        SqlValidator validator = SqlValidatorUtil.newValidator(opTab,
+                catalogReader, typeFactory,
+                SqlValidator.Config.DEFAULT);
+
+        // Validate the initial AST
+        SqlNode validNode = validator.validate(sqlNode);
+
+        long validationEndTime = System.nanoTime();
+        CalciteStat.recordValidation(validationEndTime - parsingEndTime);
+
+        // Configure and instantiate the converter of the AST to Logical plan (requires opt cluster)
+        RelOptCluster cluster = newCluster(typeFactory);
+        SqlToRelConverter relConverter = new SqlToRelConverter(
+                NOOP_EXPANDER,
+                validator,
+                catalogReader,
+                cluster,
+                StandardConvertletTable.INSTANCE,
+                SqlToRelConverter.config());
+
+        // Convert the valid AST into a logical plan
+        RelNode logPlan = relConverter.convertQuery(validNode, false, true).rel;
+//        RelNode logPlan = relConverter.convertQuery(sqlNode, false, true).rel;
+    }
+    
     public void executeSQL(String sql, BlockingQueue<Integer> futureReadyCond, BlockingQueue<Integer> awaitForFutureCond,
                            BlockingQueue<Integer> awaitForSQLCompletionCond,
                            BlockingQueue<Integer> tableScanCntCond,
@@ -258,7 +313,7 @@ public class Calcite {
                             SqlExplainLevel.EXPPLAN_ATTRIBUTES));
         }
 
-        long executionEndTime = 0;
+        long planingEndTime = 0;
 
         if (logPlan instanceof LogicalTableModify) {
             LogicalTableModify modify = (LogicalTableModify) logPlan;
@@ -278,8 +333,8 @@ public class Calcite {
                 // TODO: key will be on the right, call delete manually (delete(tableName, key))
             } else if (modify.getOperation() == TableModify.Operation.INSERT) {
                 Bindable executablePlan = enumerableConventionPlanExecution(logPlan, cluster);
-                executionEndTime = System.nanoTime();
-                CalciteStat.recordPlanning(executionEndTime - validationEndTime);
+                planingEndTime = System.nanoTime();
+                CalciteStat.recordPlanning(planingEndTime - validationEndTime);
 
                 // Run the executable plan using a context simply providing access to the schema
                 for (Object row : executablePlan.bind(new SchemaOnlyDataContext(schema))) {
@@ -291,8 +346,8 @@ public class Calcite {
             }
         } else {
             BindableRel phyPlan = bindableConventionPlanExecution(logPlan, cluster);
-            executionEndTime = System.nanoTime();
-            CalciteStat.recordPlanning(executionEndTime - validationEndTime);
+            planingEndTime = System.nanoTime();
+            CalciteStat.recordPlanning(planingEndTime - validationEndTime);
 
             // Run the executable plan using a context simply providing access to the schema
             for (Object[] row : phyPlan.bind(new SchemaOnlyDataContext(schema))) {
@@ -302,7 +357,7 @@ public class Calcite {
             awaitForSQLCompletionCond.put(1);
         }
 
-        CalciteStat.recordExecution(System.nanoTime() - executionEndTime);
+        CalciteStat.recordExecution(System.nanoTime() - planingEndTime);
 
         init();
     }
