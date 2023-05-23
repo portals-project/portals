@@ -3,14 +3,16 @@ package portals.runtime.state
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.PrintWriter
+import scala.io.Source
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
-
+import java.nio.file.{Files, Path, Paths}
 import org.apache.commons.io.FileUtils
 import org.rocksdb
-
+import org.rocksdb.{Checkpoint, RestoreOptions, RocksDB}
 import portals.util.JavaSerializer
 
 private[portals] class RocksDBStateBackendImpl extends StateBackend:
@@ -38,27 +40,12 @@ private[portals] class RocksDBStateBackendImpl extends StateBackend:
     }
   }
 
-  override def snapshot(): Snapshot = ???
-  /*
+  override def snapshot(): Snapshot = {
     val checkpointEpoch = System.currentTimeMillis().toInt
     customRocksDB.checkpoint(checkpointEpoch)
-    val snapshotRocksDB = CustomRocksDB(customRocksDB.checkpointdir(checkpointEpoch))
-    new Snapshot {
-      override def iterator: Iterator[(Any, Any)] =
-        val it = snapshotRocksDB.getRocksDB().newIterator()
-        new Iterator[(Any, Any)] {
-          override def hasNext: Boolean = {
-            it.isValid
-          }
+    new RocksDBSnapshot(checkpointEpoch)
+  }
 
-          override def next(): (Any, Any) = {
-            val key = JavaSerializer.deserialize[Any](it.key())
-            val value = JavaSerializer.deserialize[Any](it.value())
-            it.next()
-            (key, value)
-          }
-        }
-   */
   override def incrementalSnapshot(): Snapshot = ???
   // Implement incremental snapshot if needed, otherwise leave as it is
   // new Snapshot { def iterator = Iterator.empty }
@@ -68,15 +55,11 @@ object CustomRocksDB {
     val dbFileName = "portals-db"
     val dbFilePath = System.getenv("DB_FILE_PATH") // read env variable
 
-    val dbFile = if (dbFilePath != null && !dbFilePath.trim().isEmpty()) {
-      new File(dbFilePath, dbFileName)
-    } else {
-      new File(dbFileName)
-    }
+    val dbFile = new File(dbFileName)
+
     val dbAbsolutePath = dbFile.getAbsolutePath()
 
     val uniquePath = generateUniquePath(dbAbsolutePath)
-
     new CustomRocksDB(uniquePath)
   }
 
@@ -100,7 +83,7 @@ class CustomRocksDB(path: String) {
   options.setCreateIfMissing(true)
   options.setMaxOpenFiles(1000)
 
-  def checkpointdir(epoch: Int): String = path + "/" + epoch.toString
+  def checkpointdir(epoch: Int): String = path + "/backup/" + epoch.toString
 
   private var rocksDB = rocksdb.RocksDB.open(options, livedir())
 
@@ -123,15 +106,48 @@ class CustomRocksDB(path: String) {
   // directory with files for live store
   private def livedir(): String = path + "/" + "current"
 
-  def checkpoint(epoch: Int): Unit =
+  def checkpoint(epoch: Int): Unit = {
     val checkpointdir = this.checkpointdir(epoch)
-    val checkpoint: rocksdb.Checkpoint = rocksdb.Checkpoint.create(rocksDB);
-    checkpoint.createCheckpoint(checkpointdir)
+    val checkpointDirFile = new File(checkpointdir)
+    checkpointDirFile.mkdirs()
 
-  def recover(epoch: Int): Unit =
-    rocksDB.close()
+
+
+
+    // Create the checkpoint
+    val checkpoint: Checkpoint = Checkpoint.create(this.getRocksDB())
+    //checkpoint.createCheckpoint(checkpointdir)
+    try {
+      checkpoint.createCheckpoint(checkpointdir)
+    } catch {
+      case e: Exception => 
+        if (e.getMessage().contains("Directory exists")) {
+          // Directory exists
+          //println("Directory exists")
+          return
+        }
+        e.printStackTrace()
+        return
+    }
+  }
+
+  def restore(epoch: Int): Unit = {
     val checkpointdir = this.checkpointdir(epoch)
-    FileUtils.deleteDirectory(File(livedir()))
-    FileUtils.copyDirectory(File(checkpointdir), File(livedir()))
-    rocksDB = rocksdb.RocksDB.open(options, livedir())
+    //println(s"Restoring: $epoch from $checkpointdir")
+
+    rocksDB.close()
+
+    val dbPath = Paths.get(path)
+    val checkpointPath = Paths.get(checkpointdir)
+
+    // Delete existing DB files
+    FileUtils.deleteDirectory(File(path))
+    // Copy from checkpoint directory to DB directory
+    FileUtils.copyDirectory(File(checkpointdir), File(path))
+
+
+    rocksDB = RocksDB.open(options, path)
+  }
+
+
 }

@@ -139,7 +139,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
   private inline val GC_INTERVAL = 128 // GC Step Interval
 
 
-  private inline val CHECKPOINT_INTERVAL = 100 // TODO: make configurable
+  private inline val CHECKPOINT_INTERVAL = 100000 // TODO: make configurable
   private var lastCheckpointTime: Long = 0
   private def checkpoint(): Unit = {
     // use statebackend function to checkpoint
