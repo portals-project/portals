@@ -145,11 +145,15 @@ object PortalsJS:
   @JSExport
   def ApplicationBuilder(name: String): ApplicationBuilderJS = ApplicationBuilderJS(name)
 
+
+/*
+  import Types.*
   @JSExport
-  def PortalsApp(name: String)(app: ApplicationBuilderJS ?=> Unit): Application =
+  def PortalsApp(name: String)(app: ContextFunction1JS[ApplicationBuilderJS, Unit]): Application =
     val builder = ApplicationBuilder(name)
     app(using builder)
     builder.build()
+*/
 
   //////////////////////////////////////////////////////////////////////////////
   // Flow Builder
@@ -448,3 +452,29 @@ object PortalsJS:
   extension (tb: TaskBuilder.type) {
     def toJS: TaskBuilderJS = TaskBuilderJS()
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Task State Extension
+  //////////////////////////////////////////////////////////////////////////////
+
+  @JSExportAll
+  class PerTaskStateJS[T](name: String, initValue: T, ctx: StatefulTaskContext):
+    val state = portals.application.task.PerTaskState(name, initValue)
+    def get(): T = state.get()(using ctx)
+    def set(value: T): Unit = state.set(value)(using ctx)
+    def del(): Unit = state.del()(using ctx)
+
+  @JSExport
+  def PerTaskState[T](name: String, initValue: T, ctx: StatefulTaskContext): PerTaskStateJS[T] = PerTaskStateJS[T](name, initValue, ctx)
+
+  @JSExportAll
+  class PerKeyStateJS[T](name: String, initValue: T, ctx: StatefulTaskContext):
+    val state = portals.application.task.PerKeyState(name, initValue)
+    def get(): T = state.get()(using ctx)
+    def set(value: T): Unit = state.set(value)(using ctx)
+    def del(): Unit = state.del()(using ctx)
+
+  @JSExport
+  def PerKeyState[T](name: String, initValue: T, ctx: StatefulTaskContext): PerKeyStateJS[T] = PerKeyStateJS[T](name, initValue, ctx)
+
+end PortalsJS
