@@ -130,7 +130,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
   private var _stepN: Long = 0
   private def stepN: Long = { _stepN += 1; _stepN }
 
-  private inline val GC_INTERVAL = 128 // GC Step Interval
+  private inline val GC_INTERVAL = 4 // GC Step Interval
 
   /** Launch an application. */
   def launch(application: Application): Unit =
@@ -213,7 +213,7 @@ private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends 
       val minprogress = outputs
         .map { outpt => progressTracker.getProgress(outpt, streamName).get }
         .minOption
-        .getOrElse(-1L) // TODO: this could be set to streamProgress._2 instead if no subscribers exist
+        .getOrElse(streamProgress._2)
       if minprogress > streamProgress._1 + GC_INTERVAL then
         stream.prune(minprogress)
         streamTracker.setProgress(streamName, minprogress, streamProgress._2)

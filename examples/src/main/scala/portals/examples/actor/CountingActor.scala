@@ -53,9 +53,12 @@ object CountingActorMain extends App:
   import ActorEvents.*
   import CountingActor.CountingBehaviors.*
 
+  val config = ActorConfig.default
+    .replace("logging", false)
+
   val app = PortalsApp("CountingActor") {
     val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), producerBehavior))
-    val wf = ActorWorkflow(generator.stream)
+    val wf = ActorWorkflow(generator.stream, config)
   }
 
   val system = Systems.interpreter()
