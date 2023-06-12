@@ -4,16 +4,11 @@ import scala.annotation.experimental
 
 import portals.system.Systems
 
-@experimental
 object ShoppingCartMain extends App:
-  val app = ShoppingCart.app
-
-  // ASTPrinter.println(app)
-
-  val system = Systems.interpreter(2)
-
-  val _ = system.launch(app)
-
+  val system = Systems.interpreter()
+  val _ = system.launch(ShoppingCart.app)
+  // -- to execute for longer time, uncomment the following two lines: --
+  // val now = System.currentTimeMillis()
+  // while System.currentTimeMillis() - now < 10_000_000 do system.stepUntilComplete()
   system.stepUntilComplete()
-
   system.shutdown()
