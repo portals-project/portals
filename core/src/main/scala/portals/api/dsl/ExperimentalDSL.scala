@@ -5,6 +5,8 @@ import scala.annotation.experimental
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.FlowBuilder
 import portals.api.builder.GeneratorBuilder
+import portals.api.builder.TaskExtensions.*
+import portals.api.dsl.DSL.Tasks
 import portals.application.*
 import portals.application.task.AskerTaskContext
 import portals.application.task.MapTaskStateExtension.*
@@ -35,14 +37,22 @@ object ExperimentalDSL:
   }
 
   // consume the events of a flow
-  extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU]) {
+  extension [T, U, CT, CU](fb: FlowBuilder[T, U, CT, CU])
     // consume events, change the type
     def empty[NU](): FlowBuilder[T, U, CU, NU] = fb.flatMap(_ => List.empty[NU])
     // consume events, keep the type
     def consume(): FlowBuilder[T, U, CU, CU] = fb.flatMap(_ => List.empty[CU])
     // consume events, change type to Nothing
     def nothing(): FlowBuilder[T, U, CU, Nothing] = fb.flatMap(_ => List.empty[Nothing])
-  }
+    // sample every `n`th event
+    def sample(n: Int): FlowBuilder[T, U, CU, CU] =
+      val task =
+        Tasks.init[CU, CU]:
+          val _rand = scala.util.Random()
+          inline def sample(): Boolean = _rand.nextInt(n) < 1
+          Tasks.filter(_ => sample())
+      fb.task(task)
+  end extension
 
   //////////////////////////////////////////////////////////////////////////////
   // Recursive DSL
