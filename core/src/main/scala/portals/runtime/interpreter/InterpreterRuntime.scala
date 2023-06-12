@@ -15,7 +15,7 @@ import portals.runtime.WrappedEvents.*
 private[portals] class InterpreterRuntimeContext():
   private var _applications: Map[String, Application] = Map.empty
   private var _streams: Map[String, InterpreterStream] = Map.empty
-  private var _portals: Map[String, InterpreterPortal] = Map.empty
+  var _portals: Map[String, InterpreterPortal] = Map.empty
   private var _workflows: Map[String, InterpreterWorkflow] = Map.empty
   private var _sequencers: Map[String, InterpreterSequencer] = Map.empty
   private var _splitters: Map[String, InterpreterSplitter] = Map.empty
@@ -120,7 +120,7 @@ private[portals] class InterpreterStreamTracker:
   def getProgress(stream: String): Option[(Long, Long)] = _progress.get(stream)
 
 private[portals] class InterpreterRuntime(val seed: Option[Int] = None) extends PortalsRuntime:
-  private val rctx = new InterpreterRuntimeContext()
+  val rctx = new InterpreterRuntimeContext()
   private val progressTracker = InterpreterProgressTracker()
   private val streamTracker = InterpreterStreamTracker()
   private val graphTracker = InterpreterGraphTracker()

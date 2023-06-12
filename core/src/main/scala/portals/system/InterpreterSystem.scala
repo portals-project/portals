@@ -10,7 +10,7 @@ import portals.system.PortalsSystem
   * stepping until it has completed.
   */
 class InterpreterSystem(seed: Option[Int] = None) extends PortalsSystem:
-  private val runtime: InterpreterRuntime = InterpreterRuntime(seed)
+  val runtime: InterpreterRuntime = InterpreterRuntime(seed)
 
   /** Launch a Portals application. */
   def launch(application: Application): Unit = runtime.launch(application)
