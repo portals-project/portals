@@ -2,36 +2,50 @@ package portals.examples.shoppingcart
 
 import scala.annotation.experimental
 
-@experimental
 object ShoppingCartEvents:
+  ////////////////////////////////////////////////////////////////////////////
+  // Types
+  ////////////////////////////////////////////////////////////////////////////
+  type User = Int
+  type Item = Int
+  type Count = Int
+
   ////////////////////////////////////////////////////////////////////////////
   // Cart
   ////////////////////////////////////////////////////////////////////////////
   sealed trait CartOps
-  @experimental case class AddToCart(user: Int, item: Int) extends CartOps
-  @experimental case class RemoveFromCart(user: Int, item: Int) extends CartOps
-  @experimental case class Checkout(user: Int) extends CartOps
+  case class AddToCart(user: User, item: Item) extends CartOps
+  case class RemoveFromCart(user: User, item: Item) extends CartOps
+  case class Checkout(user: User) extends CartOps
 
-  @experimental case class CartState(items: List[Int]):
-    def add(item: Int): CartState = CartState(item :: items)
-    def remove(item: Int): CartState = CartState(items.diff(List(item)))
+  case class CartState(items: List[Item]):
+    def add(item: Item): CartState = CartState(item :: items)
+    def remove(item: Item): CartState = CartState(items.diff(List(item)))
   object CartState { def zero: CartState = CartState(List.empty) }
 
   ////////////////////////////////////////////////////////////////////////////
   // Inventory
   ////////////////////////////////////////////////////////////////////////////
   sealed trait InventoryReqs
-  @experimental case class Get(item: Int) extends InventoryReqs
-  @experimental case class Put(item: Int) extends InventoryReqs
+  case class Get(item: Item) extends InventoryReqs
+  case class Put(item: Item) extends InventoryReqs
   sealed trait InventoryReps
-  @experimental case class GetReply(item: Int, success: Boolean) extends InventoryReps
-  @experimental case class PutReply(item: Int, success: Boolean) extends InventoryReps
+  case class GetReply(item: Item, success: Boolean) extends InventoryReps
+  case class PutReply(item: Item, success: Boolean) extends InventoryReps
 
   ////////////////////////////////////////////////////////////////////////////
   // Orders
   ////////////////////////////////////////////////////////////////////////////
   sealed trait OrderOps
-  @experimental case class Order(user: Int, order: CartState) extends OrderOps
+  case class Order(user: User, order: CartState) extends OrderOps
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Analytics
+  ////////////////////////////////////////////////////////////////////////////
+  sealed trait AnalyticsReqs
+  case object Top100 extends AnalyticsReqs
+  sealed trait AnalyticsReps
+  case class Top100Reply(items: List[Item]) extends AnalyticsReps
 
   ////////////////////////////////////////////////////////////////////////////
   // Key
@@ -47,3 +61,9 @@ object ShoppingCartEvents:
 
   def keyFrom(order: OrderOps): Long = order match
     case Order(user, _) => user.toLong
+
+  def keyFrom(item: Item): Long =
+    item.toLong
+
+  def keyFrom(analyticsReq: AnalyticsReqs): Long =
+    0L // all analytics requests go to the same key, can be optimized
