@@ -21,10 +21,14 @@ import portals.system.Systems
 
   val builder = ApplicationBuilder("application")
 
-  val generator = builder.generators.fromIterator(Iterator.iterate((0, 1)) {
-    case (prev, current) => (current, prev + current)
-  }.map(_._1).take(n))
-
+  val generator = builder.generators.fromIterator(
+    Iterator
+      .iterate((0, 1)) { case (prev, current) =>
+        (current, prev + current)
+      }
+      .map(_._1)
+      .take(n)
+  )
 
   val _ = builder
     .workflows[Int, List[Int]]("fibonacci")
@@ -34,10 +38,9 @@ import portals.system.Systems
       val count = PerTaskState[Int]("count", 0)
       TaskBuilder.processor { _ =>
         count.set(count.get() + 1)
-        if(count.get() == 1) fibs.set(Array(0))
-        else if(count.get() == 2) fibs.set(Array(0, 1))
+        if (count.get() == 1) fibs.set(Array(0))
+        else if (count.get() == 2) fibs.set(Array(0, 1))
         else fibs.set(fibs.get() :+ (fibs.get()(count.get() - 2) + fibs.get()(count.get() - 3)))
-
 
       }
     }
