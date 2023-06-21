@@ -12,7 +12,7 @@ object BankAccountMain extends App:
 
   // ASTPrinter.println(app)
 
-  val system = Systems.interpreter()
+  val system = Systems.test()
 
   val _ = system.launch(app)
 

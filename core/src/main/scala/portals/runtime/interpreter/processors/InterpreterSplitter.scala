@@ -1,12 +1,11 @@
-package portals.runtime.interpreter
+package portals.runtime.interpreter.processors
 
 import portals.application.AtomicSplitter
-import portals.runtime.interpreter.InterpreterEvents.*
-import portals.runtime.interpreter.InterpreterRuntimeContext
+import portals.runtime.BatchedEvents.*
 import portals.runtime.WrappedEvents.*
 
 /** Internal API. Test Runtime wrapper around the Splitter. */
-private[portals] class InterpreterSplitter(splitter: AtomicSplitter[_])(using rctx: InterpreterRuntimeContext):
+private[portals] class InterpreterSplitter(splitter: AtomicSplitter[_]) extends ProcessingStepper:
 
   /** Add an output to the splitter, that filters out the events for the path.
     *
@@ -29,15 +28,15 @@ private[portals] class InterpreterSplitter(splitter: AtomicSplitter[_])(using rc
   def removeOutput(path: String): Unit = splitter.splitter.removeOutput(path)
 
   /** Create a list representation using the splitter events. */
-  private def toSplitterAtom(atom: InterpreterAtom): List[WrappedEvent[Any]] =
+  private def toSplitterAtom(atom: EventBatch): List[WrappedEvent[Any]] =
     atom match
-      case InterpreterAtomBatch(path, list) =>
+      case AtomBatch(path, list) =>
         list
       case _ => ???
 
   /** Create an atom representation from the splitter representation. */
-  private def fromSplitterAtom(path: String, satom: List[WrappedEvent[Any]]): InterpreterAtom =
-    InterpreterAtomBatch(path, satom)
+  private def fromSplitterAtom(path: String, satom: List[WrappedEvent[Any]]): EventBatch =
+    AtomBatch(path, satom)
 
   /** Process an atom on the test splitter. This will produce a list of new
     * atoms, one for each nonempty output.
@@ -47,7 +46,7 @@ private[portals] class InterpreterSplitter(splitter: AtomicSplitter[_])(using rc
     * @return
     *   a list of new atoms, one for each nonempty output.
     */
-  def process(atom: InterpreterAtom): List[InterpreterAtom] =
+  override def step(atom: EventBatch): List[EventBatch] =
     splitter
       .asInstanceOf[AtomicSplitter[Any]]
       .splitter

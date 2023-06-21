@@ -67,7 +67,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     val rewriteApp = CompilerBuilder
       .portalRewriteCompiler()
@@ -149,7 +149,7 @@ class PortalTest:
         .sink()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     val rewriteApp = CompilerBuilder
       .portalRewriteCompiler()

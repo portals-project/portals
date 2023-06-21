@@ -64,7 +64,7 @@ import portals.system.Systems
   val application = builder
     .build()
 
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(application)
 
   system.stepUntilComplete()

@@ -61,7 +61,7 @@ object CountingActorMain extends App:
     val wf = ActorWorkflow(generator.stream, config)
   }
 
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()

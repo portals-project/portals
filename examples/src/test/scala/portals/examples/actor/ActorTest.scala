@@ -26,15 +26,14 @@ class ActorTest:
     val testBehavior = ActorTestUtils.TestBehavior(initBehavior(FIB_N))
 
     val config = ActorConfig.default
-      .replace("logging", false)
+      .replace("logging", true)
 
     val app = PortalsApp("Fibonacci") {
       val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), testBehavior.behavior))
       val wf = ActorWorkflow(generator.stream, config)
     }
 
-    /** synchronous interpreter */
-    val system = Systems.interpreter()
+    val system = Systems.test()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()

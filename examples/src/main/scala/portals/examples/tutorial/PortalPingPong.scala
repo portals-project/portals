@@ -46,7 +46,7 @@ import portals.util.Future
       .freeze()
   }
 
-  val system = Systems.interpreter()
+  val system = Systems.test()
 
   system.launch(app)
 

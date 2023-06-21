@@ -25,7 +25,7 @@ object ShoppingCartData:
   def cartOpsGenerator =
     ThrottledGenerator(
       Generators.fromIteratorOfIterators(cartOpsIter),
-      1000,
+      128,
     )
 
   private def inventoryOpsIter: Iterator[Iterator[InventoryReqs]] =
@@ -37,5 +37,5 @@ object ShoppingCartData:
   def inventoryOpsGenerator =
     ThrottledGenerator(
       Generators.fromIteratorOfIterators(inventoryOpsIter),
-      1000,
+      128,
     )

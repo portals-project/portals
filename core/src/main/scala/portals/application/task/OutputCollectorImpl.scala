@@ -52,4 +52,5 @@ private[portals] class OutputCollectorImpl[T, U, Req, Rep] extends OutputCollect
   def getRepOutput(): List[Reply[Rep]] = _reps.toList
   def removeAllReps(): Seq[Reply[Rep]] = _reps.removeAll() // clears and returns
   def clearReps(): Unit = _reps.clear()
+
 end OutputCollectorImpl // class

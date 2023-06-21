@@ -6,8 +6,8 @@ import portals.application.Application
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.system.InterpreterSystem
 import portals.system.Systems
+import portals.system.TestSystem
 
 object PingPongBenchmark extends Benchmark:
   private val config = BenchmarkConfig()
@@ -50,10 +50,8 @@ object PingPongBenchmark extends Benchmark:
     val completer = CompletionWatcher()
 
     val system = sSystem match
-      case "async" => Systems.local()
-      case "noGuarantees" => Systems.asyncLocalNoGuarantees()
-      case "microBatching" => Systems.asyncLocalMicroBatching()
-      case "sync" => Systems.interpreter()
+      case "parallel" => Systems.parallel(8)
+      case "test" => Systems.test()
       case _ => ???
 
     // create pinger and ponger apps
@@ -77,7 +75,7 @@ object PingPongBenchmark extends Benchmark:
     system.launch(pongerApp)
     system.launch(runApp)
 
-    if sSystem == "sync" then system.asInstanceOf[InterpreterSystem].stepUntilComplete()
+    if sSystem == "sync" then system.asInstanceOf[TestSystem].stepUntilComplete()
 
     // wait for completion
     try completer.waitForCompletion()

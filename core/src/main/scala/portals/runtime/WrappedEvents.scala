@@ -31,3 +31,12 @@ object WrappedEvents:
       meta: PortalMeta,
       event: T
   ) extends WrappedEvent[T]
+
+  extension (event: WrappedEvent[_])
+    def key: Key = event match
+      case Event(key, _) => key
+      case Ask(key, _, _) => key
+      case Reply(key, _, _) => key
+      case Error(_) => Key(-1)
+      case Atom => Key(-1)
+      case Seal => Key(-1)

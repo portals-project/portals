@@ -46,7 +46,7 @@ class SequencerTest:
 
     // ASTPrinter.println(app)
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     system.launch(app)
 
