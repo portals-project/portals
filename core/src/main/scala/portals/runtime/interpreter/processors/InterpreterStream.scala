@@ -1,21 +1,20 @@
-package portals.runtime.interpreter
+package portals.runtime.interpreter.processors
 
 import scala.collection.mutable.ArrayDeque
 
 import portals.application.AtomicStream
-import portals.runtime.interpreter.InterpreterEvents.*
-import portals.runtime.interpreter.InterpreterRuntimeContext
+import portals.runtime.BatchedEvents.*
 
-private[portals] class InterpreterStream(stream: AtomicStream[_])(using rctx: InterpreterRuntimeContext):
-  private var atomQueue = ArrayDeque.empty[InterpreterAtom]
+private[portals] class InterpreterStream(stream: AtomicStream[_]):
+  private var atomQueue = ArrayDeque.empty[EventBatch]
   private var index: Long = -1
 
   /** Enqueue an atom to the atomic stream. */
-  def enqueue(ta: InterpreterAtom): Unit =
+  def enqueue(ta: EventBatch): Unit =
     atomQueue = atomQueue.append(ta)
 
   /** Read from the output atomic stream at the index idx. */
-  def read(idx: Long): InterpreterAtom =
+  def read(idx: Long): EventBatch =
     atomQueue((idx - index).toInt) // trust me :_)
 
   /** Returns the range of indexes that can be read. The range is inclusive,

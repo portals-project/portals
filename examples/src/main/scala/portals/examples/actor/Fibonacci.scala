@@ -62,7 +62,7 @@ object FibonacciMain extends App:
   val FIB_N = 21
 
   val config = ActorConfig.default
-    .replace("logging", false)
+    .replace("logging", true)
 
   val app = PortalsApp("Fibonacci") {
     val generator = Generators.signal[ActorMessage](ActorCreate(ActorRef.fresh(), initBehavior(FIB_N)))
@@ -70,7 +70,7 @@ object FibonacciMain extends App:
   }
 
   /** synchronous interpreter */
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()

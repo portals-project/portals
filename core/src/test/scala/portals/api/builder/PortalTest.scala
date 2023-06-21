@@ -76,7 +76,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     system.launch(app)
 
@@ -157,7 +157,7 @@ class PortalTest:
         .sink()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     system.launch(app)
 
@@ -245,7 +245,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     system.launch(app)
 
@@ -307,7 +307,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     system.launch(app)
 
@@ -383,7 +383,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     system.launch(app)
 
@@ -447,7 +447,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()
@@ -501,7 +501,7 @@ class PortalTest:
         .freeze()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()

@@ -61,7 +61,7 @@ import portals.system.Systems
     .build()
 
   // launch the application
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(application)
 
   // run the application

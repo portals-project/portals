@@ -8,4 +8,3 @@ private[portals] class MapStateBackendImpl extends StateBackend:
   override def clear(): Unit = map.clear()
   override def iterator: Iterator[(Any, Any)] = map.iterator
   override def snapshot(): Snapshot = { val c = map.clone(); new Snapshot { def iterator = c.iterator } }
-  override def incrementalSnapshot(): Snapshot = new Snapshot { def iterator = Iterator.empty }

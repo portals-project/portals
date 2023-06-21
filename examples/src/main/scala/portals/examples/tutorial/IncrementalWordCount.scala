@@ -53,7 +53,7 @@ import portals.system.Systems
 
   // ASTPrinter.println(application)
 
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(application)
 
   system.stepUntilComplete()
@@ -94,7 +94,7 @@ import portals.system.Systems
 
   // ASTPrinter.println(application)
 
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(application)
 
   system.stepUntilComplete()

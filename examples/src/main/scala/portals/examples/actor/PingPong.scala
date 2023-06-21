@@ -54,13 +54,7 @@ object PingPongMain extends App:
   }
 
   /** synchronous interpreter */
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()
-
-  // /** parallel runtime */
-  // val system = Systems.parallel()
-  // system.launch(app)
-  // Thread.sleep(1000) // if using parallel
-  // system.shutdown()

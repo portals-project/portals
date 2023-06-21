@@ -31,7 +31,7 @@ object EventFiltering:
   }
 
 @main def EventFilteringMain(): Unit =
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(EventFiltering.app)
   system.stepUntilComplete()
   system.shutdown()

@@ -35,7 +35,7 @@ object HelloWorld:
 @main def HelloWorldMain(): Unit =
   val application = HelloWorld.app
   // ASTPrinter.println(application) // print the application AST
-  val system = Systems.interpreter()
+  val system = Systems.test()
   system.launch(application)
   system.stepUntilComplete()
   system.shutdown()

@@ -38,7 +38,7 @@ class GeneratorTest:
 
     val app = builder.build()
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     // ASTPrinter.println(app)
 
@@ -72,7 +72,7 @@ class GeneratorTest:
 
     val app = builder.build()
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     // ASTPrinter.println(app)
 
@@ -116,7 +116,7 @@ class GeneratorTest:
 
     val app = builder.build()
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     // ASTPrinter.println(app)
 

@@ -95,7 +95,7 @@ class DSLTest:
         .freeze()
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()
@@ -125,7 +125,7 @@ class DSLTest:
       Connections.connect(generator.stream, sequencer)
     }
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()

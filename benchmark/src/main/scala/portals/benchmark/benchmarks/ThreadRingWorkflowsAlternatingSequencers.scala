@@ -7,8 +7,8 @@ import portals.application.Workflow
 import portals.benchmark.*
 import portals.benchmark.systems.*
 import portals.benchmark.BenchmarkUtils.*
-import portals.system.InterpreterSystem
 import portals.system.Systems
+import portals.system.TestSystem
 
 object ThreadRingWorkflowsAlternatingSequencers extends Benchmark:
   private val config = BenchmarkConfig()
@@ -31,10 +31,8 @@ object ThreadRingWorkflowsAlternatingSequencers extends Benchmark:
     val completer = CompletionWatcher()
 
     val system = sSystem match
-      case "async" => Systems.local()
-      case "noGuarantees" => Systems.asyncLocalNoGuarantees()
-      case "microBatching" => Systems.asyncLocalMicroBatching()
-      case "sync" => Systems.interpreter()
+      case "parallel" => Systems.parallel(8)
+      case "test" => Systems.test()
       case _ => ???
 
     val builder = ApplicationBuilder("app")
@@ -77,7 +75,7 @@ object ThreadRingWorkflowsAlternatingSequencers extends Benchmark:
 
     system.launch(application)
 
-    if sSystem == "sync" then system.asInstanceOf[InterpreterSystem].stepUntilComplete()
+    if sSystem == "sync" then system.asInstanceOf[TestSystem].stepUntilComplete()
 
     completer.waitForCompletion()
 

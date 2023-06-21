@@ -5,7 +5,7 @@ import scala.annotation.experimental
 import portals.system.Systems
 
 object ShoppingCartMain extends App:
-  val system = Systems.interpreter()
+  val system = Systems.test()
   val _ = system.launch(ShoppingCart.app)
   // -- to execute for longer time, uncomment the following two lines: --
   // val now = System.currentTimeMillis()

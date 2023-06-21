@@ -60,7 +60,7 @@ import portals.util.Future
 
   } // end dynamicQueryApp
 
-  val system = Systems.interpreter()
+  val system = Systems.test()
 
   system.launch(dynamicQueryApp)
 

@@ -1,7 +1,11 @@
 package portals.test
 
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ConcurrentLinkedQueue
+
 import scala.collection.mutable
 import scala.collection.mutable.Queue
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 import org.junit.Assert._
@@ -11,6 +15,7 @@ import portals.api.builder.FlowBuilder
 import portals.api.builder.TaskBuilder
 import portals.application.task.ExtensibleTask
 import portals.application.task.GenericTask
+import portals.application.task.PerTaskState
 import portals.application.task.TaskContextImpl
 import portals.application.AtomicStreamRef
 import portals.application.Workflow
@@ -36,7 +41,7 @@ object TestUtils:
       .sink()
       .freeze()
     val app = builder.build()
-    val system = Systems.interpreter()
+    val system = Systems.test()
     system.launch(app)
     system.stepUntilComplete()
     system.shutdown()
@@ -67,7 +72,7 @@ object TestUtils:
 
     val app = builder.build()
 
-    val system = Systems.interpreter()
+    val system = Systems.test()
 
     system.launch(app)
     system.stepUntilComplete()
@@ -92,23 +97,23 @@ object TestUtils:
   class Tester[T]:
     import Tester.*
 
-    private val queue: Queue[WrappedEvent[T]] = Queue[WrappedEvent[T]]()
+    private var queue: ConcurrentLinkedQueue[WrappedEvent[T]] = ConcurrentLinkedQueue[WrappedEvent[T]]()
 
-    def enqueueEvent(event: T): Unit = queue.enqueue(Event(event))
-    def enqueueAtom(): Unit = queue.enqueue(Atom)
-    def enqueueSeal(): Unit = queue.enqueue(Seal)
-    def enqueueError(t: Throwable): Unit = queue.enqueue(Error(t))
+    def enqueueEvent(event: T): Unit = queue.add(Event(event))
+    def enqueueAtom(): Unit = queue.add(Atom)
+    def enqueueSeal(): Unit = queue.add(Seal)
+    def enqueueError(t: Throwable): Unit = queue.add(Error(t))
 
     val task = new ExtensibleTask[T, T, Nothing, Nothing] {
       override def onNext(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(t: T): Unit =
-        queue.enqueue(Event(t))
+        queue.add(Event(t))
         ctx.emit(t)
       override def onError(using ctx: TaskContextImpl[T, T, Nothing, Nothing])(t: Throwable): Unit =
-        queue.enqueue(Error(t))
+        queue.add(Error(t))
       override def onComplete(using ctx: TaskContextImpl[T, T, Nothing, Nothing]): Unit =
-        queue.enqueue(Seal)
+        queue.add(Seal)
       override def onAtomComplete(using ctx: TaskContextImpl[T, T, Nothing, Nothing]): Unit =
-        queue.enqueue(Atom)
+        queue.add(Atom)
     }
 
     def workflow(stream: AtomicStreamRef[T], builder: ApplicationBuilder): Workflow[T, T] =
@@ -142,9 +147,9 @@ object TestUtils:
 
     private def dequeueingIter: Iterator[WrappedEvent[T]] =
       new Iterator[Option[WrappedEvent[T]]] {
-        override def hasNext: Boolean = queue.nonEmpty
+        override def hasNext: Boolean = !queue.isEmpty()
         override def next(): Option[WrappedEvent[T]] =
-          Try(queue.dequeue()).toOption
+          Try(queue.poll()).toOption
       }.flatMap(x => x)
 
     def receive(): Option[T] =
@@ -155,11 +160,11 @@ object TestUtils:
       this
 
     def receiveAtomAssert(): this.type =
-      assertEquals(Some(Atom), Try(queue.dequeue()).toOption)
+      assertEquals(Some(Atom), Try(queue.poll()).toOption)
       this
 
     def receiveSealAssert(): this.type =
-      assertEquals(Some(Seal), Try(queue.dequeue()).toOption)
+      assertEquals(Some(Seal), Try(queue.poll()).toOption)
       this
 
     def isEmptyAssert(): this.type = { assertEquals(true, isEmpty()); this }
@@ -170,15 +175,15 @@ object TestUtils:
 
     // does not dequeue the elements
     def receiveAll(): Seq[T] =
-      queue.flatMap { unwrap(_) }.toSeq
+      queue.asScala.flatMap { unwrap(_) }.toSeq
 
     // does not dequeue the elements
     def receiveAllWrapped(): Seq[WrappedEvent[T]] =
-      queue.toSeq
+      queue.asScala.toSeq
 
     // does not dequeue the elements
     def receiveAllAtoms(): Seq[Seq[T]] =
-      atomIterator(queue.iterator).toSeq
+      atomIterator(queue.asScala.iterator).toSeq
 
     def isEmpty(): Boolean =
       queue.isEmpty
@@ -200,12 +205,9 @@ object AsyncTestUtils:
       if !promise.isCompleted then promise.success(value)
 
     def waitForCompletion(): Boolean =
-      // while !future.isCompleted do ()
       Await.result(future, atMost)
 
     def task[T](p: T => Boolean) = TaskBuilder.map[T, T] { x => { if p(x) then complete(true); x } }
-
-    // def taskOpt[T](p: T => Option[Boolean]) = TaskBuilder.map[T, T] { x => { p(x) match { case Some(b) => complete(b); }; x } }
 
     def workflow[T](stream: AtomicStreamRef[T], builder: ApplicationBuilder)(p: T => Boolean): Workflow[T, T] =
       builder
@@ -214,6 +216,20 @@ object AsyncTestUtils:
         .task(task(p(_)))
         .sink[T]()
         .freeze()
+
+  class CountWatcher(count: Int):
+    private val completionWatcher = new CompletionWatcher()
+    private val counter = new AtomicInteger(0)
+
+    def increment(): Unit =
+      if counter.incrementAndGet() == count then //
+        completionWatcher.complete()
+
+    def waitForCompletion(): Boolean =
+      completionWatcher.waitForCompletion()
+
+    def task[T]() =
+      TaskBuilder.map[T, T] { x => { this.increment(); x } }
 
   class Timer():
     private var startTime: Option[Long] = None
@@ -256,3 +272,11 @@ object AsyncTestUtils:
 
     def taskIterator[T](iterator: Iterator[T]) =
       TaskBuilder.map[Int, Int] { x => { assertTrue(x == iterator.next()); x } }
+
+    def taskMonotonic =
+      TaskBuilder.init[Int, Int]:
+        val last = PerTaskState("last", -1)
+        TaskBuilder.map[Int, Int]: x =>
+          assertTrue(x > last.get())
+          last.set(x)
+          x

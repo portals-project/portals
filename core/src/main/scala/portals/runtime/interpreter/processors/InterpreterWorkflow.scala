@@ -1,10 +1,9 @@
-package portals.runtime.interpreter
+package portals.runtime.interpreter.processors
 
 import portals.application.*
 import portals.application.task.*
 import portals.runtime.executor.TaskExecutorImpl
-import portals.runtime.interpreter.InterpreterEvents.*
-import portals.runtime.interpreter.InterpreterRuntimeContext
+import portals.runtime.BatchedEvents.*
 import portals.runtime.WrappedEvents.*
 
 /** Internal API. TestRuntime wrapper of a Workflow.
@@ -14,7 +13,9 @@ import portals.runtime.WrappedEvents.*
   * @param rctx
   *   runtime context
   */
-private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: InterpreterRuntimeContext):
+private[portals] class InterpreterWorkflow(wf: Workflow[_, _]) extends ProcessingStepper:
+  // TODO: collect shuffles somewhere else?
+  private var shuffles: List[ShuffleBatch[_]] = List.empty
 
   // init
   private val runner = TaskExecutorImpl()
@@ -39,12 +40,13 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     * @return
     *   list of produced atoms
     */
-  def process(atom: InterpreterAtom): List[InterpreterAtom] =
+  override def step(atom: EventBatch): List[EventBatch] =
     atom match
-      case x @ InterpreterAtomBatch(_, _) => processAtomBatch(x)
-      case x @ InterpreterAskBatch(_, _) => processAskBatch(x)
-      case x @ InterpreterRepBatch(_, _) => processReplyBatch(x)
-  end process
+      case x @ AtomBatch(_, _) => processAtomBatch(x)
+      case x @ AskBatch(_, _) => processAskBatch(x)
+      case x @ ReplyBatch(_, _) => processReplyBatch(x)
+      case x @ ShuffleBatch(_, _, _) => processShuffleBatch(x)
+  end step
 
   /** Internal API. Get the ordinal of a path in a workflow.
     *
@@ -60,16 +62,16 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     if idx == -1 then workflow.connections.reverse.size else idx
   end getOrdinal
 
-  /** Internal API. Processes a InterpreterAtomBatch on the workflow.
+  /** Internal API. Processes a AtomBatch on the workflow.
     *
     * @param atom
     *   atom batch to be processed
     * @return
     *   list of produced atoms
     */
-  private def processAtomBatch(atom: InterpreterAtomBatch[_]): List[InterpreterAtom] =
+  private def processAtomBatch(atom: AtomBatch[_]): List[EventBatch] =
     // set the source output to be the input atom
-    val outputs = Map[String, InterpreterAtomBatch[_]](wf.source -> atom)
+    val outputs = Map[String, AtomBatch[_]](wf.source -> atom)
 
     // process the atom batch on the outputs with the source set to the input
     processAtomBatchHelper(outputs)
@@ -82,9 +84,9 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     * @return
     *   list of produced atoms
     */
-  private def processAskBatch(atom: InterpreterAskBatch[_]): List[InterpreterAtom] = {
+  private def processAskBatch(atom: AskBatch[_]): List[EventBatch] = {
     // setup info
-    val taskName = rctx.portals(atom.meta.portal).replierTask
+    val taskName = atom.meta.replyingTask.get
     val task = initializedTasks.toMap.get(taskName).get.asInstanceOf[ReplierTaskKind[_, _, _, _]]
 
     // execute ask batch
@@ -107,14 +109,14 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     * @return
     *   list of produced atoms
     */
-  private def processReplyBatch(atom: InterpreterRepBatch[_]): List[InterpreterAtom] =
+  private def processReplyBatch(atom: ReplyBatch[_]): List[EventBatch] =
     // setup info
 
     // execute reply batch
     val outputs1 = atom.list
       .groupBy(_.asInstanceOf[Reply[_]].meta.askingTask)
       .map { (asker, batch) =>
-        (asker, processAskerTask(asker, InterpreterRepBatch(atom.meta, batch)))
+        (asker, processAskerTask(asker, ReplyBatch(atom.meta, batch)))
       }
       .toMap
 
@@ -126,6 +128,15 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     // return
     outputs2
   end processReplyBatch
+
+  def processShuffleBatch(atom: ShuffleBatch[_]): List[EventBatch] =
+    // val atom = AtomBatch(path, list)
+    val forgedAtom = AtomBatch(atom.path, atom.list)
+    // rename to TaskPath
+    val forgedOutputs = Map[String, AtomBatch[_]](atom.task -> forgedAtom)
+    processAtomBatchHelper(forgedOutputs)
+
+  end processShuffleBatch
 
   /** Internal API. Process a task with inputs on the previous outputs.
     *
@@ -145,9 +156,8 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
       path: String,
       task: GenericTask[_, _, _, _],
       inputs: List[String],
-      outputs: Map[String, InterpreterAtomBatch[_]],
-  ): InterpreterAtomBatch[_] = {
-
+      outputs: Map[String, AtomBatch[_]],
+  ): AtomBatch[_] = {
     // setup runner for task
     runner.setup(path, wf.path, task.asInstanceOf)
 
@@ -162,7 +172,14 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     val allOutputs = runner.oc.getOutput()
     val cleanedAllOutputs = runner.clean_events(allOutputs)
     runner.oc.clear()
-    InterpreterAtomBatch(null, cleanedAllOutputs)
+
+    // return an empty atom batch if the task shuffles, otherwise return the atom
+    task match
+      case ShuffleTask(_) =>
+        shuffles = ShuffleBatch(wf.path, path, cleanedAllOutputs) :: shuffles
+        AtomBatch(null, List.empty)
+      case _ =>
+        AtomBatch(null, cleanedAllOutputs)
   }
 
   /** Internal API. Process a sink with inputs on the previous outputs.
@@ -180,8 +197,8 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
   private def processSink(
       path: String,
       inputs: List[String],
-      outputs: Map[String, InterpreterAtomBatch[_]]
-  ): InterpreterAtomBatch[_] = {
+      outputs: Map[String, AtomBatch[_]]
+  ): AtomBatch[_] = {
 
     // all the outputs of the sink
     val allOutputs = inputs
@@ -192,7 +209,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     // cleaned outputs, with duplicate Atom markers removed, etc.
     val cleanedAllOutputs = runner.clean_events(allOutputs)
 
-    InterpreterAtomBatch(wf.stream.path, cleanedAllOutputs)
+    AtomBatch(wf.stream.path, cleanedAllOutputs)
   }
 
   /** Internal API. Process the ReplierTask on a batch of asks.
@@ -212,8 +229,8 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
   private def processReplierTask(
       path: String,
       task: ReplierTaskKind[_, _, _, _],
-      batch: InterpreterAskBatch[_]
-  ): InterpreterAtomBatch[_] =
+      batch: AskBatch[_]
+  ): AtomBatch[_] =
 
     // setup runner for task
     runner.setup(path, wf.path, task.asInstanceOf)
@@ -227,7 +244,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     val cleanedOutput = runner.clean_events(output)
 
     // return
-    InterpreterAtomBatch(null, cleanedOutput)
+    AtomBatch(null, cleanedOutput)
   end processReplierTask
 
   /** Internal API. Process a TestReplyBatch.
@@ -244,7 +261,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     * @return
     *   batch of regular events produced by the replier task
     */
-  private def processAskerTask(path: String, atom: InterpreterRepBatch[_]): InterpreterAtomBatch[_] =
+  private def processAskerTask(path: String, atom: ReplyBatch[_]): AtomBatch[_] =
 
     // setup runner for task
     runner.setup(path, wf.path, null)
@@ -258,7 +275,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     val cleanedOutput = runner.clean_events(output)
 
     // return
-    InterpreterAtomBatch(null, cleanedOutput)
+    AtomBatch(null, cleanedOutput)
   end processAskerTask
 
   /** Internal API. Process the workflow on the provided events in `_outputs`.
@@ -272,17 +289,17 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     * function is to provide the workflow input as a mapping from the source
     * name to the workflow input. This will in turn process the input on the
     * workflow, and produce a list of the produced atoms, typically this will be
-    * a single InterpreterAtomBatch. If there are asker tasks, or replyer tasks,
-    * then it may also produce several AskBatches and RepBatches.
+    * a single AtomBatch. If there are asker tasks, or replyer tasks, then it
+    * may also produce several AskBatches and RepBatches.
     *
     * @param _outputs
     *   mapping of task names to their output
     * @return
     *   list of produced atoms by the workflow
     */
-  private def processAtomBatchHelper(_outputs: Map[String, InterpreterAtomBatch[_]]): List[InterpreterAtom] =
+  private def processAtomBatchHelper(_outputs: Map[String, AtomBatch[_]]): List[EventBatch] =
     // A mapping from task/source/sink name to their output
-    var outputs: Map[String, InterpreterAtomBatch[_]] = _outputs
+    var outputs: Map[String, AtomBatch[_]] = _outputs
 
     ////////////////////////////////////////////////////////////////////////////
     // 1. Execute tasks in topographical order
@@ -315,7 +332,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
           // group by portal
           .groupBy { case Ask(_, portalMeta, _) => (portalMeta.portal) }
           // map grouping to ask batches
-          .map { (k, v) => InterpreterAskBatch(InterpreterPortalBatchMeta(k, wf.path), v) }
+          .map { (k, v) => AskBatch(AskReplyMeta(k, wf.path), v) }
           .toList
 
       // collect reply outputs
@@ -325,7 +342,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
           // group by portal and the asking workflow
           .groupBy { case Reply(_, portalMeta, _) => (portalMeta.portal, portalMeta.askingWF) }
           // map grouping to reply batches
-          .map { (k, v) => InterpreterRepBatch(InterpreterPortalBatchMeta(k._1, k._2), v) }
+          .map { (k, v) => ReplyBatch(AskReplyMeta(k._1, k._2), v) }
           .toList
 
       // concatenate list of atom batches
@@ -333,14 +350,20 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _])(using rctx: Inter
     }
 
     ////////////////////////////////////////////////////////////////////////////
+    // 4. Collect ShuffleBatches
+    ////////////////////////////////////////////////////////////////////////////
+    val shuffleOutputs = shuffles.reverse.filter(_.nonEmpty)
+
+    ////////////////////////////////////////////////////////////////////////////
     // 4. Cleanup
     ////////////////////////////////////////////////////////////////////////////
     runner.oc.clear()
     runner.oc.clearAsks()
     runner.oc.clearReps()
+    shuffles = List.empty
 
     ////////////////////////////////////////////////////////////////////////////
     // 5. Return
     ////////////////////////////////////////////////////////////////////////////
-    outputs(wf.sink) :: askAndReplyOutputs
+    outputs(wf.sink) :: askAndReplyOutputs ::: shuffleOutputs
   end processAtomBatchHelper

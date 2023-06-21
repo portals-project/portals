@@ -1,15 +1,17 @@
 package portals.system
 
+import portals.application.Application
+
 trait Systems
 
-import portals.system.InterpreterSystem
 import portals.system.PortalsSystem
+import portals.system.TestSystem
 
 object Systems extends Systems:
-  def default(): PortalsSystem = interpreter()
+  def default(): PortalsSystem = test()
 
-  def interpreter(): InterpreterSystem = new InterpreterSystem()
+  def test(): TestSystem = new TestSystem()
 
-  def interpreter(seed: Int): InterpreterSystem = new InterpreterSystem(Some(seed))
+  def test(seed: Int): TestSystem = new TestSystem(Some(seed))
 
-  def local(): PortalsSystem = new LocalSystem()
+  def parallel(nThreads: Int): PortalsSystem = new ParallelSystem(nThreads)
