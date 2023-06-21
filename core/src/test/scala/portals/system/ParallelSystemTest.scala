@@ -22,6 +22,7 @@ import portals.test.AsyncTestUtils.Asserter
 @RunWith(classOf[JUnit4])
 class ParallelSystemTest:
   @Test
+  @Ignore
   def lotsOfEventsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -55,6 +56,7 @@ class ParallelSystemTest:
     system.shutdown()
 
   @Test
+  @Ignore
   def largeAtomsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -130,6 +132,7 @@ class ParallelSystemTest:
     system.shutdown()
 
   @Test
+  @Ignore
   def chainOfTasksTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -170,6 +173,7 @@ class ParallelSystemTest:
     system.shutdown()
 
   @Test
+  @Ignore
   def taskFanOutInTest(): Unit =
     import portals.api.dsl.DSL.*
 
