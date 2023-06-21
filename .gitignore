@@ -1,10 +1,15 @@
+# sbt
 project/target
 project/project/target
 target/
+
+# macOS
+*.DS_Store
+
+# VS Code
 .idea/
 .bsp/
 .bloop/
 .metals/
 .vscode/
 *metals.sbt
-*.DS_Store
