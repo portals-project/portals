@@ -4,6 +4,10 @@ lazy val logbackversion = "1.2.11"
 lazy val akkaVersion = "2.6.20"
 lazy val pprintversion = "0.7.0"
 lazy val nexmarkVersion = "2.41.0"
+lazy val caskVersion = "0.9.1"
+lazy val upickleVersion = "3.1.0"
+lazy val requestsVersion = "0.8.0"
+lazy val mainargsVersion = "0.5.0"
 
 ThisBuild / organization := "org.portals-project"
 ThisBuild / organizationName := "Portals-Project"
@@ -44,3 +48,15 @@ lazy val examples = project
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
   .dependsOn(portals % "test->test;compile->compile")
+
+lazy val distributed = project
+  .in(file("distributed"))
+  .settings(
+    name := "portals-distributed",
+    libraryDependencies += "com.lihaoyi" %% "cask" % caskVersion,
+    libraryDependencies += "com.lihaoyi" %% "upickle" % upickleVersion,
+    libraryDependencies += "com.lihaoyi" %% "requests" % requestsVersion,
+    libraryDependencies += "com.lihaoyi" %% "mainargs" % mainargsVersion,
+  )
+  .dependsOn(portals % "test->test;compile->compile")
+  .dependsOn(examples % "test->test;compile->compile")
