@@ -15,6 +15,18 @@ import portals.util.Common.Types.Path
 private[portals] class Interpreter(ctx: InterpreterContext) extends SuspendingRuntime with GarbageCollectingRuntime:
   import SuspendingRuntime.*
 
+  private def initProgressToLatest(path: String, dependency: String): Unit =
+    ctx.progressTracker.initProgress(path, dependency)
+    ctx.rctx.streams.get(dependency) match
+      case Some(stream) =>
+        stream.asInstanceOf[InterpreterStream].getIdxRange() match
+          case (_, -1) => ()
+          case (-1, _) => ()
+          case (from, to) =>
+            ctx.progressTracker.setProgress(path, dependency, to)
+      case None =>
+        ()
+
   private def launchStreams(application: Application): Unit = {
     application.streams.foreach { stream =>
       ctx.rctx.addStream(stream)
@@ -33,7 +45,7 @@ private[portals] class Interpreter(ctx: InterpreterContext) extends SuspendingRu
       ctx.rctx.addWorkflow(wf)
       ctx.graphTracker.addEdge(wf.consumes.path, wf.path)
       ctx.graphTracker.addEdge(wf.path, wf.stream.path)
-      ctx.progressTracker.initProgress(wf.path, wf.consumes.path)
+      initProgressToLatest(wf.path, wf.consumes.path)
 
       // add portal dependencies
       wf.tasks.foreach((name, task) =>
@@ -54,7 +66,7 @@ private[portals] class Interpreter(ctx: InterpreterContext) extends SuspendingRu
     application.splitters.foreach { splitr =>
       ctx.rctx.addSplitter(splitr)
       ctx.graphTracker.addEdge(splitr.in.path, splitr.path)
-      ctx.progressTracker.initProgress(splitr.path, splitr.in.path)
+      initProgressToLatest(splitr.path, splitr.in.path)
     }
   }
 
@@ -75,7 +87,7 @@ private[portals] class Interpreter(ctx: InterpreterContext) extends SuspendingRu
     application.connections.foreach { conn =>
       ctx.rctx.addConnection(conn)
       ctx.graphTracker.addEdge(conn.from.path, conn.to.path)
-      ctx.progressTracker.initProgress(conn.to.path, conn.from.path)
+      initProgressToLatest(conn.to.path, conn.from.path)
     }
   }
 
