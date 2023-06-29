@@ -8,6 +8,7 @@ lazy val caskVersion = "0.9.1"
 lazy val upickleVersion = "3.1.0"
 lazy val requestsVersion = "0.8.0"
 lazy val mainargsVersion = "0.5.0"
+lazy val scalajsstubsVersion = "1.1.0"
 
 ThisBuild / organization := "org.portals-project"
 ThisBuild / organizationName := "Portals-Project"
@@ -20,17 +21,20 @@ ThisBuild / homepage := Some(url("https://github.com/portals-project/portals"))
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := scala3Version
 
-lazy val portals = project
+lazy val portals = crossProject(JSPlatform, JVMPlatform)
   .in(file("core"))
-  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "portals",
     Compile / doc / target := target.value / "api",
-    libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
+    libraryDependencies += "com.lihaoyi" %%% "pprint" % pprintversion,
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
-    libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
-    libraryDependencies += "com.lihaoyi" %% "pprint" % pprintversion,
+    libraryDependencies += "org.scala-js" %% "scalajs-stubs" % scalajsstubsVersion % "provided",
   )
+  .jvmSettings(
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
+    libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
+  )
+  .jsSettings()
 
 lazy val benchmark = project
   .in(file("benchmark"))
@@ -40,7 +44,7 @@ lazy val benchmark = project
     libraryDependencies += "org.apache.beam" % "beam-sdks-java-nexmark" % nexmarkVersion, // NEXMark benchmark
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
   )
-  .dependsOn(portals % "test->test;compile->compile")
+  .dependsOn(portals.jvm % "test->test;compile->compile")
 
 lazy val examples = project
   .in(file("examples"))
@@ -48,7 +52,7 @@ lazy val examples = project
     name := "portals-examples",
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
   )
-  .dependsOn(portals % "test->test;compile->compile")
+  .dependsOn(portals.jvm % "test->test;compile->compile")
 
 lazy val distributed = project
   .in(file("distributed"))
@@ -59,12 +63,11 @@ lazy val distributed = project
     libraryDependencies += "com.lihaoyi" %% "requests" % requestsVersion,
     libraryDependencies += "com.lihaoyi" %% "mainargs" % mainargsVersion,
   )
-  .dependsOn(portals % "test->test;compile->compile")
+  .dependsOn(portals.jvm % "test->test;compile->compile")
   .dependsOn(examples % "test->test;compile->compile")
 
-lazy val portalsjs = project
+lazy val portalsjs = crossProject(JSPlatform)
   .in(file("portals-js"))
-  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "portals-js",
     libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.4.0",

@@ -1,20 +1,27 @@
 # PortalsJS
 
-## Compile
-The compiled files are in `portals-js/target/scala-X/portals-js-fastopt/main.js`; `portals-js/target/scala-X/portals-js-opt/main.js`.
+## Compile, Test, and Run
+The final compiled file is: `portals-js/js/target/scala-X/portals-js.js`.
 
+Install packages:
+```
+npm install javascript-obfuscator fs
+```
+
+Compile:
 ```
 sbt compile;
 sbt fastLinkJS;
 sbt fastOptJS;
 sbt fullOptJS;
+node portals-js/js/src/main/resources/obfuscator.js;
 ```
 
-## Obfuscation
+Test:
 ```
-npm install javascript-obfuscator fs
-node portals-js/src/main/resources/obfuscator.js
+cd portals-js/js/src/main/resources/;
+node test-runner.js;
 ```
 
-## Test and Run
-Open the `src/main/resources/index.html` file in a browser, and open the console editor.
+To run:
+Load the JS file, see https://github.com/portals-project/playground.
