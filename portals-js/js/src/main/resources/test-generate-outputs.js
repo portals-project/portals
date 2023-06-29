@@ -26,6 +26,21 @@ function LogCapture() {
 }
 const log = LogCapture();
 
+// helper function to format the output to match the expected output by removing
+// timestamps and other information before the "- " symbol for every line
+function formatOutput(input) {
+  var lines = input.split('\n');
+  var formattedLines = lines.map(function (line) {
+    var hyphenIndex = line.indexOf('-');
+    if (hyphenIndex !== -1) {
+      return line.substring(hyphenIndex + 2); // +2 to exclude the space after the hyphen
+    }
+    return line;
+  });
+  var formattedOutput = formattedLines.join('\n');
+  return formattedOutput;
+}
+
 // read all example files from the example directory, if no output exists, then 
 // create the corresponding output file
 fs.readdirSync(exampleDirectory).forEach((file) => {
@@ -48,7 +63,7 @@ fs.readdirSync(exampleDirectory).forEach((file) => {
       console.warn(`Expected output file not found. Creating ${expectedFilePath}`);
       log.startCapturing();
       eval(exampleCode);
-      const output = log.retrieve();
+      const output = formatOutput(log.retrieve());
       log.clear();
       log.stopCapturing();
       fs.writeFileSync(expectedFilePath, output, 'utf8');
