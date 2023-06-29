@@ -1,0 +1,10 @@
+var builder = PortalsJS.ApplicationBuilder("helloVLDB")
+var _ = builder.workflows
+  .source(builder.generators.fromArray(["Hello VLDB!"]).stream)
+  .logger()
+  .sink()
+  .freeze()
+var helloVLDB = builder.build()
+var system = PortalsJS.System()
+system.launch(helloVLDB)
+system.stepUntilComplete()

@@ -11,6 +11,8 @@ const portalsJSCode = fs.readFileSync(portalsJS, 'utf8');
 const ignoredFiles = [
   'union.js',
   'splitter.js',
+  `billionEvents.js`,
+  `sleepingBeauty.js`,
 ]
 
 // helper function to capture the output to console.log
@@ -41,35 +43,52 @@ function formatOutput(input) {
   return formattedOutput;
 }
 
+// process an example file, may throw an error if example throws an error
+function processExampleFile(directory, file) {
+  const filePath = path.join(directory, file);
+  const expectedFilePath = filePath + '.out';
+
+  const example = fs.readFileSync(filePath, 'utf8');
+  const exampleCode = portalsJSCode + "\n" + example;
+
+  // ignore files in the ignoredFiles array
+  if (ignoredFiles.includes(file)) {
+    return;
+  }
+
+  // create an expected output file if it does not exist
+  if (!fs.existsSync(expectedFilePath, 'utf8')) {
+    console.warn(`Expected output file not found. Creating ${expectedFilePath}`);
+    log.startCapturing();
+    eval(exampleCode);
+    const output = formatOutput(log.retrieve());
+    log.clear();
+    log.stopCapturing();
+    fs.writeFileSync(expectedFilePath, output, 'utf8');
+    return;
+  }
+}
+
 // read all example files from the example directory, if no output exists, then 
 // create the corresponding output file
-fs.readdirSync(exampleDirectory).forEach((file) => {
-  if (file.endsWith('.js')) {
-    // example
-    const exampleFilePath = path.join(exampleDirectory, file);
-    const example = fs.readFileSync(exampleFilePath, 'utf8');
-    const exampleCode = portalsJSCode + "\n" + example;
+function processDirectory(directory) {
+  fs.readdirSync(directory).forEach((file) => {
+    const filePath = path.join(directory, file);
+    const stats = fs.statSync(filePath);
 
-    // ignore
-    if (ignoredFiles.includes(file)) {
-      return;
+    if (stats.isDirectory()) {
+      // recursively process subdirectories
+      processDirectory(filePath);
+
+    } else if (stats.isFile() && file.endsWith('.js')) {
+      // process example files
+      processExampleFile(directory, file);
     }
+  });
+}
 
-    const expectedFilePath = path.join(exampleDirectory, `${file}.out`);
-    try {
-      expected = fs.readFileSync(expectedFilePath, 'utf8');
-    } catch (error) {
-      // creating the expected output file if it does not exist
-      console.warn(`Expected output file not found. Creating ${expectedFilePath}`);
-      log.startCapturing();
-      eval(exampleCode);
-      const output = formatOutput(log.retrieve());
-      log.clear();
-      log.stopCapturing();
-      fs.writeFileSync(expectedFilePath, output, 'utf8');
-      return;
-    }
-  }
-});
+// process the example directory, recusively
+processDirectory(exampleDirectory);
 
+// if this message printed then all outputs were generated
 console.log('All outputs generated!');

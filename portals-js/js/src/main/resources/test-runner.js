@@ -16,6 +16,12 @@ const ignoredOutputs = [
   'splitter.js',
 ]
 
+// files which are ignored
+const ignoredFiles = [
+  `billionEvents.js`,
+  `sleepingBeauty.js`,
+]
+
 // helper function to capture the output to console.log
 function LogCapture() {
   var log = "";
@@ -44,41 +50,66 @@ function formatOutput(input) {
   return formattedOutput;
 }
 
+// process an example file, throws an error if example throws an error or if the
+// output does not match the expected output
+function processExampleFile(directory, file) {
+  const filePath = path.join(directory, file);
+  const expectedFilePath = filePath + '.out';
+
+  const example = fs.readFileSync(filePath, 'utf8');
+  const exampleCode = portalsJSCode + "\n" + example;
+
+  // ignore files in the ignoredFiles array
+  if (ignoredFiles.includes(file)) {
+    return;
+  }
+
+  // if no output file exists, then only verify that it does not throw any 
+  // errors
+  if (ignoredOutputs.includes(file)) {
+    log.startCapturing();
+    eval(exampleCode);
+    log.clear();
+    log.stopCapturing();
+    return;
+  }
+
+  expected = fs.readFileSync(expectedFilePath, 'utf8');
+
+  // execute
+  log.startCapturing();
+  eval(exampleCode);
+  const actual = formatOutput(log.retrieve());
+  log.clear();
+  log.stopCapturing();
+
+  // verify output
+  if (actual !== expected) {
+    throw new Error(`Expected ${expected}, but got ${actual}`);
+  }
+}
+
 // read all example files from the example directory, if an output exists, then
 // compare the output to the expected output, otherwise just executed the file
 // and check if it executes without errors
-fs.readdirSync(exampleDirectory).forEach((file) => {
-  if (file.endsWith('.js')) {
-    // example
-    const exampleFilePath = path.join(exampleDirectory, file);
-    const example = fs.readFileSync(exampleFilePath, 'utf8');
-    const exampleCode = portalsJSCode + "\n" + example;
+function processDirectory(directory) {
+  fs.readdirSync(directory).forEach((file) => {
+    const filePath = path.join(directory, file);
+    const stats = fs.statSync(filePath);
 
-    // execute, verify no errors if no output file exists
-    if (ignoredOutputs.includes(file)) {
-      log.startCapturing();
-      eval(exampleCode);
-      log.clear();
-      log.stopCapturing();
-      return;
+    if (stats.isDirectory()) {
+      // recursively process subdirectories
+      processDirectory(filePath);
+
+    } else if (stats.isFile() && file.endsWith('.js')) {
+      // process example files
+      processExampleFile(directory, file);
     }
+  });
+}
 
-    // expected output
-    const expectedFilePath = path.join(exampleDirectory, `${file}.out`);
-    expected = fs.readFileSync(expectedFilePath, 'utf8');
+// process the example directory, recursively
+processDirectory(exampleDirectory);
 
-    // execute
-    log.startCapturing();
-    eval(exampleCode);
-    const actual = formatOutput(log.retrieve());
-    log.clear();
-    log.stopCapturing();
-
-    // verify output
-    if (actual !== expected) {
-      throw new Error(`Expected ${expected}, but got ${actual}`);
-    }
-  }
-});
-
+// if this message printed then all tests passed
 console.log('All tests passed!');
