@@ -75,38 +75,39 @@ object PortalsJS:
   // Registry
   //////////////////////////////////////////////////////////////////////////////
 
-  @JSExportAll
-  class AppRegistryJS(system: portals.system.InterpreterSystem):
-    import scalajs.js.JSConverters._
-    def show: String =
-      scalajs.js.JSON.stringify(this.all, space = 2)
-    def all: scalajs.js.Dictionary[Array[String]] =
-      scalajs.js.Dictionary(
-        "applications" -> this.applications,
-        "streams" -> this.streams,
-        "portals" -> this.portals,
-        "workflows" -> this.workflows,
-        "sequencers" -> this.sequencers,
-        "splitters" -> this.splitters,
-        "generators" -> this.generators,
-        "connections" -> this.connections
-      )
-    def applications: Array[String] =
-      system.registry.applications.map(_._2.path).toJSArray
-    def streams: Array[String] =
-      system.registry.streams.map(_._2.stream.path).toJSArray
-    def portals: Array[String] =
-      system.registry.portals.map(_._2.portal.path).toJSArray
-    def workflows: Array[String] =
-      system.registry.workflows.map(_._2.wf.path).toJSArray
-    def sequencers: Array[String] =
-      system.registry.sequencers.map(_._2.sequencer.path).toJSArray
-    def splitters: Array[String] =
-      system.registry.splitters.map(_._2.splitter.path).toJSArray
-    def generators: Array[String] =
-      system.registry.generators.map(_._2.generator.path).toJSArray
-    def connections: Array[String] =
-      system.registry.connections.map(_._2.connection.path).toJSArray
+  // TODO: decide if we should bring back the registry in the future?
+  // @JSExportAll
+  // class AppRegistryJS(system: portals.system.TestSystem):
+  //   import scalajs.js.JSConverters._
+  //   def show: String =
+  //     scalajs.js.JSON.stringify(this.all, space = 2)
+  //   def all: scalajs.js.Dictionary[Array[String]] =
+  //     scalajs.js.Dictionary(
+  //       "applications" -> this.applications,
+  //       "streams" -> this.streams,
+  //       "portals" -> this.portals,
+  //       "workflows" -> this.workflows,
+  //       "sequencers" -> this.sequencers,
+  //       "splitters" -> this.splitters,
+  //       "generators" -> this.generators,
+  //       "connections" -> this.connections
+  //     )
+  //   def applications: Array[String] =
+  //     system.registry.applications.map(_._2.path).toJSArray
+  //   def streams: Array[String] =
+  //     system.registry.streams.map(_._2.stream.path).toJSArray
+  //   def portals: Array[String] =
+  //     system.registry.portals.map(_._2.portal.path).toJSArray
+  //   def workflows: Array[String] =
+  //     system.registry.workflows.map(_._2.wf.path).toJSArray
+  //   def sequencers: Array[String] =
+  //     system.registry.sequencers.map(_._2.sequencer.path).toJSArray
+  //   def splitters: Array[String] =
+  //     system.registry.splitters.map(_._2.splitter.path).toJSArray
+  //   def generators: Array[String] =
+  //     system.registry.generators.map(_._2.generator.path).toJSArray
+  //   def connections: Array[String] =
+  //     system.registry.connections.map(_._2.connection.path).toJSArray
 
   //////////////////////////////////////////////////////////////////////////////
   // System
@@ -114,8 +115,8 @@ object PortalsJS:
 
   @JSExportAll
   class SystemJS():
-    private val system = portals.system.Systems.interpreter()
-    def registry: AppRegistryJS = new AppRegistryJS(system)
+    private val system = portals.system.Systems.test()
+    // def registry: AppRegistryJS = new AppRegistryJS(system)
     def launch(app: Application): Unit = system.launch(app)
     def step(): Unit = system.step()
     def stepUntilComplete(): Unit = system.stepUntilComplete()
@@ -144,7 +145,6 @@ object PortalsJS:
 
   @JSExport
   def ApplicationBuilder(name: String): ApplicationBuilderJS = ApplicationBuilderJS(name)
-
 
   //////////////////////////////////////////////////////////////////////////////
   // Flow Builder
@@ -456,7 +456,8 @@ object PortalsJS:
     def del(): Unit = state.del()(using ctx)
 
   @JSExport
-  def PerTaskState[T](name: String, initValue: T, ctx: StatefulTaskContext): PerTaskStateJS[T] = PerTaskStateJS[T](name, initValue, ctx)
+  def PerTaskState[T](name: String, initValue: T, ctx: StatefulTaskContext): PerTaskStateJS[T] =
+    PerTaskStateJS[T](name, initValue, ctx)
 
   @JSExportAll
   class PerKeyStateJS[T](name: String, initValue: T, ctx: StatefulTaskContext):
@@ -466,6 +467,7 @@ object PortalsJS:
     def del(): Unit = state.del()(using ctx)
 
   @JSExport
-  def PerKeyState[T](name: String, initValue: T, ctx: StatefulTaskContext): PerKeyStateJS[T] = PerKeyStateJS[T](name, initValue, ctx)
+  def PerKeyState[T](name: String, initValue: T, ctx: StatefulTaskContext): PerKeyStateJS[T] =
+    PerKeyStateJS[T](name, initValue, ctx)
 
 end PortalsJS
