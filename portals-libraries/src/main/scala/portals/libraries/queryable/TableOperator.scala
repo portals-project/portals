@@ -16,5 +16,5 @@ private[queryable] object TableOperator:
     * responding to the request. Any changes to the table are reflected in the
     * emitted CDC.
     */
-  def apply[T <: RowType](table: Table[T]): _Type[T] =
+  def apply[T <: RowType](table: TableType[T]): _Type[T] =
     ??? // return a task that implements the table operator

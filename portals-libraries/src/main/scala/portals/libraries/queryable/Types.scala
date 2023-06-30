@@ -6,7 +6,11 @@ object Types:
   trait RowType extends Serializable with Product
 
   /** The type of a table. */
-  sealed trait TableType[T <: RowType]
+  trait TableType[T <: RowType]:
+    def ref: TableRef[T]
+
+  /** A reference to a table. */
+  sealed trait TableRef[T <: RowType] extends Serializable
 
   /** Change data capture events handled by the table operators. */
   sealed trait CDC[T]
