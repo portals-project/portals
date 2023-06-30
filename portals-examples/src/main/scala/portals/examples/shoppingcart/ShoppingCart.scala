@@ -2,7 +2,6 @@ package portals.examples.shoppingcart
 
 import scala.annotation.experimental
 
-import portals.api.dsl.CustomTask
 import portals.api.dsl.DSL
 import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
@@ -14,7 +13,7 @@ import portals.examples.shoppingcart.ShoppingCartEvents.*
 // Shopping Cart
 ////////////////////////////////////////////////////////////////////////////////
 object ShoppingCart:
-  def app: Application = PortalsApp("shopping-cart") {
+  def app: Application = PortalsApp("shopping-cart"):
     val inventoryOpsGenerator = Generators.generator(ShoppingCartData.inventoryOpsGenerator)
 
     val cartOpsGenerator = Generators.generator(ShoppingCartData.cartOpsGenerator)
@@ -58,5 +57,5 @@ object ShoppingCart:
       .nothing()
       .sink()
       .freeze()
-  }
   end app // def
+end ShoppingCart // object

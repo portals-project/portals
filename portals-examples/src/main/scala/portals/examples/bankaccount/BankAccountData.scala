@@ -3,7 +3,6 @@ package portals.examples.bankaccount
 import scala.annotation.experimental
 import scala.util.Random
 
-@experimental
 object BankAccountData:
   import BankAccountConfig.*
   import BankAccountEvents.*
@@ -15,7 +14,7 @@ object BankAccountData:
       case 0 => Deposit(rand.nextInt(N_ACCOUNTS), rand.nextInt(100))
       case 1 => Withdraw(rand.nextInt(N_ACCOUNTS), rand.nextInt(100))
 
-  def txnIter: Iterator[Iterator[Req]] =
+  def txnIter: Iterator[Iterator[Saga[AccountOperation]]] =
     Iterator
       .fill(N_EVENTS) {
         Saga(op, List.fill(N_OPS_PER_SAGA - 1)(op))

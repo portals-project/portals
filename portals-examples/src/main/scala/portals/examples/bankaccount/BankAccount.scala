@@ -2,41 +2,41 @@ package portals.examples.bankaccount
 
 import scala.annotation.experimental
 
-import portals.api.dsl.CustomTask
 import portals.api.dsl.DSL.*
+import portals.api.dsl.ExperimentalDSL.*
 import portals.application.Application
+import portals.examples.bankaccount.BankAccountEvents.*
 
-@experimental
+////////////////////////////////////////////////////////////////////////////////
+// Bank Account
+////////////////////////////////////////////////////////////////////////////////
 object BankAccount:
-  import portals.api.dsl.ExperimentalDSL.*
-
-  import BankAccountEvents.*
 
   // the bank account application
-  val app: Application = PortalsApp("BankAccount") {
+  def app: Application = PortalsApp("BankAccount"):
+
     // generated stream of transactions
     val txnOps = Generators.fromIteratorOfIterators(BankAccountData.txnIter)
 
     // bank account service portal
-    val account = Portal[Req, Rep]("account", keyFrom)
+    val account = Portal[Saga[AccountOperation], SagaReply[AccountOperation]]("account", keyFrom)
 
     // bank account workflow
     val accountWorkflow = Workflows[Nothing, Nothing]("accountWorkflow")
-      .source(Generators.empty.stream)
-      .task[Nothing] {
-        // TODO: this looks ugly, change the way we use CustomTasks :/
-        CustomTask.askerReplier(account)(account) { () => new BankAccountTasks.AccountTask(account) }
-      }
+      .source(Generators.empty.stream) // no input
+      .task[Nothing](AccountTask(account))
       .sink()
       .freeze()
 
     // trigger workflow
-    val _ = Workflows[Req, Nothing]("txns")
+    val _ = Workflows[Saga[AccountOperation], Nothing]("txns")
       .source(txnOps.stream)
-      .task(BankAccountTasks.triggerTask(account))
+      .task(TriggerTask(account))
       .filter(_.isInstanceOf[SagaSuccess[AccountOperation]])
       .logger()
-      .empty[Nothing]()
+      .empty[Nothing]() // consume the stream
       .sink()
       .freeze()
-  }
+
+  end app
+end BankAccount
