@@ -18,3 +18,13 @@ private[queryable] object TableOperator:
     */
   def apply[T <: RowType](table: TableType[T]): _Type[T] =
     ??? // return a task that implements the table operator
+    // To be implemented as a Portal Asker:
+    // * Handles Strings as inputs, then parses and validates them, and then
+    //   executes them. The result is emitted as a string.
+    // * Queries use the asker interface, to ask the corresponding Table portal,
+    //   this sends a QueryRequest to the portal.
+    // * If a query is malformed, it should output an Error as a response.
+    // 1. parses the incoming query (String)
+    // 2. validates the parsed query (table exists, correct form, etc.)
+    // 3. rewrites the query / reorders it so it can be executed
+    // 4. execute/interpret the query, intermediate state needs to be persisted

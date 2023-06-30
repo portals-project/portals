@@ -15,3 +15,11 @@ private[queryable] object QueryOperator:
     */
   def apply[T <: RowType](table: TableRef[T]*): _Type[T] =
     ??? // return a task that implements the query operator
+    // To be implemented as a Portal Replier:
+    // * Handles CDC events on its regular input, applies them, and outputs CDC
+    //   events.
+    // * Handles QueryRequest and replies with QueryResponse on its portal
+    //   handler.
+    // Operation mode:
+    // 1. apply the incoming operation
+    // 2. return the result, emit CDC if changes are made
