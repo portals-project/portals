@@ -24,6 +24,6 @@ jobs:
       - name: Install Node.js Packages
         run: npm install javascript-obfuscator fs
       - name: Build
-        run: sh portals-js/js/src/main/resources/portalsjs-compile.sh
+        run: sh scripts/portalsjs/portalsjs-compile.sh
       - name: Test
-        run: sh portals-js/js/src/main/resources/portalsjs-test.sh
+        run: sh scripts/portalsjs/portalsjs-test-runner.sh

@@ -1,0 +1,1 @@
+node portals-portalsjs/js/src/main/resources/test-runner.js;
