@@ -22,9 +22,9 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := scala3Version
 
 lazy val portals = crossProject(JSPlatform, JVMPlatform)
-  .in(file("core"))
+  .in(file("portals-core"))
   .settings(
-    name := "portals",
+    name := "portals-core",
     Compile / doc / target := target.value / "api",
     libraryDependencies += "com.lihaoyi" %%% "pprint" % pprintversion,
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
@@ -37,7 +37,7 @@ lazy val portals = crossProject(JSPlatform, JVMPlatform)
   .jsSettings()
 
 lazy val benchmark = project
-  .in(file("benchmark"))
+  .in(file("portals-benchmark"))
   .settings(
     name := "portals-benchmark",
     resolvers += "confluent" at "https://packages.confluent.io/maven/", // NEXMark benchmark
@@ -47,7 +47,7 @@ lazy val benchmark = project
   .dependsOn(portals.jvm % "test->test;compile->compile")
 
 lazy val examples = project
-  .in(file("examples"))
+  .in(file("portals-examples"))
   .settings(
     name := "portals-examples",
     libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
@@ -55,7 +55,7 @@ lazy val examples = project
   .dependsOn(portals.jvm % "test->test;compile->compile")
 
 lazy val distributed = project
-  .in(file("distributed"))
+  .in(file("portals-distributed"))
   .settings(
     name := "portals-distributed",
     libraryDependencies += "com.lihaoyi" %% "cask" % caskVersion,
@@ -67,9 +67,9 @@ lazy val distributed = project
   .dependsOn(examples % "test->test;compile->compile")
 
 lazy val portalsjs = crossProject(JSPlatform)
-  .in(file("portals-js"))
+  .in(file("portals-portalsjs"))
   .settings(
-    name := "portals-js",
+    name := "portals-portalsjs",
     libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.4.0",
     Compile / scalaJSLinkerConfig ~= { _.withSourceMap(false) },
   )
