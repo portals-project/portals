@@ -1,7 +1,7 @@
 # PortalsJS
 
 ## Compile, Test, and Run
-The final compiled file is: `portals-js/js/target/scala-X/portals-js.js`.
+The final compiled file is: `portals-portalsjs/js/target/scala-X/portals-portalsjs.js`.
 
 Install packages:
 ```
