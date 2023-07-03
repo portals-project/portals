@@ -13,6 +13,7 @@ object PortalsJS:
 
   import scala.annotation.targetName
   import scalajs.js.Array
+  import scalajs.js.BigInt
   import scalajs.js.Function1
   import scalajs.js.Function2
   import scalajs.js.Iterator
@@ -21,8 +22,10 @@ object PortalsJS:
   import portals.api.builder.TaskExtensions.*
   import portals.api.dsl.DSL
   import portals.api.dsl.DSL.*
+  import portals.api.dsl.ExperimentalDSL.*
   import portals.application.*
   import portals.application.task.*
+  import portals.util.Future
   import portals.util.Key
 
   //////////////////////////////////////////////////////////////////////////////
@@ -33,6 +36,10 @@ object PortalsJS:
 
     extension [T](array: Array[T]) {
       def toScala: List[T] = array.toList
+    }
+
+    extension (bigInt: BigInt) {
+      def toScala: scala.BigInt = scala.BigInt(bigInt.toString)
     }
 
     extension [T](iterator: Iterator[T]) {
@@ -134,12 +141,19 @@ object PortalsJS:
     private val builder = portals.api.builder.ApplicationBuilder(name)
     def build(): Application = builder.build()
     def registry: RegistryBuilderJS = builder.registry.toJS
+    // TODO: the with name option should be unified with the scala portals API.
     def workflows[T, U]: WorkflowBuilderJS[T, U] = builder.workflows[T, U].toJS
+    def workflowsWithName[T, U](name: String): WorkflowBuilderJS[T, U] = builder.workflows[T, U](name).toJS
     def splitters: SplitterBuilderJS = builder.splitters.toJS
+    def splittersWithName(name: String): SplitterBuilderJS = builder.splitters(name).toJS
     def splits: SplitBuilderJS = builder.splits.toJS
+    def splitsWithName(name: String): SplitBuilderJS = builder.splits(name).toJS
     def generators: GeneratorBuilderJS = builder.generators.toJS
+    def generatorsWithName(name: String): GeneratorBuilderJS = builder.generators(name).toJS
     def sequencers: SequencerBuilderJS = builder.sequencers.toJS
+    def sequencersWithName(name: String): SequencerBuilderJS = builder.sequencers(name).toJS
     def connections: ConnectionBuilderJS = builder.connections.toJS
+    def connectionsWithName(name: String): ConnectionBuilderJS = builder.connections(name).toJS
     def portal: PortalBuilderJS = builder.portals.toJS
     def tasks: TaskBuilderJS = TaskBuilder.toJS
 
@@ -173,8 +187,8 @@ object PortalsJS:
     def map[CCU](f: ContextFunction2JS[MapTaskContext[CU, CCU], CU, CCU]): FlowBuilderJS[T, U, CU, CCU] =
       fb.map(f.toScala).toJS
 
-    def key(f: Function1JS[CU, Long]): FlowBuilderJS[T, U, CU, CU] =
-      fb.key(f.toScala).toJS
+    def key(f: Function1JS[CU, BigInt]): FlowBuilderJS[T, U, CU, CU] =
+      fb.key(x => f.toScala(x).toScala.toLong).toJS
 
     def task[CCU](taskBehavior: GenericTask[CU, CCU, _, _]): FlowBuilderJS[T, U, CU, CCU] =
       fb.task(taskBehavior).toJS
@@ -253,20 +267,34 @@ object PortalsJS:
     def asker[CCU, Req, Rep](
         portals: AtomicPortalRefKind[Req, Rep]
     )(
-        f: ContextFunction2JS[AskerTaskContext[CU, CCU, Req, Rep], CU, Unit]
-    ): FlowBuilderJS[T, U, CU, CCU] = {
-      fb.asker[CCU, Req, Rep](portals)(f.toScala).toJS
-    }
+        f: ContextFunction2JS[TaskContextJS[CU, CCU, Req, Rep], CU, Unit]
+    ): FlowBuilderJS[T, U, CU, CCU] =
+      // TODO: fix this to make it more uniform with the rest (see comment below on TaskContext)
+      fb.asker[CCU, Req, Rep](portals)(c ?=> f.toScala(using c.toJS)).toJS
 
     def replier[CCU, Req, Rep](
         portals: AtomicPortalRefKind[Req, Rep]
     )(
-        f1: ContextFunction2JS[ProcessorTaskContext[CU, CCU], CU, Unit]
+        f1: ContextFunction2JS[TaskContextJS[CU, CCU, Req, Rep], CU, Unit]
     )(
-        f2: ContextFunction2JS[ReplierTaskContext[CU, CCU, Req, Rep], Req, Unit]
-    ): FlowBuilderJS[T, U, CU, CCU] = {
-      fb.replier[CCU, Req, Rep](portals)(f1.toScala)(f2.toScala).toJS
-    }
+        f2: ContextFunction2JS[TaskContextJS[CU, CCU, Req, Rep], Req, Unit]
+    ): FlowBuilderJS[T, U, CU, CCU] =
+      // TODO: fix this to make it more uniform with the rest (see comment below on TaskContext)
+      fb.replier[CCU, Req, Rep](portals)(c ?=> f1.toScala(using c.toJS))(c ?=> f2.toScala(using c.toJS)).toJS
+
+    def askerreplier[CCU, Req, Rep](
+        askerportals: AtomicPortalRefKind[Req, Rep]
+    )(
+        replierportals: AtomicPortalRefKind[Req, Rep]
+    )(
+        f1: ContextFunction2JS[TaskContextJS[CU, CCU, Req, Rep], CU, Unit]
+    )(
+        f2: ContextFunction2JS[TaskContextJS[CU, CCU, Req, Rep], Req, Unit]
+    ): FlowBuilderJS[T, U, CU, CCU] =
+      // TODO: make it look nicer
+      fb.askerreplier[CCU, Req, Rep](askerportals)(replierportals)(c ?=> f1.toScala(using c.toJS))(c ?=>
+        f2.toScala(using c.toJS)
+      ).toJS
 
   end FlowBuilderJS
 
@@ -335,6 +363,10 @@ object PortalsJS:
       gb.fromListOfLists(arrayarray.toScala.map(_.toScala), keys.toScala.map(_.toScala))
     def fromRange(start: Int, end: Int, step: Int): AtomicGeneratorRef[Int] =
       gb.fromRange(start, end, step)
+    def signal[T](value: T): AtomicGeneratorRef[T] =
+      gb.signal(value)
+    def empty[T](): AtomicGeneratorRef[T] =
+      gb.empty
 
   extension (gb: GeneratorBuilder) {
     def toJS: GeneratorBuilderJS = GeneratorBuilderJS(gb)
@@ -403,8 +435,8 @@ object PortalsJS:
     def portal[T, R](name: String): AtomicPortalRef[T, R] =
       pb.portal(name)
 
-    def portal[T, R](name: String, f: Function1JS[T, Long]): AtomicPortalRef[T, R] =
-      pb.portal(name, f.toScala)
+    def portal[T, R](name: String, f: Function1JS[T, BigInt]): AtomicPortalRef[T, R] =
+      pb.portal(name, x => f.toScala(x).toScala.toLong)
 
   extension (pb: PortalBuilder) {
     def toJS: PortalBuilderJS = PortalBuilderJS(pb)
@@ -469,5 +501,45 @@ object PortalsJS:
   @JSExport
   def PerKeyState[T](name: String, initValue: T, ctx: StatefulTaskContext): PerKeyStateJS[T] =
     PerKeyStateJS[T](name, initValue, ctx)
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Task Context
+  //////////////////////////////////////////////////////////////////////////////
+
+  // TODO: Internal API. Used for constructing a JS API safe TaskContext object
+  // within the Asker for now. To be used in replacement for all TaskContext
+  // within the JS API at a later time.
+  @JSExportAll
+  class TaskContextJS[T, U, V, W](ctx: TaskContextImpl[T, U, V, W]) extends StatefulTaskContext:
+    private[portals] val _inner_ctx = ctx
+    import Types.*
+    def state = ctx.state
+    def emit(event: U) = ctx.emit(event)
+    def log = ctx.log
+    def ask(portal: AtomicPortalRefKind[V, W], msg: V) = ctx.ask(portal)(msg).toJS
+    def await(future: FutureJS[W], f: Function1JS[TaskContextJS[T, U, V, W], Unit]) =
+      ctx.await(future._inner_f)(c ?=> f.toScala(c.toJS))
+    def reply(msg: W) = ctx.reply(msg)
+
+  extension (ctx: GenericGenericTaskContext) {
+    def toJS[T, U, V, W]: TaskContextJS[T, U, V, W] =
+      TaskContextJS[T, U, V, W](ctx.asInstanceOf[TaskContextImpl[T, U, V, W]])
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Future
+  //////////////////////////////////////////////////////////////////////////////
+
+  // TODO: Internal API. Make it consistent with the rest.
+  @JSExportAll
+  class FutureJS[T](f: Future[T]):
+    private[portals] val _inner_f = f
+    private[portals] val id: Int = f.id
+    def value(ctx: TaskContextJS[_, _, _, T]): T = f.value(using ctx._inner_ctx).get
+    override def toString(): String = "Future(id=" + id + ")"
+
+  extension [T](f: Future[T]) {
+    def toJS: FutureJS[T] = FutureJS[T](f)
+  }
 
 end PortalsJS

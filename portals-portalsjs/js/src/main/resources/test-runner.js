@@ -14,6 +14,8 @@ const portalsJSCode = fs.readFileSync(portalsJS, 'utf8');
 const ignoredOutputs = [
   'union.js',
   'splitter.js',
+  `multiDataflow.js`,
+  `portalAggregation.js`,
 ]
 
 // files which are ignored

@@ -258,7 +258,6 @@ private[portals] class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderCon
     val behavior = TaskBuilder.portal[Req, Rep](portals: _*).replier[CU, CCU](f1)(f2)
     addTask(behavior)
 
-  @experimental
   override def askerreplier[CCU, Req, Rep](askerportals: AtomicPortalRefKind[Req, Rep]*)(
       replierportals: AtomicPortalRefKind[Req, Rep]*
   )(
