@@ -443,7 +443,6 @@ trait FlowBuilder[T, U, CT, CU]:
     * @param f2
     *   the request handler
     */
-  @experimental
   def askerreplier[CCU, Req, Rep](
       askerportals: AtomicPortalRefKind[Req, Rep]*
   )(
