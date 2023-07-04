@@ -21,7 +21,7 @@ import portals.distributed.Client
   * // uncomment the files you want to submit
   *
   * // submit the class files with the client
-  * sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory distributed/target/scala-3.3.0/classes"
+  * sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes"
   *
   * // launch each application with the client
   * sbt "distributed/runMain portals.distributed.ClientCLI launch --application portals.distributed.examples.shoppingcart.Inventory$"

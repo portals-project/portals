@@ -19,7 +19,7 @@ import portals.distributed.SubmittableApplication
   * // uncomment this whole file so that we can submit the app
   *
   * // submit the class files with the client
-  * sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory distributed/target/scala-3.3.0/classes"
+  * sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes"
   *
   * // launch the application with the client
   * sbt "distributed/runMain portals.distributed.ClientCLI launch --application portals.distributed.examples.HelloWorld$"
