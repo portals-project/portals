@@ -20,7 +20,7 @@ object ClientCLI:
     *
     * @example
     *   {{{
-    * ClientCLI submit --path portals/distributed/examples/HelloWorld$.class --directory distributed/target/scala-3.3.0/classes
+    * ClientCLI submit --path portals/distributed/examples/HelloWorld$.class --directory portals-distributed/target/scala-3.3.0/classes
     *   }}}
     */
   @mainargs.main
@@ -34,7 +34,7 @@ object ClientCLI:
     *
     * @example
     *   {{{
-    * ClientCLI submitDir --directory distributed/target/scala-3.3.0/classes
+    * ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes
     *   }}}
     */
   @mainargs.main
