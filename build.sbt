@@ -1,14 +1,15 @@
 lazy val scala3Version = "3.3.0"
 lazy val junitInterfaceVersion = "0.11"
-lazy val logbackversion = "1.2.11"
+lazy val logbackversion = "1.4.8"
 lazy val akkaVersion = "2.6.20"
-lazy val pprintversion = "0.7.0"
-lazy val nexmarkVersion = "2.41.0"
+lazy val pprintversion = "0.8.1"
+lazy val nexmarkVersion = "2.48.0"
 lazy val caskVersion = "0.9.1"
 lazy val upickleVersion = "3.1.0"
 lazy val requestsVersion = "0.8.0"
 lazy val mainargsVersion = "0.5.0"
 lazy val scalajsstubsVersion = "1.1.0"
+lazy val scalajsdomVersion = "2.6.0"
 
 ThisBuild / organization := "org.portals-project"
 ThisBuild / organizationName := "Portals-Project"
@@ -70,7 +71,7 @@ lazy val portalsjs = crossProject(JSPlatform)
   .in(file("portals-portalsjs"))
   .settings(
     name := "portals-portalsjs",
-    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.4.0",
+    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % scalajsdomVersion,
     Compile / scalaJSLinkerConfig ~= { _.withSourceMap(false) },
   )
   .dependsOn(portals % "test->test;compile->compile")
