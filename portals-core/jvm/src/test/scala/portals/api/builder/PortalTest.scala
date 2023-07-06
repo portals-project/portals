@@ -64,7 +64,7 @@ class PortalTest:
         // .portal
         .recursiveAsker[Int](portal) { self => x =>
           val future: Future[Pong] = ask(portal)(Ping(x))
-          future.await {
+          await(future) {
             testerAsker.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
             if future.value.get.x > 0 then self(future.value.get.x)
@@ -133,7 +133,7 @@ class PortalTest:
       val asker1 = askersrc
         .recursiveAsker[Int](portal) { self => x =>
           val future: Future[Pong] = ask(portal)(Ping(x))
-          future.await {
+          await(future) {
             testerAsker1.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
             if future.value.get.x > 0 then self(future.value.get.x)
@@ -146,7 +146,7 @@ class PortalTest:
       val asker2 = askersrc
         .recursiveAsker[Int](portal) { self => x =>
           val future: Future[Pong] = ask(portal)(Ping(x))
-          future.await {
+          await(future) {
             testerAsker2.enqueueEvent(future.value.get.x)
             ctx.emit(future.value.get.x)
             if future.value.get.x > 0 then self(future.value.get.x)
@@ -228,7 +228,7 @@ class PortalTest:
           AskerTaskContext[Int, Int, Ping, Pong]
       ): Unit =
         val future: Future[Pong] = ask(portal)(Ping(x))
-        future.await {
+        await(future) {
           tester.enqueueEvent(future.value.get.x)
           ctx.emit(future.value.get.x)
           if future.value.get.x > 0 then recAwait(future.value.get.x, portal, tester)

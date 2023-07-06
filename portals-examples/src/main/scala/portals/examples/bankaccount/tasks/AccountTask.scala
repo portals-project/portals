@@ -87,7 +87,7 @@ object AccountTask:
           val f = ask(portal)(next)
 
           // Wait for a reply from the next account, if the next one has succeded, then we can also commit, else abort
-          f.await {
+          await(f) {
             f.value.get match
 
               // Transaction succeeded, execute the operation, and reply with success
