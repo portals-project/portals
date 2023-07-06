@@ -12,7 +12,7 @@ private[queryable] object QueryOperator:
   private type _Type[T <: RowType] = GenericTask[SQLQueryRequest, SQLQueryResult, TableRequest[T], TableResponse[T]]
 
   /** Handler for SQL Query events. */
-  private def handleSQLQuery[T <: RowType](req: SQLQueryRequest)(tableref: TableRef[T])(using
+  private def handleSQLQuery[T <: RowType](req: SQLQueryRequest)(tablerefs: TableRef[T]*)(using
       AskerTaskContext[SQLQueryRequest, SQLQueryResult, TableRequest[T], TableResponse[T]]
   ): Unit =
     // * Handles Strings as inputs, then parses and validates them, and then
@@ -26,10 +26,14 @@ private[queryable] object QueryOperator:
     // 4. execute/interpret the query, intermediate state needs to be persisted
     parse(req.query) match
       case Some(Select(Asterisk, Table(table), Some(Predicate(col, Operator("="), Value(value))))) =>
-        val q = Get[T](extractKey(value))
-        val f = ctx.ask(tableref.portal)(q)
-        ctx.await(f):
-          emit(SQLQueryResult(f.value.get))
+        tablerefs.find(_.name == table) match
+          case Some(tableref) =>
+            val q = Get[T](extractKey(value))
+            val f = ctx.ask(tableref.portal)(q)
+            ctx.await(f):
+              emit(SQLQueryResult(f.value.get))
+          case None =>
+            emit(SQLQueryResult(Error("Invalid table")))
       case _ =>
         emit(SQLQueryResult(Error("Invalid query")))
 
@@ -37,7 +41,7 @@ private[queryable] object QueryOperator:
     * operator consumes SQL queries as strings, queries the corresponding
     * tables, and produces and emits the final output as a string.
     */
-  def apply[T <: RowType](table: TableRef[T]): _Type[T] =
-    Tasks.asker(table.portal): //
+  def apply[T <: RowType](tables: TableRef[T]*): _Type[T] =
+    Tasks.asker(tables.map(_.portal): _*): //
       e => //
-        handleSQLQuery(e)(table)
+        handleSQLQuery(e)(tables: _*)

@@ -14,8 +14,9 @@ object TableFactory:
 
   /** Internal API. A table for rows of type `T` with a `name`. */
   private[queryable] class TableImpl[T <: RowType](
-      name: String,
+      named: String,
       portalref: AtomicPortalRef[TableRequest[T], TableResponse[T]]
   ) extends TableType[T]:
-    override def ref: TableRef[T] = new TableRef[T] { def portal = portalref }
+    override def name: String = named
+    override def ref: TableRef[T] = new TableRef[T] { def portal = portalref; def name = named }
     override private[portals] def portal: AtomicPortalRef[TableRequest[T], TableResponse[T]] = portalref

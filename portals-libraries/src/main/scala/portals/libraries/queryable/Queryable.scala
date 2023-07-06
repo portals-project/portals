@@ -15,8 +15,8 @@ object Queryable:
 
   extension [T, U, CT, X <: RowType](fb: FlowBuilder[T, U, CT, SQLQueryRequest])
     /** extension method for the FlowBuilder which can create a query. */
-    def query(table: TableRef[X]): FlowBuilder[T, U, SQLQueryRequest, SQLQueryResult] =
-      fb.task(QueryOperator(table))
+    def query(table: TableRef[X]*): FlowBuilder[T, U, SQLQueryRequest, SQLQueryResult] =
+      fb.task(QueryOperator(table: _*))
 
   /** Creates a table for rows of type `T` for the provided `name`. */
   def Table[T <: RowType](name: String)(using ApplicationBuilder): TableType[T] =

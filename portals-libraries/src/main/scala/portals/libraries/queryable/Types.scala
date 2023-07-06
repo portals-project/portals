@@ -19,6 +19,9 @@ object Types:
 
   /** The type of a table. */
   trait TableType[T <: RowType]:
+    /** The name of this table. */
+    def name: String
+
     /** Get a reference of this table. */
     def ref: TableRef[T]
 
@@ -27,6 +30,9 @@ object Types:
 
   /** A reference to a table. */
   trait TableRef[T <: RowType]:
+    /** The name of the table. */
+    def name: String
+
     /** Get a reference of the `portal` for this table. */
     private[portals] def portal: AtomicPortalRef[TableRequest[T], TableResponse[T]]
 
