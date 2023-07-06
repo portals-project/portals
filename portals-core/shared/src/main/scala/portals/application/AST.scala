@@ -59,7 +59,7 @@ case class Workflow[T, U](
 
 /** Atomic Stream Ref Kind. */
 @JSExportAll
-sealed trait AtomicStreamRefKind[T] extends AST
+trait AtomicStreamRefKind[T] extends AST
 
 /** Atomic Stream. */
 @JSExportAll
@@ -182,7 +182,7 @@ case class AtomicPortal[T, R](
 
 /** Atomic Portal Reference. */
 @JSExportAll
-sealed trait AtomicPortalRefKind[T, R] extends AST
+trait AtomicPortalRefKind[T, R] extends AST
 
 /** External Atomic Portal Reference. */
 @JSExportAll
