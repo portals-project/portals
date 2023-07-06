@@ -1,1 +1,0 @@
-node portals-js/js/src/main/resources/test-generate-outputs.js

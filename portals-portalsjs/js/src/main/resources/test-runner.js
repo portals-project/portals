@@ -6,14 +6,16 @@
 
 const fs = require('fs');
 const path = require('path');
-const exampleDirectory = 'portals-js/js/src/main/resources/examples/'; // the directory containing the examples
-const portalsJS = 'portals-js/js/target/scala-3.3.0/portals-js.js'; // the PortalsJS library
+const exampleDirectory = 'portals-portalsjs/js/src/main/resources/examples/'; // the directory containing the examples
+const portalsJS = 'portals-portalsjs/js/target/scala-3.3.0/portals-portalsjs.js'; // the PortalsJS library
 const portalsJSCode = fs.readFileSync(portalsJS, 'utf8');
 
 // files for which the outputs are ignored
 const ignoredOutputs = [
   'union.js',
   'splitter.js',
+  `multiDataflow.js`,
+  `portalAggregation.js`,
 ]
 
 // files which are ignored

@@ -1,7 +1,7 @@
 # PortalsJS
 
 ## Compile, Test, and Run
-The final compiled file is: `portals-js/js/target/scala-X/portals-js.js`.
+The final compiled file is: `portals-portalsjs/js/target/scala-X/portals-portalsjs.js`.
 
 Install packages:
 ```
@@ -10,16 +10,16 @@ npm install javascript-obfuscator fs
 
 Compile:
 ```
-sh portals-js/js/src/main/resources/portalsjs-compile.sh```
+sh portals-portalsjs/js/src/main/resources/portalsjs-compile.sh```
 
 Test:
 ```
-sh portals-js/js/src/main/resources/portalsjs-test.sh
+sh portals-portalsjs/js/src/main/resources/portalsjs-test.sh
 ```
 
 Generate new test outputs:
 ```
-sh portals-js/js/src/main/resources/portalsjs-generate-outputs.sh
+sh portals-portalsjs/js/src/main/resources/portalsjs-generate-outputs.sh
 ```
 
 To run:

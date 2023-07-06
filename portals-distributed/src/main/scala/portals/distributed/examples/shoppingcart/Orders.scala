@@ -1,6 +1,5 @@
 package portals.distributed.examples.shoppingcart
 
-import portals.api.dsl.CustomTask
 import portals.api.dsl.DSL
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.PortalsApp

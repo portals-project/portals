@@ -302,7 +302,6 @@ object TaskBuilder extends TaskBuilder:
       * @return
       *   asker-replier task behavior
       */
-  @experimental
   def askerreplier[T, U, Req, Rep](
       askerportals: AtomicPortalRefKind[Req, Rep]*
   )(

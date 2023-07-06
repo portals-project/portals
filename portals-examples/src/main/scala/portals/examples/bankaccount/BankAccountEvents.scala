@@ -2,25 +2,24 @@ package portals.examples.bankaccount
 
 import scala.annotation.experimental
 
-@experimental
 object BankAccountEvents:
   //////////////////////////////////////////////////////////////////////////////
   // Saga Events
   //////////////////////////////////////////////////////////////////////////////
 
   // Saga Operations
-  @experimental sealed trait SagaOperation[T]
+  sealed trait SagaOperation[T]
 
   // Saga Requests
-  @experimental sealed trait SagaRequest[T] extends SagaOperation[T]
+  sealed trait SagaRequest[T] extends SagaOperation[T]
 
-  @experimental case class Saga[T](head: T, tail: List[T]) extends SagaRequest[T]
+  case class Saga[T](head: T, tail: List[T]) extends SagaRequest[T]
 
   // Saga Replies
-  @experimental sealed trait SagaReply[T] extends SagaOperation[T]
+  sealed trait SagaReply[T] extends SagaOperation[T]
 
-  @experimental case class SagaSuccess[T](saga: Option[Saga[T]] = None) extends SagaReply[T]
-  @experimental case class SagaAbort[T](saga: Option[Saga[T]] = None) extends SagaReply[T]
+  case class SagaSuccess[T](saga: Option[Saga[T]] = None) extends SagaReply[T]
+  case class SagaAbort[T](saga: Option[Saga[T]] = None) extends SagaReply[T]
 
   //////////////////////////////////////////////////////////////////////////////
   // Account Events
@@ -29,8 +28,8 @@ object BankAccountEvents:
   // Account Operations
   sealed trait AccountOperation
 
-  @experimental case class Deposit(id: Long, amount: Int) extends AccountOperation
-  @experimental case class Withdraw(id: Long, amount: Int) extends AccountOperation
+  case class Deposit(id: Long, amount: Int) extends AccountOperation
+  case class Withdraw(id: Long, amount: Int) extends AccountOperation
 
   //////////////////////////////////////////////////////////////////////////////
   // Key Extractors
@@ -48,11 +47,3 @@ object BankAccountEvents:
     case SagaAbort(Some(Saga(head, _))) =>
       keyFrom(head)
     case _ => ???
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Types
-  //////////////////////////////////////////////////////////////////////////////
-
-  type Req = Saga[AccountOperation]
-  type Rep = SagaReply[AccountOperation]
-  type SagaOp = SagaOperation[AccountOperation]
