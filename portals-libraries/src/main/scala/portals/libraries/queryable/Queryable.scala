@@ -9,11 +9,13 @@ object Queryable:
   extension [T, U, CT, X <: RowType](fb: FlowBuilder[T, U, CT, CDC[X]])
     /** extension method for the FlowBuilder which can create a table. */
     def table(table: TableType[X]): FlowBuilder[T, U, CDC[X], CDC[X]] =
-      fb.task(TableOperator(table))
+      fb
+        .key(keyFrom(_))
+        .task(TableOperator(table))
 
-  extension [T, U, CT, X <: RowType](fb: FlowBuilder[T, U, CT, String])
+  extension [T, U, CT, X <: RowType](fb: FlowBuilder[T, U, CT, SQLQueryRequest])
     /** extension method for the FlowBuilder which can create a query. */
-    def query(table: TableRef[X]): FlowBuilder[T, U, String, String] =
+    def query(table: TableRef[X]): FlowBuilder[T, U, SQLQueryRequest, SQLQueryResult] =
       fb.task(QueryOperator(table))
 
   /** Creates a table for rows of type `T` for the provided `name`. */

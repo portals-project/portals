@@ -1,5 +1,6 @@
 package portals.libraries.queryable
 
+import portals.api.dsl.DSL.*
 import portals.application.task.*
 import portals.libraries.queryable.Types.*
 
@@ -7,7 +8,50 @@ import portals.libraries.queryable.Types.*
 private[queryable] object TableOperator:
 
   /** The task type that is returned by this operator. */
-  type _Type[T <: RowType] = GenericTask[CDC[T], CDC[T], QueryRequest[T], QueryResponse[T]]
+  type _Type[T <: RowType] = GenericTask[CDC[T], CDC[T], TableRequest[T], TableResponse[T]]
+
+  /** Handle CDC stream events and update the internal table state. */
+  private def handleCDC[T <: RowType](cdc: CDC[T])(using
+      StatefulTaskContext with EmittingTaskContext[CDC[T]]
+  ): Unit =
+    val state = PerKeyState[Option[T]]("state", None)
+    cdc match {
+      case Insert(v) =>
+        state.set(Some(v))
+        emit(cdc)
+      case Remove(v) =>
+        state.set(None)
+        emit(cdc)
+      case Update(v) =>
+        state.set(Some(v))
+        emit(cdc)
+    }
+
+  /** Handle Portal request events, respond, update internal state, and emit any
+    * internal changes as CDC events.
+    */
+  private def handlePortal[T <: RowType](req: TableRequest[T])(using
+      ReplierTaskContext[CDC[T], CDC[T], TableRequest[T], TableResponse[T]]
+  ): Unit =
+    val state = PerKeyState[Option[T]]("state", None)
+    req match
+      // get the state for the current key, else return error
+      case Get(key) =>
+        state.get() match
+          case Some(v) => reply(GetResult(key, v))
+          case None => reply(Error(s"Key: $key not found in table"))
+
+      // set the state for the current key, emit changes as CDC event
+      case Set(key, value) =>
+        state.get() match
+          case Some(v) =>
+            state.set(Some(value))
+            ctx.emit(Update(value))
+            ctx.reply(SetResult(key))
+          case None =>
+            state.set(Some(value))
+            ctx.emit(Insert(value))
+            ctx.reply(SetResult(key))
 
   /** Table operator factory. This operator serves the table. It consumes change
     * data capture events, applies them to the corresponding tables, and
@@ -17,14 +61,10 @@ private[queryable] object TableOperator:
     * emitted CDC.
     */
   def apply[T <: RowType](table: TableType[T]): _Type[T] =
-    ??? // return a task that implements the table operator
-    // To be implemented as a Portal Asker:
-    // * Handles Strings as inputs, then parses and validates them, and then
-    //   executes them. The result is emitted as a string.
-    // * Queries use the asker interface, to ask the corresponding Table portal,
-    //   this sends a QueryRequest to the portal.
-    // * If a query is malformed, it should output an Error as a response.
-    // 1. parses the incoming query (String)
-    // 2. validates the parsed query (table exists, correct form, etc.)
-    // 3. rewrites the query / reorders it so it can be executed
-    // 4. execute/interpret the query, intermediate state needs to be persisted
+    Tasks.replier[CDC[T], CDC[T], TableRequest[T], TableResponse[T]](table.portal) { //
+      cdc =>
+        handleCDC(cdc)
+    } { //
+      req =>
+        handlePortal(req)
+    }

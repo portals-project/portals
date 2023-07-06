@@ -7,19 +7,19 @@ import portals.libraries.queryable.Types.*
 import portals.system.Systems
 
 object SimpleExample extends App:
-  case class Author(name: String, age: Int | Null) extends RowType
+  case class Author(name: String, age: Option[Int] = None) extends RowType
 
   val simpleExample = PortalsApp("simpleExample"):
     ////////////////////////////////////////////////////////////////////////////
     // Table
     ////////////////////////////////////////////////////////////////////////////
 
-    val tableGenerator = Generators.fromList[CDC[Author]](
+    val tableGenerator = Generators.fromListOfLists[CDC[Author]](
       List(
-        Insert(Author("John", 30)),
-        Insert(Author("Jane", 25)),
-        Insert(Author("Jack", 40)),
-        Remove(Author("John", null)),
+        List(Insert(Author("John", Some(30)))),
+        List(Insert(Author("Jane", Some(25)))),
+        List(Insert(Author("Jack", Some(40)))),
+        List(Remove(Author("John"))),
       )
     )
 
@@ -35,17 +35,21 @@ object SimpleExample extends App:
     // Query
     ////////////////////////////////////////////////////////////////////////////
 
-    val queryGenerator = Generators.fromList[String](
+    val queryGenerator = Generators.fromListOfLists[String](
       List(
-        "SELECT * FROM authors WHERE name = 'John'",
-        "SELECT * FROM authors WHERE name = 'Jane'",
-        "SELECT * FROM authors WHERE name = 'Jule'",
+        List("SELECT * FROM authors WHERE name = 'John'"),
+        List("SELECT * FROM authors WHERE name = 'Jane'"),
+        List("SELECT * FROM authors WHERE name = 'Jule'"),
+        List("SELECT * FROM authors WHERE name = 'Jack'"),
       )
     )
 
-    val queryWorkflow = Workflows[String, String]()
+    val queryWorkflow = Workflows[String, Any]()
       .source(queryGenerator.stream)
+      .map(SQLQuery(_))
       .query(table.ref)
+      .map(_.result)
+      .logger()
       .sink()
       .freeze()
 

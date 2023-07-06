@@ -1,25 +1,43 @@
 package portals.libraries.queryable
 
+import portals.api.dsl.DSL.*
 import portals.application.task.*
+import portals.libraries.queryable.SQLParser.*
 import portals.libraries.queryable.Types.*
 
 /** Operator factory that implements the query operator. */
 private[queryable] object QueryOperator:
 
   /** The task type that is returned by this operator. */
-  private type _Type[T <: RowType] = GenericTask[String, String, QueryRequest[T], QueryResponse[T]]
+  private type _Type[T <: RowType] = GenericTask[SQLQueryRequest, SQLQueryResult, TableRequest[T], TableResponse[T]]
+
+  /** Handler for SQL Query events. */
+  private def handleSQLQuery[T <: RowType](req: SQLQueryRequest)(tableref: TableRef[T])(using
+      AskerTaskContext[SQLQueryRequest, SQLQueryResult, TableRequest[T], TableResponse[T]]
+  ): Unit =
+    // * Handles Strings as inputs, then parses and validates them, and then
+    //   executes them. The result is emitted as a string.
+    // * Queries use the asker interface, to ask the corresponding Table portal,
+    //   this sends a QueryRequest to the portal.
+    // * If a query is malformed, it should output an Error as a response.
+    // 1. parses the incoming query (String)
+    // 2. validates the parsed query (table exists, correct form, etc.)
+    // 3. rewrites the query / reorders it so it can be executed
+    // 4. execute/interpret the query, intermediate state needs to be persisted
+    parse(req.query) match
+      case Some(Select(Asterisk, Table(table), Some(Predicate(col, Operator("="), Value(value))))) =>
+        val q = Get[T](extractKey(value))
+        val f = ctx.ask(tableref.portal)(q)
+        ctx.await(f):
+          emit(SQLQueryResult(f.value.get))
+      case _ =>
+        emit(SQLQueryResult(Error("Invalid query")))
 
   /** Query operator factory. Connects to the provided `table`. The query
     * operator consumes SQL queries as strings, queries the corresponding
     * tables, and produces and emits the final output as a string.
     */
-  def apply[T <: RowType](table: TableRef[T]*): _Type[T] =
-    ??? // return a task that implements the query operator
-    // To be implemented as a Portal Replier:
-    // * Handles CDC events on its regular input, applies them, and outputs CDC
-    //   events.
-    // * Handles QueryRequest and replies with QueryResponse on its portal
-    //   handler.
-    // Operation mode:
-    // 1. apply the incoming operation
-    // 2. return the result, emit CDC if changes are made
+  def apply[T <: RowType](table: TableRef[T]): _Type[T] =
+    Tasks.asker(table.portal): //
+      e => //
+        handleSQLQuery(e)(table)
