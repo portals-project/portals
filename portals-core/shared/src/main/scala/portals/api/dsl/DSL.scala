@@ -13,13 +13,7 @@ import portals.api.builder.SplitterBuilder
 import portals.api.builder.TaskBuilder
 import portals.api.builder.WorkflowBuilder
 import portals.application.*
-import portals.application.task.AskerTaskContext
-import portals.application.task.EmittingTaskContext
-import portals.application.task.GenericGenericTaskContext
-import portals.application.task.LoggingTaskContext
-import portals.application.task.ProcessorTaskContext
-import portals.application.task.ReplierTaskContext
-import portals.application.task.StatefulTaskContext
+import portals.application.task.*
 import portals.util.Future
 
 /** DSL extensions for Portals, convenient shorthands for building applications.
@@ -75,12 +69,10 @@ object DSL:
     *
     * @param event
     *   The event to emit.
-    * @tparam T
-    *   The Task's type of the input value.
     * @tparam U
     *   The Task's type of the output value.
     */
-  def emit[T, U](event: U)(using EmittingTaskContext[T, U]) = summon[EmittingTaskContext[T, U]].emit(event)
+  def emit[U](event: U)(using EmittingTaskContext[U]) = summon[EmittingTaskContext[U]].emit(event)
 
   /** Task state.
     *
@@ -117,12 +109,8 @@ object DSL:
     *
     * @return
     *   The logger.
-    * @tparam T
-    *   The Task's type of the input value.
-    * @tparam U
-    *   The Task's type of the output value.
     */
-  def log[T, U](using LoggingTaskContext) = summon[LoggingTaskContext].log
+  def log(using LoggingTaskContext) = summon[LoggingTaskContext].log
 
   //////////////////////////////////////////////////////////////////////////////
   // Builder DSL
@@ -167,16 +155,12 @@ object DSL:
     *   The request to send.
     * @return
     *   A future of the reply.
-    * @tparam T
-    *   The Task's type of the input value.
-    * @tparam U
-    *   The Task's type of the output value.
     * @tparam Req
     *   The Portal's type of the request.
     * @tparam Rep
     *   The Portal's type of the reply.
     */
-  def ask[T, U, Req, Rep](using ctx: AskerTaskContext[T, U, Req, Rep])(portal: AtomicPortalRefKind[Req, Rep])(
+  def ask[Req, Rep](using ctx: AskingTaskContext[Req, Rep])(portal: AtomicPortalRefKind[Req, Rep])(
       req: Req
   ): Future[Rep] =
     ctx.ask(portal)(req)
@@ -198,17 +182,11 @@ object DSL:
     *
     * @param rep
     *   The reply to send.
-    * @tparam T
-    *   The Task's type of the input value.
-    * @tparam U
-    *   The Task's type of the output value.
-    * @tparam Req
-    *   The Portal's type of the request.
     * @tparam Rep
     *   The Portal's type of the reply.
     */
-  def reply[T, U, Req, Rep](using
-      ctx: ReplierTaskContext[T, U, Req, Rep]
+  def reply[Rep](using
+      ctx: ReplyingTaskContext[Rep]
   )(rep: Rep): Unit = ctx.reply(rep)
 
   /** Await the completion of the `future` and then execute continuation `f`.
@@ -237,8 +215,6 @@ object DSL:
     *   The future to await.
     * @param f
     *   The function to execute.
-    * @tparam T
-    *   The Task's type of the input value.
     * @tparam U
     *   The Task's type of the output value.
     * @tparam Req
@@ -246,8 +222,8 @@ object DSL:
     * @tparam Rep
     *   The Portal's type of the reply.
     */
-  def Await[T, U, Req, Rep](future: Future[Rep])(f: AskerTaskContext[T, U, Req, Rep] ?=> Unit)(using
-      ctx: AskerTaskContext[T, U, Req, Rep]
+  def Await[U, Req, Rep](future: Future[Rep])(f: AskerTaskContext[_, U, Req, Rep] ?=> Unit)(using
+      ctx: AwaitingTaskContext[U, Req, Rep]
   ): Unit = ctx.await(future)(f)
 
   extension [Rep](future: Future[Rep]) {
