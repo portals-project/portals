@@ -12,7 +12,7 @@ lazy val scalajsstubsVersion = "1.1.0"
 lazy val scalajsdomVersion = "2.6.0"
 
 ThisBuild / organization := "org.portals-project"
-ThisBuild / organizationName := "Portals-Project"
+ThisBuild / organizationName := "Portals Project"
 ThisBuild / organizationHomepage := Some(url("https://portals-project.org/"))
 
 ThisBuild / description := "Portals"
