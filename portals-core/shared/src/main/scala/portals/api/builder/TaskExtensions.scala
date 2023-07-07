@@ -356,20 +356,24 @@ object TaskExtensions:
       * Example use:
       * {{{
       * Tasks.map[Int, Int] { _ + 5 }
-      *   .withWrapper{ ctx ?=> wrapped => event =>
-      *     if event < 3 then ctx.emit(0) else wrapped(event)
+      *   .withWrapper[String]{ ctx ?=> wrapped => event =>
+      *     if event < 3 then ctx.emit("0") else wrapped(event)
       *   }
       * }}}
       *
+      * @tparam V
+      *   additional type for widening the output type of the task by union
       * @param f
       *   the wrapping function to wrap around the behavior of the task
       * @return
       *   a task with the wrapped behavior
       */
-    def withWrapper(
-        f: ProcessorTaskContext[T, U] ?=> (ProcessorTaskContext[T, U] ?=> T => Unit) => T => Unit
-    ): GenericTask[T, U, _, _] =
-      ProcessorTask[T, U] { ctx => event => f(using ctx)(task.onNext(using ctx))(event) }
+    def withWrapper[V](
+        f: ProcessorTaskContext[T, U | V] ?=> (ProcessorTaskContext[T, U | V] ?=> T => Unit) => T => Unit
+    ): GenericTask[T, U | V, _, _] =
+      ProcessorTask[T, U | V] { ctx => event =>
+        f(using ctx)(task.asInstanceOf[GenericTask[T, U | V, Nothing, Nothing]].onNext(using ctx))(event)
+      }
 
     // Optionally, wrapping around a full task.
     // /** f: ctx => wrapped => task */
