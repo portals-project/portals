@@ -22,6 +22,17 @@ ThisBuild / homepage := Some(url("https://github.com/portals-project/portals"))
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := scala3Version
 
+ThisBuild / scalacOptions ++= Seq(
+  "-deprecation",
+  "-encoding",
+  "UTF-8",
+  "-explaintypes",
+  "-feature",
+  "-unchecked",
+  // "-Wunused:all",
+  "-Xfatal-warnings",
+)
+
 lazy val portals = crossProject(JSPlatform, JVMPlatform)
   .in(file("portals-core"))
   .settings(
