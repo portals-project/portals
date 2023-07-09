@@ -29,7 +29,7 @@ lazy val portals = crossProject(JSPlatform, JVMPlatform)
     Compile / doc / target := target.value / "api",
     libraryDependencies += "com.lihaoyi" %%% "pprint" % pprintversion,
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
-    libraryDependencies += "org.scala-js" %% "scalajs-stubs" % scalajsstubsVersion % "provided",
+    libraryDependencies += "org.scala-js" %% "scalajs-stubs" % scalajsstubsVersion,
   )
   .jvmSettings(
     libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
