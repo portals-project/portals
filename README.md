@@ -50,11 +50,8 @@ libraryDependencies += "org.portals-project" %% "portals" % "0.1.0-RC1"
 
 A full project setup with instructions for executing a hello world example is available at [https://github.com/portals-project/Hello-World](https://github.com/portals-project/Hello-World).
 
-## Portals Overview
+## Getting Started Guide
 
-This is a short overview of the Portals framework.
-
-### Getting Started Guide
 We recommend the following steps to get started.
 * [Install Scala](https://www.scala-lang.org/download/), we recommend working with sbt, together with [Metals](https://scalameta.org/metals/docs/editors/vscode/) on VS Code. 
 * Clone the [Hello World](https://github.com/portals-project/Hello-World) repository.
@@ -98,15 +95,15 @@ As the example shows, to write applications you need to import the API from the 
 
 With these abstractions, you can define complex multi-dataflow applications, and execute them on the serverless runtime. For more examples, please check out the [examples](/portals-examples) directory, or the [tutorial](https://www.portals-project.org/tutorial).
 
+## Comparison to Other Projects
+
+TODO: Flink; Kafka; Durable Functions; https://github.com/typelevel/feral; Kalix
+
 ## Project Structure
 
 The Portals framework is licensed under Apache 2.0 and is maintained by the [Portals Project Committee](https://www.portals-project.org/team).
 
 If you are interested in contributing to the project, please check out our [contributing guidelines](CONTRIBUTING.md).
-
-## Comparison to Other Projects
-
-TODO: Flink; Kafka; Durable Functions; https://github.com/typelevel/feral; Kalix
 
 ## Cite Our Work
 
