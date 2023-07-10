@@ -1,4 +1,4 @@
-name: Generate and deploy API documentation
+name: Latest API Docs
 on:
   push:
     branches:
