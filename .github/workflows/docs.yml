@@ -32,7 +32,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v1
       with:
-        path: './portals-core/target/api'
+        path: './portals-core/jvm/target/api'
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v1
