@@ -1,4 +1,4 @@
-name: API documentation generation on release
+name: Versioned API Docs
 on:
   push:
     tags:
@@ -21,8 +21,8 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        external_repository: portals-project/portals-api
+        external_repository: portals-project/api-versioned
         publish_branch: main
-        publish_dir: './target/api'
+        publish_dir: './portals-core/jvm/target/api'
         destination_dir: ${{ github.ref_name }}
         keep_files: true
