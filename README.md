@@ -33,12 +33,12 @@ The Portals project is currently in the early stages of development, we are curr
 * Portals Benchmark. The Portals Benchmark features some microbenchmarks for testing the performance of Portals applications. Due to the recent restructuring of the project, the benchmark is currently not available, and is currently under development.
 * \*Portals Libraries. There are two Portals Libraries, one SQL library for exposing SQL queries as Portal services, and one Actor library for writing actor programs on Portals. These are currently under development.
 
-> **Note**
-> Features that are currently in development are marked as *experimental* and are likely to change.
-
 The following features are planned for the next releases, with target to be finished by the end of 2023.
 
 * \* Portals Runtime. A fault-tolerant, elastically scalable runtime for running Portals applications on multiple nodes across edge and cloud.
+
+> **Note**
+> Features that are currently in development are marked as *experimental* and are likely to change.
 
 ## Project Setup
 
@@ -87,63 +87,25 @@ object HelloWorld extends App:
   system.shutdown()
 ```
 
-The example shows how we can build applications similar to traditional dataflow frameworks. However, Portals also allows us to define multiple dataflows, and connect them to each other, as shown in the following example.
+As the example shows, to write applications you need to import the API from the DSL, and to run the applications you need a system. But, there are many more abstractions and concepts in Portals. The main abstractions of the Portals API are the following:
+* Workflows: for processing atomic streams.
+* Per-key stateful tasks: the processing units within workflows are stateful tasks sharded over a key.
+* Generators: for generating atomic streams.
+* Sequencers: for sequencing atomic streams.
+* Splitters: for splitting atomic streams.
+* Portals: for exposing services with a futures API.
+* Registry: for connecting to streams and portals in other applications.
 
-```scala
-// add this code snippet after the `workflow` in previous example
-val workflow2 = Workflows[String, String]()
-  .source(workflow.stream)
-  .map(_.toLowerCase())
-  .logger("from workflow2: ")
-  .sink()
-  .freeze()
-```
+With these abstractions, you can define complex multi-dataflow applications, and execute them on the serverless runtime. For more examples, please check out the [examples](/portals-examples) directory, or the [tutorial](https://www.portals-project.org/tutorial).
 
-In-fact, we can create cyclic dependencies between workflows using a sequencer (an operations which sequences multiple atomic streams into a single atomic stream).
-
-```scala
-// again, add this code snippet after the `workflow` in the previous example
-val sequencer = Sequencers.random[String]()
-
-val workflow3 = Workflows[String, String]()
-  .source(sequencer.stream)
-  .flatMap { x =>
-    if x.length() > 0 then List(x.tail) else List()
-  }
-  .logger("from workflow3: ")
-  .sink()
-  .freeze()
-
-val _ = Connections.connect(workflow2.stream, sequencer)
-val _ = Connections.connect(workflow3.stream, sequencer)
-```
-
-Here, the sequencer is used to connect workflow2's output and workflow3's output to workflow3's input, creating a cyclic dependency. Besides the sequencer, we also have a splitter, which can be used to split a stream.
-
-```scala
-val splitter = Splitters.empty[String](workflow3.stream)
-val split = Splits.split(splitter, x => x.length() % 2 == 0)
-
-val workflow4 = Workflows[String, String]()
-  .source(split)
-  .logger("from workflow4: ")
-  .sink()
-  .freeze()
-```
-
-Here, the splitter splits the output atomic stream from workflow3, we add a split which only keeps the strings with an even length, and print this in workflow4. 
-
-TODO: more complex workflows, taskbuilder, state.
-
-TODO: Portals
-
-## Project structure / team structure
+## Project Structure
 
 The Portals framework is licensed under Apache 2.0 and is maintained by the [Portals Project Committee](https://www.portals-project.org/team).
 
 If you are interested in contributing to the project, please check out our [contributing guidelines](CONTRIBUTING.md).
 
-## Comparison to other projects
+## Comparison to Other Projects
+
 TODO: Flink; Kafka; Durable Functions; https://github.com/typelevel/feral; Kalix
 
 ## Cite Our Work
