@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/portals-project/portals/actions/workflows/build-test.yaml/badge.svg)](https://github.com/portals-project/portals/actions/workflows/build-test.yaml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/portals-project/portals/blob/main/LICENSE)
 [![API Docs](https://img.shields.io/badge/API_Docs-orange)](https://portals-project.org/api/)
-[![Website](https://img.shields.io/badge/Website-teal)](https://portals-project.org/)
+[![Website](https://img.shields.io/badge/Portals_Website-teal)](https://portals-project.org/)
 
 ## Project Information
 
