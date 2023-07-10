@@ -1,11 +1,11 @@
-let builder = PortalsJS.ApplicationBuilder("flatMap");
+let builder = PortalsJS.ApplicationBuilder("map");
 let _ = builder.workflows
   .source(builder.generators.fromRange(0, 128, 8).stream)
-  .flatMap(ctx => x => { return [x, x * x]; })
+  .map(ctx => x => x * x)
   .logger()
   .sink()
   .freeze();
-let flatMap = builder.build();
+let map = builder.build();
 let system = PortalsJS.System();
-system.launch(flatMap);
+system.launch(map);
 system.stepUntilComplete();
