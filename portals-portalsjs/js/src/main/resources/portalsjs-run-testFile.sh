@@ -1,1 +1,1 @@
-node portals-js/js/src/main/resources/test-run-testFile.js
+node portals-portalsjs/js/src/main/resources/test-run-testFile.js
