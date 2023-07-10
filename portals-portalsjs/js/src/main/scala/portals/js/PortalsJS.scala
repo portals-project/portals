@@ -464,9 +464,9 @@ object PortalsJS:
       TaskBuilder.map(f.toScala)
 
     def flatMap[T, U](
-        f: ContextFunction2JS[MapTaskContext[T, U], T, IterableOnce[U]]
+        f: ContextFunction2JS[MapTaskContext[T, U], T, Array[U]]
     ): GenericTask[T, U, Nothing, Nothing] =
-      TaskBuilder.flatMap(f.toScala)
+      TaskBuilder.flatMap(ctx ?=> x => f.toScala(using ctx)(x).toScala)
 
     def filter[T](f: Function1JS[T, Boolean]): GenericTask[T, T, Nothing, Nothing] =
       TaskBuilder.filter(f.toScala)

@@ -21,3 +21,4 @@ let portalStar = builder.build();
 let system = PortalsJS.System();
 system.launch(portalStar);
 system.stepUntilComplete();
+system.shutdown();

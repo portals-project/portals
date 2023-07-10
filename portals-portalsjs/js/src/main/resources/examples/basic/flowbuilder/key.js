@@ -14,3 +14,4 @@ let key = builder.build();
 let system = PortalsJS.System();
 system.launch(key);
 system.stepUntilComplete();
+system.shutdown();

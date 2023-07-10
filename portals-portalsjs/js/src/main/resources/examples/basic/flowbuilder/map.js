@@ -1,12 +1,12 @@
-let builder = PortalsJS.ApplicationBuilder("task");
-let t = builder.tasks.map(ctx => x => x * x);
+let builder = PortalsJS.ApplicationBuilder("map");
 let _ = builder.workflows
   .source(builder.generators.fromRange(0, 128, 8).stream)
-  .task(t)
+  .map(ctx => x => x * x)
   .logger()
   .sink()
   .freeze();
-let task = builder.build();
+let map = builder.build();
 let system = PortalsJS.System();
-system.launch(task);
+system.launch(map);
 system.stepUntilComplete();
+system.shutdown();

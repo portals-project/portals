@@ -1,11 +1,13 @@
-let builder = PortalsJS.ApplicationBuilder("flatMap");
+let builder = PortalsJS.ApplicationBuilder("identity");
 let _ = builder.workflows
   .source(builder.generators.fromRange(0, 128, 8).stream)
-  .flatMap(ctx => x => { return [x, x * x]; })
+  .key(x => 0)
+  .identity()
   .logger()
   .sink()
   .freeze();
-let flatMap = builder.build();
+let identity = builder.build();
 let system = PortalsJS.System();
-system.launch(flatMap);
+system.launch(identity);
 system.stepUntilComplete();
+system.shutdown();

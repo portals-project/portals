@@ -16,3 +16,4 @@ let init = builder.build();
 let system = PortalsJS.System();
 system.launch(init);
 system.stepUntilComplete();
+system.shutdown();

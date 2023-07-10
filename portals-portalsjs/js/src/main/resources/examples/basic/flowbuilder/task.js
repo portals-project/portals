@@ -1,11 +1,13 @@
-let builder = PortalsJS.ApplicationBuilder("filter");
+let builder = PortalsJS.ApplicationBuilder("task");
+let t = builder.tasks.map(ctx => x => x * x);
 let _ = builder.workflows
   .source(builder.generators.fromRange(0, 128, 8).stream)
-  .filter(x => x % 2 == 0)
+  .task(t)
   .logger()
   .sink()
   .freeze();
-let filter = builder.build();
+let task = builder.build();
 let system = PortalsJS.System();
-system.launch(filter);
+system.launch(task);
 system.stepUntilComplete();
+system.shutdown();

@@ -15,3 +15,4 @@ let portalTask = builder.build();
 let system = PortalsJS.System();
 system.launch(portalTask);
 system.stepUntilComplete();
+system.shutdown();

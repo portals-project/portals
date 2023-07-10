@@ -13,3 +13,4 @@ let withStar = builder.build();
 let system = PortalsJS.System();
 system.launch(withStar);
 system.stepUntilComplete();
+system.shutdown();

@@ -14,3 +14,4 @@ let union = builder.build();
 let system = PortalsJS.System();
 system.launch(union);
 system.stepUntilComplete();
+system.shutdown();

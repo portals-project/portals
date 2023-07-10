@@ -1,12 +1,12 @@
-let builder = PortalsJS.ApplicationBuilder("identity");
+let builder = PortalsJS.ApplicationBuilder("filter");
 let _ = builder.workflows
   .source(builder.generators.fromRange(0, 128, 8).stream)
-  .key(x => 0)
-  .identity()
+  .filter(x => x % 2 == 0)
   .logger()
   .sink()
   .freeze();
-let identity = builder.build();
+let filter = builder.build();
 let system = PortalsJS.System();
-system.launch(identity);
+system.launch(filter);
 system.stepUntilComplete();
+system.shutdown();
