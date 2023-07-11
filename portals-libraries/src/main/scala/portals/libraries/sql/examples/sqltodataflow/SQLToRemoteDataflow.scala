@@ -36,7 +36,7 @@ object SQLToRemoteDataflow extends App:
 
     val tableWorkflow = Workflows[Nothing, Nothing]()
       .source(Generators.empty[Nothing].stream)
-      .tablex[Types.KV](table)
+      .table[Types.KV](table)
       .sink()
       .freeze()
 

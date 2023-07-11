@@ -111,7 +111,7 @@ object sqlDSL:
     TableInfo(tableName, primaryField, portal, fieldNames, fieldTypes)
 
   extension [T, U, CT](wb: FlowBuilder[T, U, CT, Nothing]) {
-    def tablex[X: DBSerializable: ClassTag](tables: Table*): FlowBuilder[T, U, Nothing, Nothing] =
+    def table[X: DBSerializable: ClassTag](tables: Table*): FlowBuilder[T, U, Nothing, Nothing] =
       wb.task(
         Utils.tableReplier[X](tables.head).asInstanceOf
       )
