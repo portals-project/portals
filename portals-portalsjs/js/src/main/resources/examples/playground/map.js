@@ -1,0 +1,11 @@
+var builder = PortalsJS.ApplicationBuilder("map")
+var _ = builder.workflows
+  .source(builder.generators.fromRange(0, 128, 8).stream)
+  .map(ctx => x => [x, x.toString().length])
+  .logger()
+  .sink()
+  .freeze()
+var map = builder.build()
+var system = PortalsJS.System()
+system.launch(map)
+system.stepUntilComplete()

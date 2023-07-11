@@ -1,10 +1,20 @@
+# sbt
 project/target
 project/project/target
 target/
+
+# macOS
+*.DS_Store
+
+# VS Code
 .idea/
 .bsp/
 .bloop/
 .metals/
 .vscode/
 *metals.sbt
-*.DS_Store
+
+# Node
+node_modules/
+package-lock.json
+package.json

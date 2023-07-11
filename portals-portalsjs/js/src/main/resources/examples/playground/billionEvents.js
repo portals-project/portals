@@ -1,0 +1,11 @@
+var builder = PortalsJS.ApplicationBuilder("billionEvents")
+var _ = builder.workflows
+  .source(builder.generators.fromRange(0, 1024*1024*1024, 1024*1024).stream)
+  .filter(x => x % (1024*1024) == 0)
+  .logger()
+  .sink()
+  .freeze()
+var billionEvents = builder.build()
+var system = PortalsJS.System()
+system.launch(billionEvents)
+system.stepUntilComplete()
