@@ -4,6 +4,7 @@ import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
 import portals.application.AtomicPortalRef
 import portals.libraries.sql.*
+import portals.libraries.sql.queryable.*
 import portals.system.Systems
 
 /** An example with a queryable Key-Value table using the sql library.

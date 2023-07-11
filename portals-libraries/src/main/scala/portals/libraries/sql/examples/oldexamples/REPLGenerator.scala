@@ -1,4 +1,4 @@
-package portals.libraries.sql.examples
+package portals.libraries.sql.examples.oldexamples
 
 import java.util.concurrent.LinkedBlockingQueue
 

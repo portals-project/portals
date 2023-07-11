@@ -1,15 +1,15 @@
-package portals.libraries.sql.examples
+package portals.libraries.sql.examples.oldexamples
+
 import scala.annotation.experimental
 
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.PortalsApp
+import portals.libraries.sql.*
 import portals.libraries.sql.calcite.*
-import portals.libraries.sql.examples.Author
-import portals.libraries.sql.examples.Book
-import portals.libraries.sql.querierTransactional
-import portals.libraries.sql.DBSerializable
-import portals.libraries.sql.QueryableWorkflow
+import portals.libraries.sql.examples.oldexamples.*
+import portals.libraries.sql.queryable.querierTransactional
+import portals.libraries.sql.queryable.QueryableWorkflow
 import portals.system.Systems
 
 /** Simulate concurrent queries, in this case insert on key 0 will block select

@@ -1,4 +1,4 @@
-package portals.libraries.sql.examples
+package portals.libraries.sql.examples.oldexamples
 
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -10,16 +10,8 @@ import portals.api.dsl.DSL.*
 import portals.application.task.PerKeyState
 import portals.application.AtomicGeneratorRef
 import portals.libraries.sql.calcite.*
-import portals.libraries.sql.examples.Book
-import portals.libraries.sql.DBSerializable
-import portals.libraries.sql.InsertOp
-import portals.libraries.sql.PreCommitOp
-import portals.libraries.sql.QueryableWorkflow
-import portals.libraries.sql.Result
-import portals.libraries.sql.RollbackOp
-import portals.libraries.sql.SQLPortal
-import portals.libraries.sql.SelectOp
-import portals.libraries.sql.TableInfo
+import portals.libraries.sql.examples.oldexamples.*
+import portals.libraries.sql.queryable.*
 import portals.system.Systems
 import portals.util.Future
 
@@ -27,7 +19,7 @@ import portals.util.Future
   * on key (1, 0), precommit on key 1 will be rolled back
   */
 @experimental
-object TransactionalConflictWithProblem extends App:
+object TransactionalConflictProbabilistic extends App:
 
   import scala.jdk.CollectionConverters.*
 
@@ -39,9 +31,9 @@ object TransactionalConflictWithProblem extends App:
 
   import portals.api.dsl.ExperimentalDSL.*
   import portals.libraries.sql.*
-  import portals.libraries.sql.QueryableWorkflow.clsToSqlTypeMapping
-  import portals.libraries.sql.QueryableWorkflow.createDataWfPortal
-  import portals.libraries.sql.QueryableWorkflow.createDataWorkflow
+  import portals.libraries.sql.queryable.QueryableWorkflow.clsToSqlTypeMapping
+  import portals.libraries.sql.queryable.QueryableWorkflow.createDataWfPortal
+  import portals.libraries.sql.queryable.QueryableWorkflow.createDataWorkflow
 
   val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
   logger.setLevel(Level.INFO)
@@ -50,22 +42,32 @@ object TransactionalConflictWithProblem extends App:
   rndTxnIDGenerator.setSeed(514)
 
   for (seed <- 1 to 200) {
+    println("====== seed " + seed)
 
-    // more sql statements
     val app = PortalsApp("app") {
       val generator1 = Generators.fromIteratorOfIterators[String](
         List(
-          // NOTE: actually upsert
+          //        List(
+          //          "INSERT INTO Book (id, title, \"year\", author) VALUES (1, 'Les Miserables', 1862, 0), (2, 'The Hunchback of Notre-Dame', 1829, 0)",
+          //        ).iterator,
+          //        List(
+          //          "SELECT 'wf1', * FROM Book WHERE id IN (1, 2, 3, 4)",
+          //        ).iterator
           List(
             "INSERT INTO Book (id, title, \"year\", author) VALUES (1, 'Les Miserables', 1862, 0), (2, 'The Hunchback of Notre-Dame', 1829, 0)," +
-              "(3, 'The Hunchback of Notre-Dame', 1829, 0), (4, 'The Hunchback of Notre-Dame', 1829, 0)",
+              "(3, 'The Last Day of a Condemned Man', 1829, 0), (4, 'The three Musketeers', 1844, 1)",
+          ).iterator
+//          List(
 //            "INSERT INTO Book (id, title, \"year\", author) VALUES (1, 'Les Miserables', 1862, 0), (2, 'The Hunchback of Notre-Dame', 1829, 0)",
-          ).iterator,
+//          ).iterator
         ).iterator
       )
 
       val generator2 = Generators.fromIteratorOfIterators[String](
         List(
+          //        List(
+          //          "INSERT INTO Book (id, title, \"year\", author) VALUES (3, 'The Last Day of a Condemned Man', 1829, 0), (4, 'The three Musketeers', 1844, 1)",
+          //        ).iterator,
           List(
             "SELECT 'wf2', * FROM Book WHERE id IN (1, 2, 3, 4)",
 //            "SELECT 'wf2', * FROM Book WHERE id IN (1, 2)",
@@ -103,7 +105,6 @@ object TransactionalConflictWithProblem extends App:
                 println("precommit txn " + txnId + " key " + key + " fail")
                 reply(Result("error", List()))
             case SelectOp(tableName, key, txnId) =>
-              println("select txn " + txnId + " key " + key)
               val data = state.get()
               _txn.set(-1)
               if (data.isDefined)
@@ -112,7 +113,6 @@ object TransactionalConflictWithProblem extends App:
               else
                 reply(Result(STATUS_OK, null))
             case InsertOp(tableName, data, key, txnId) =>
-              println("insert txn " + txnId + " key " + key + " data " + data)
               state.set(Some(Book.fromObjectArray(data)))
               _txn.set(-1)
               //            println("inserted " + state.get().get)
@@ -131,33 +131,45 @@ object TransactionalConflictWithProblem extends App:
 
         Workflows[String, String](wfName)
           .source(generator.stream)
-          .asker[String](dataPortal) { sql =>
+          .asker[FirstPhaseResult](dataPortal) { sql =>
             val futureReadyCond = new LinkedBlockingQueue[Integer]()
             val awaitForFutureCond = new LinkedBlockingQueue[Integer]()
             val awaitForFinishCond = new LinkedBlockingQueue[Integer]()
-            val tableOptCntCond = new LinkedBlockingQueue[Integer]()
+            val tableScanCntCond = new LinkedBlockingQueue[Integer]()
             val result = new java.util.ArrayList[Array[Object]]()
             val futures = new java.util.ArrayList[FutureWithResult]()
+
             var portalFutures = List[Future[Result]]()
 
             val calcite = new Calcite()
             calcite.printPlan = false
 
+            val txnId = rndTxnIDGenerator.nextInt(1000000)
+
             val ti = TableInfo(tableName, "", dataPortal, fieldNames, fieldTypes)
+
             calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
             calcite
               .getTable(ti.tableName)
               .setInsertRow(data => {
                 // TODO: assert pk always Int
-                val future = ask(ti.portal)(InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int]))
+                val future = ask(ti.portal)(
+                  PreCommitOp(
+                    ti.tableName,
+                    data(0).asInstanceOf[Int],
+                    txnId,
+                    InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int], txnId)
+                  )
+                )
                 portalFutures = portalFutures :+ future
                 new FutureWithResult(future, null)
               })
             calcite
               .getTable(ti.tableName)
               .setGetFutureByRowKeyFunc(key => {
+                val intKey = key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()
                 val future =
-                  ask(ti.portal)(SelectOp(ti.tableName, key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()))
+                  ask(ti.portal)(PreCommitOp(ti.tableName, intKey, txnId, SelectOp(ti.tableName, intKey, txnId)))
                 portalFutures = portalFutures :+ future
                 new FutureWithResult(future, null)
               })
@@ -167,45 +179,89 @@ object TransactionalConflictWithProblem extends App:
               futureReadyCond,
               awaitForFutureCond,
               awaitForFinishCond,
-              tableOptCntCond,
+              tableScanCntCond,
               futures,
               result
             )
 
-            val tableOptCnt = tableOptCntCond.take
+            val tableScanCnt = tableScanCntCond.take
 
+            val emit = { (x: FirstPhaseResult) =>
+              ctx.emit(x)
+            }
+
+            for (i <- 1 to tableScanCnt) {
+              futureReadyCond.take
+
+              // wait for the last one to awaitAll
+              if i != tableScanCnt then awaitForFutureCond.put(1)
+              else
+                awaitAll[Result](portalFutures: _*) {
+                  val results: List[Result] =
+                    futures.asScala.map(_.future.asInstanceOf[Future[Result]].value.get).toList
+                  val succeedOps = results.filter(_.status == STATUS_OK).map(_.data.asInstanceOf[SQLQueryEvent])
+
+                  // TODO: made a partial commit example
+                  if succeedOps.size != futures.size() then {
+                    awaitForFutureCond.put(-1) // trigger execution failure
+                    emit(FirstPhaseResult(-1, txnId, sql, false, succeedOps))
+                  } else
+                    emit(
+                      FirstPhaseResult(
+                        -1,
+                        txnId,
+                        sql,
+                        true,
+                        succeedOps,
+                        futures,
+                        awaitForFutureCond,
+                        awaitForFinishCond,
+                        result
+                      )
+                    )
+                }
+            }
+          }
+          .asker[String](dataPortal) { (preCommResult: FirstPhaseResult) =>
             val emit = { (x: String) =>
               ctx.emit(x)
             }
 
-            for (i <- 1 to tableOptCnt) {
-              //        println("try future ready consume")
-              futureReadyCond.take
-              //        println("future ready consume done")
-
-              // wait for the last one to awaitAll
-              if i != tableOptCnt then awaitForFutureCond.put(1)
-              else
-                awaitAll[Result](portalFutures: _*) {
-                  futures.forEach(f => {
-                    val data = f.future.asInstanceOf[Future[Result]].value
-                    f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
-                  })
-
-                  awaitForFutureCond.put(1) // allow SQL execution to start
-
-                  awaitForFinishCond.take() // wait for SQL execution to finish
-
-                  println("====== Result for " + sql + " ======")
-                  if !sql.startsWith("INSERT") && (result.size() != 0 && result.size() != 4) then
-                    println("inconsistent result size " + result.size())
-                  else if !sql.startsWith("INSERT") then println("consistent result size " + result.size())
-                  result.forEach(row => println(java.util.Arrays.toString(row)))
-
-                  result.forEach(row => {
-                    emit(java.util.Arrays.toString(row))
-                  })
+            if preCommResult.success then {
+              println("txn " + preCommResult.txnID + " precommit succeed")
+              var futures = List[Future[Result]]()
+              preCommResult.succeedOps.foreach { op =>
+                futures = futures :+ ask(dataPortal)(op)
+              }
+              awaitAll[Result](futures: _*) {
+                for (i <- futures.indices) {
+                  preCommResult.preparedOps.get(i).futureResult = futures(i).value.get.data.asInstanceOf[Array[Object]]
                 }
+                preCommResult.awaitForFutureCond.put(1)
+                preCommResult.awaitForFinishCond.take()
+
+                println("====== Result for " + preCommResult.sql + " ======")
+                if !preCommResult.sql.startsWith("INSERT") && preCommResult.result.size() != 0 && preCommResult.result
+                    .size() != 4
+                then println("inconsistent result size " + preCommResult.result.size())
+                else if !preCommResult.sql.startsWith("INSERT") then
+                  println("consistent result size " + preCommResult.result.size())
+                preCommResult.result.forEach(row => {
+                  //                emit(util.Arrays.toString(row))
+                  println(java.util.Arrays.toString(row))
+                  emit(java.util.Arrays.toString(row))
+                })
+              }
+            } else {
+              println("txn " + preCommResult.txnID + " precommit failed")
+              var futures = List[Future[Result]]()
+              preCommResult.succeedOps.foreach { op =>
+                futures = futures :+ ask(dataPortal)(RollbackOp(op.tableName, op.key, op.txnId))
+              }
+              awaitAll[Result](futures: _*) {
+                println("====== Abort txn " + preCommResult.txnID + " sql " + preCommResult.sql)
+                emit("rollback")
+              }
             }
           }
           .sink()
@@ -219,10 +275,10 @@ object TransactionalConflictWithProblem extends App:
     //  val system = Systems.interpreter()
     //  val system = new RandomInterpreter(Some(1)) // I2 I1 S2A S1
     //  val system = new RandomInterpreter(Some(2)) // I1 I2 S1A S2A
-    //  val system = new RandomInterpreter(Some(15)) // Problem Found!
+//    val system = new RandomInterpreter(Some(9)) // I1 I2 S1A S2A
 
-    // I2 Q2 -> inconsistency 47/200
-    // I4 Q4 -> inconsistency 93/200 -> result size 45
+    // size 2 -> all consistent -> out2 rate 6/200
+    // size 4 -> all consistent -> out0 45 abort
     val system = Systems.test() // I1 I2 S1A S2A
     system.launch(app)
     system.stepUntilComplete()
