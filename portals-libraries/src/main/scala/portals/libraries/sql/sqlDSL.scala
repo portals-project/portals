@@ -49,10 +49,12 @@ object sqlDSL:
   // TYPES
   //////////////////////////////////////////////////////////////////////////////
 
-  object Types:
+  private[this] object Types:
     type Table = TableInfo
 
     extension (t: Table) {
+
+      /** Get a `ref`erence to this table. */
       def ref: TableRef =
         TableRef(t.tableName, t.primaryField, t.portal, t.fieldNames, t.fieldTypes)
     }
@@ -100,11 +102,11 @@ object sqlDSL:
     val portal = createDataWfPortal(tableName)
     TableInfo(tableName, primaryField, portal, fieldNames, fieldTypes)
 
-  extension [T, U](wb: FlowBuilder[T, U, String, String]) {
-    def table[X: DBSerializable: ClassTag](tables: Table*): FlowBuilder[T, U, Any, Any] =
+  extension [T, U, CT](wb: FlowBuilder[T, U, CT, Nothing]) {
+    def tablex[X: DBSerializable: ClassTag](tables: Table*): FlowBuilder[T, U, Nothing, Nothing] =
       wb.task(
         Utils.tableReplier[X](tables.head).asInstanceOf
-      ).asInstanceOf
+      )
   }
 
   ////////////////////////////////////////////////////////////////////////////
