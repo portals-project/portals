@@ -44,7 +44,6 @@ class PersistentList[T](name: String) extends java.util.ArrayList[T] {
   val state = PerTaskState(name, this)
 }
 
-@experimental
 object QueryableWorkflow:
   import portals.api.dsl.ExperimentalDSL.*
 
@@ -197,10 +196,8 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
 
   def id(): FlowBuilder[T, U, String, String] = wb
 
-  @experimental
   def querier(tableInfos: TableInfo*): FlowBuilder[T, U, String, String] = _querier(tableInfos: _*)(true)
 
-  @experimental
   def _querier(tableInfos: TableInfo*)(printResult: Boolean): FlowBuilder[T, U, String, String] = {
     import scala.jdk.CollectionConverters.*
     import java.math.BigDecimal
@@ -286,7 +283,6 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
     }
   }
 
-  @experimental
   def querierTransactional(tableInfos: TableInfo*): FlowBuilder[T, U, FirstPhaseResult, String] = {
     import scala.jdk.CollectionConverters.*
     import java.math.BigDecimal
