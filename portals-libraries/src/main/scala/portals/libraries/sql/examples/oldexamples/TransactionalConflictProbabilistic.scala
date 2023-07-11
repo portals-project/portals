@@ -9,7 +9,7 @@ import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.application.task.PerKeyState
 import portals.application.AtomicGeneratorRef
-import portals.libraries.sql.calcite.*
+import portals.libraries.sql.internals.calcite.*
 import portals.libraries.sql.examples.oldexamples.*
 import portals.libraries.sql.internals.*
 import portals.system.Systems

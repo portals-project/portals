@@ -1,4 +1,4 @@
-package portals.libraries.sql.calcite;
+package portals.libraries.sql.internals.calcite;
 
 public class FutureWithResult {
     public Object future;

@@ -21,7 +21,7 @@ import portals.application.task.PerTaskState
 import portals.application.AtomicPortalRef
 import portals.libraries.sql
 import portals.libraries.sql.*
-import portals.libraries.sql.calcite.*
+import portals.libraries.sql.internals.calcite.*
 import portals.libraries.sql.internals.*
 import portals.libraries.sql.internals.QueryableWorkflow.clsToSqlTypeMapping
 import portals.libraries.sql.internals.QueryableWorkflow.createDataWfPortal

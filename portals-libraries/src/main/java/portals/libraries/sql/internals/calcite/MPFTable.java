@@ -1,4 +1,4 @@
-package portals.libraries.sql.calcite;
+package portals.libraries.sql.internals.calcite;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.DataContext;

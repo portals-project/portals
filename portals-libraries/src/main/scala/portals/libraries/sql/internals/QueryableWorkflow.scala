@@ -14,7 +14,7 @@ import portals.api.dsl.DSL.Portal
 import portals.application.task.PerKeyState
 import portals.application.task.PerTaskState
 import portals.application.AtomicPortalRef
-import portals.libraries.sql.calcite.*
+import portals.libraries.sql.internals.calcite.*
 import portals.libraries.sql.internals.CommitOp
 import portals.libraries.sql.internals.DBSerializable
 import portals.libraries.sql.internals.FirstPhaseResult

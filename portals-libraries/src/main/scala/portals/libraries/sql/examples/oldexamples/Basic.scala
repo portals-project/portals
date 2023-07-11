@@ -5,7 +5,7 @@ import scala.annotation.experimental
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.PortalsApp
-import portals.libraries.sql.calcite.*
+import portals.libraries.sql.internals.calcite.*
 import portals.libraries.sql.internals.*
 import portals.system.Systems
 

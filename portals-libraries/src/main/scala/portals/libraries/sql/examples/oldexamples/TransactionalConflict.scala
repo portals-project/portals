@@ -6,7 +6,7 @@ import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.PortalsApp
 import portals.libraries.sql.*
-import portals.libraries.sql.calcite.*
+import portals.libraries.sql.internals.calcite.*
 import portals.libraries.sql.examples.oldexamples.*
 import portals.libraries.sql.internals.querierTransactional
 import portals.libraries.sql.internals.QueryableWorkflow

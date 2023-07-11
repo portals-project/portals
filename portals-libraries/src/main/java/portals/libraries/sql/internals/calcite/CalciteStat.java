@@ -1,4 +1,4 @@
-package portals.libraries.sql.calcite;
+package portals.libraries.sql.internals.calcite;
 
 import java.util.ArrayList;
 import java.util.HashMap;
