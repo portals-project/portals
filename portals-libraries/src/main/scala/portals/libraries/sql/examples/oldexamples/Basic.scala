@@ -6,7 +6,7 @@ import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.PortalsApp
 import portals.libraries.sql.calcite.*
-import portals.libraries.sql.queryable.*
+import portals.libraries.sql.internals.*
 import portals.system.Systems
 
 object Book extends DBSerializable[Book]:

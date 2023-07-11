@@ -8,14 +8,8 @@ import portals.libraries.sql.internals.*
 import portals.libraries.sql.sqlDSL.*
 import portals.system.Systems
 
-/** An example with a queryable Key-Value table using the sql library.
-  *
-  * @example
-  *   {{{
-  *  sbt "libraries/runMain portals.libraries.sql.examples.SQLToDataflow"
-  *   }}}
-  */
-object SQLToDataflow extends App:
+object SQLToRemoteDataflow extends App:
+  import sqlDSL.*
 
   /** Types used within the context of the SQLToDataflow example. */
   object Types:
@@ -34,6 +28,8 @@ object SQLToDataflow extends App:
   /** Portals application which runs the queriable KV Table. */
   val tableApp = PortalsApp("SQLToDataflowTable"):
     val table = TableWorkflow[KV]("KVTable", "k")
+
+    val queryPortal = QueryPortal("queryPortal", table)
 
     val generator = Generators.fromListOfLists[String](
       List(
@@ -63,7 +59,13 @@ object SQLToDataflow extends App:
 
     val queryWorkflow = Workflows[String, String]("queryWorkflow")
       .source(generator.stream)
-      .query(table)
+      .asker(queryPortal.portal) { x =>
+        val f = ask(queryPortal.portal)(x)
+        await(f) {
+          emit(f.value.get)
+        }
+      }
+      .logger()
       .sink()
       .freeze()
 

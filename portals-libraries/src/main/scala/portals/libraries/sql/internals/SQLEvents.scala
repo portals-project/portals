@@ -1,4 +1,4 @@
-package portals.libraries.sql.queryable
+package portals.libraries.sql.internals
 import java.util.concurrent.LinkedBlockingQueue
 
 import portals.libraries.sql.calcite.*

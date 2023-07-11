@@ -8,8 +8,8 @@ import portals.api.dsl.DSL.PortalsApp
 import portals.libraries.sql.*
 import portals.libraries.sql.calcite.*
 import portals.libraries.sql.examples.oldexamples.*
-import portals.libraries.sql.queryable.querierTransactional
-import portals.libraries.sql.queryable.QueryableWorkflow
+import portals.libraries.sql.internals.querierTransactional
+import portals.libraries.sql.internals.QueryableWorkflow
 import portals.system.Systems
 
 /** Simulate concurrent queries, in this case insert on key 0 will block select

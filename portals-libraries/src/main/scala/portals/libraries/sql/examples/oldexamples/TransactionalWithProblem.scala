@@ -11,8 +11,8 @@ import portals.application.task.PerKeyState
 import portals.application.AtomicGeneratorRef
 import portals.libraries.sql.*
 import portals.libraries.sql.calcite.*
-import portals.libraries.sql.queryable.*
-import portals.libraries.sql.queryable.QueryableWorkflow.*
+import portals.libraries.sql.internals.*
+import portals.libraries.sql.internals.QueryableWorkflow.*
 import portals.system.Systems
 import portals.util.Future
 
@@ -32,7 +32,7 @@ object TransactionalConflictWithProblem extends App:
 
   import portals.api.dsl.ExperimentalDSL.*
   import portals.libraries.sql.*
-  import portals.libraries.sql.queryable.*
+  import portals.libraries.sql.internals.*
 
   val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
   logger.setLevel(Level.INFO)

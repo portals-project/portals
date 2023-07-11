@@ -11,7 +11,7 @@ import portals.application.task.PerKeyState
 import portals.application.AtomicGeneratorRef
 import portals.libraries.sql.calcite.*
 import portals.libraries.sql.examples.oldexamples.*
-import portals.libraries.sql.queryable.*
+import portals.libraries.sql.internals.*
 import portals.system.Systems
 import portals.util.Future
 
@@ -31,9 +31,9 @@ object TransactionalConflictProbabilistic extends App:
 
   import portals.api.dsl.ExperimentalDSL.*
   import portals.libraries.sql.*
-  import portals.libraries.sql.queryable.QueryableWorkflow.clsToSqlTypeMapping
-  import portals.libraries.sql.queryable.QueryableWorkflow.createDataWfPortal
-  import portals.libraries.sql.queryable.QueryableWorkflow.createDataWorkflow
+  import portals.libraries.sql.internals.QueryableWorkflow.clsToSqlTypeMapping
+  import portals.libraries.sql.internals.QueryableWorkflow.createDataWfPortal
+  import portals.libraries.sql.internals.QueryableWorkflow.createDataWorkflow
 
   val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
   logger.setLevel(Level.INFO)

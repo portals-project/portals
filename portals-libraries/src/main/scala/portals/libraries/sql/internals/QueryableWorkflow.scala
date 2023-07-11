@@ -1,4 +1,4 @@
-package portals.libraries.sql.queryable
+package portals.libraries.sql.internals
 
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -15,15 +15,15 @@ import portals.application.task.PerKeyState
 import portals.application.task.PerTaskState
 import portals.application.AtomicPortalRef
 import portals.libraries.sql.calcite.*
-import portals.libraries.sql.queryable.CommitOp
-import portals.libraries.sql.queryable.DBSerializable
-import portals.libraries.sql.queryable.FirstPhaseResult
-import portals.libraries.sql.queryable.InsertOp
-import portals.libraries.sql.queryable.PreCommitOp
-import portals.libraries.sql.queryable.Result
-import portals.libraries.sql.queryable.RollbackOp
-import portals.libraries.sql.queryable.SQLQueryEvent
-import portals.libraries.sql.queryable.SelectOp
+import portals.libraries.sql.internals.CommitOp
+import portals.libraries.sql.internals.DBSerializable
+import portals.libraries.sql.internals.FirstPhaseResult
+import portals.libraries.sql.internals.InsertOp
+import portals.libraries.sql.internals.PreCommitOp
+import portals.libraries.sql.internals.Result
+import portals.libraries.sql.internals.RollbackOp
+import portals.libraries.sql.internals.SQLQueryEvent
+import portals.libraries.sql.internals.SelectOp
 import portals.util.Future
 
 type SQLPortal = AtomicPortalRef[SQLQueryEvent, Result]
