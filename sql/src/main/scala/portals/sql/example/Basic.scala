@@ -87,7 +87,7 @@ object SQLExample extends App:
       .freeze()
   }
 
-  val system = Systems.interpreter()
+  val system = Systems.test()
 //  val system = new RandomInterpreter()
   system.launch(app)
   system.stepUntilComplete()
