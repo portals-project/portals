@@ -1,12 +1,11 @@
 package portals.libraries.sql.examples
 
 import scala.annotation.experimental
-import portals.libraries.sql.calcite.*
 
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.PortalsApp
-
+import portals.libraries.sql.calcite.*
 import portals.libraries.sql.querier
 import portals.libraries.sql.DBSerializable
 import portals.libraries.sql.QueryableWorkflow

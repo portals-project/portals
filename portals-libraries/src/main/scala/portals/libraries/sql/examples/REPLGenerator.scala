@@ -4,7 +4,6 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import portals.application.generator.Generator
 import portals.libraries.sql.calcite.*
-
 import portals.runtime.WrappedEvents
 import portals.runtime.WrappedEvents.WrappedEvent
 import portals.util.Key

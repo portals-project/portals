@@ -96,12 +96,3 @@ lazy val libraries = project
     libraryDependencies += "com.lihaoyi" %% "cask" % caskVersion
   )
   .dependsOn(portals.jvm % "test->test;compile->compile")
-
-lazy val sql = project
-  .in(file("sql"))
-  .settings(
-    name := "portals-sql",
-    libraryDependencies += "org.apache.calcite" % "calcite-core" % calciteVersion,
-    libraryDependencies += "com.lihaoyi" %% "cask" % caskVersion
-  )
-  .dependsOn(portals.jvm % "test->test;compile->compile")
