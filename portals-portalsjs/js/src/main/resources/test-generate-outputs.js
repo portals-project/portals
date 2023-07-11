@@ -15,6 +15,8 @@ const ignoredFiles = [
   `billionEvents.js`,
   `sleepingBeauty.js`,
   `portalAggregation.js`,
+  `generator.js`,
+  `sequencer.js`,
 ]
 
 // helper function to capture the output to console.log

@@ -196,13 +196,13 @@ private[portals] class FlowBuilderImpl[T, U, CT, CU](using fbctx: FlowBuilderCon
     val newBehavior = behavior.withOnAtomComplete(_onAtomComplete)
     updateTask(name, newBehavior)
 
-  override def withWrapper(
-      _onNext: ProcessorTaskContext[CT, CU] ?=> (ProcessorTaskContext[CT, CU] ?=> CT => Unit) => CT => Unit
-  ): FlowBuilder[T, U, CT, CU] =
+  override def withWrapper[V](
+      _onNext: ProcessorTaskContext[CT, CU | V] ?=> (ProcessorTaskContext[CT, CU | V] ?=> CT => Unit) => CT => Unit
+  ): FlowBuilder[T, U, CT, CU | V] =
     val name = fbctx.latest.get
-    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU, Nothing, Nothing]]
+    val behavior = fbctx.wbctx.tasks(name).asInstanceOf[GenericTask[CT, CU | V, Nothing, Nothing]]
     val newBehavior = behavior.withWrapper(_onNext)
-    updateTask(name, newBehavior)
+    updateTask(name, newBehavior).asInstanceOf[FlowBuilder[T, U, CT, CU | V]]
 
   override def withStep(task: GenericTask[CT, CU, Nothing, Nothing]): FlowBuilder[T, U, CT, CU] =
     val name = fbctx.latest.get

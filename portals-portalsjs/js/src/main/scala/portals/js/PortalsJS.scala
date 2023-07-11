@@ -178,11 +178,12 @@ object PortalsJS:
     def union(others: Array[FlowBuilderJS[T, U, _, CU]]): FlowBuilderJS[T, U, CU, CU] =
       fb.union(others.toScala.map(_.fb)).toJS
 
-    def combineAllFrom[CU, CCU](
-        others: Array[FlowBuilderJS[T, U, _, CU]],
-        task: GenericTask[CU, CCU, _, _]
-    ): FlowBuilderJS[T, U, CU, CCU] =
-      fb.combineAllFrom(others.toScala.map(_.fb): _*)(task).toJS
+    // deprecated in favor of union
+    // def combineAllFrom[CU, CCU](
+    //     others: Array[FlowBuilderJS[T, U, _, CU]],
+    //     task: GenericTask[CU, CCU, _, _]
+    // ): FlowBuilderJS[T, U, CU, CCU] =
+    //   fb.combineAllFrom(others.toScala.map(_.fb): _*)(task).toJS
 
     def map[CCU](f: ContextFunction2JS[MapTaskContext[CU, CCU], CU, CCU]): FlowBuilderJS[T, U, CU, CCU] =
       fb.map(f.toScala).toJS
@@ -216,8 +217,9 @@ object PortalsJS:
     def logger(prefix: String = ""): FlowBuilderJS[T, U, CU, CU] =
       fb.logger(prefix).toJS
 
-    def checkExpectedType[CCU >: CU <: CU](): FlowBuilderJS[T, U, CT, CU] =
-      fb.checkExpectedType().toJS
+    // unnecessary in JS
+    // def checkExpectedType[CCU >: CU <: CU](): FlowBuilderJS[T, U, CT, CU] =
+    //   fb.checkExpectedType().toJS
 
     def withName(name: String): FlowBuilderJS[T, U, CT, CU] =
       fb.withName(name).toJS
@@ -462,9 +464,9 @@ object PortalsJS:
       TaskBuilder.map(f.toScala)
 
     def flatMap[T, U](
-        f: ContextFunction2JS[MapTaskContext[T, U], T, IterableOnce[U]]
+        f: ContextFunction2JS[MapTaskContext[T, U], T, Array[U]]
     ): GenericTask[T, U, Nothing, Nothing] =
-      TaskBuilder.flatMap(f.toScala)
+      TaskBuilder.flatMap(ctx ?=> x => f.toScala(using ctx)(x).toScala)
 
     def filter[T](f: Function1JS[T, Boolean]): GenericTask[T, T, Nothing, Nothing] =
       TaskBuilder.filter(f.toScala)

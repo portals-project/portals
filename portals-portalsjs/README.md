@@ -9,17 +9,18 @@ npm install javascript-obfuscator fs
 ```
 
 Compile:
+```bash
+sh scripts/portalsjs/portalsjs-compile.sh
 ```
-sh portals-portalsjs/js/src/main/resources/portalsjs-compile.sh```
 
 Test:
-```
-sh portals-portalsjs/js/src/main/resources/portalsjs-test.sh
+```bash
+sh scripts/portalsjs/portalsjs-test-runner.sh
 ```
 
 Generate new test outputs:
-```
-sh portals-portalsjs/js/src/main/resources/portalsjs-generate-outputs.sh
+```bash
+sh scripts/portalsjs/portalsjs-test-generate-outputs.sh
 ```
 
 To run:

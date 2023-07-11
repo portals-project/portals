@@ -12,7 +12,7 @@ lazy val scalajsstubsVersion = "1.1.0"
 lazy val scalajsdomVersion = "2.6.0"
 
 ThisBuild / organization := "org.portals-project"
-ThisBuild / organizationName := "Portals-Project"
+ThisBuild / organizationName := "Portals Project"
 ThisBuild / organizationHomepage := Some(url("https://portals-project.org/"))
 
 ThisBuild / description := "Portals"
@@ -22,6 +22,17 @@ ThisBuild / homepage := Some(url("https://github.com/portals-project/portals"))
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := scala3Version
 
+ThisBuild / scalacOptions ++= Seq(
+  "-deprecation",
+  "-encoding",
+  "UTF-8",
+  "-explaintypes",
+  "-feature",
+  "-unchecked",
+  // "-Wunused:all",
+  "-Xfatal-warnings",
+)
+
 lazy val portals = crossProject(JSPlatform, JVMPlatform)
   .in(file("portals-core"))
   .settings(
@@ -29,7 +40,7 @@ lazy val portals = crossProject(JSPlatform, JVMPlatform)
     Compile / doc / target := target.value / "api",
     libraryDependencies += "com.lihaoyi" %%% "pprint" % pprintversion,
     libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
-    libraryDependencies += "org.scala-js" %% "scalajs-stubs" % scalajsstubsVersion % "provided",
+    libraryDependencies += "org.scala-js" %% "scalajs-stubs" % scalajsstubsVersion,
   )
   .jvmSettings(
     libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackversion,
