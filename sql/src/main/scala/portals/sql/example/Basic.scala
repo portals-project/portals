@@ -61,24 +61,26 @@ object SQLExample extends App:
     val bookTable = QueryableWorkflow.createTable[Book]("Book", "id", Book)
     val authorTable = QueryableWorkflow.createTable[Author]("Author", "id", Author)
 
-    val generator = Generators.fromList[String](List(
-      "INSERT INTO Author (id, fname, lname) VALUES (0, 'Victor', 'Hugo'), (1, 'Alexandre', 'Dumas')",
-      "INSERT INTO Author (id, fname, lname) VALUES (1, 'Alexandre', 'Dumas')",
-      "INSERT INTO Book (id, title, \"year\", author) VALUES (1, 'Les Miserables', 1862, 0)",
-      "INSERT INTO Book (id, title, \"year\", author) VALUES (2, 'The Hunchback of Notre-Dame', 1829, 0)",
-      "INSERT INTO Book (id, title, \"year\", author) VALUES (3, 'The Last Day of a Condemned Man', 1829, 0)",
-      "INSERT INTO Book (id, title, \"year\", author) VALUES (4, 'The three Musketeers', 1844, 1)",
-      "INSERT INTO Book (id, title, \"year\", author) VALUES (5, 'The Count of Monte Cristo', 1884, 1)",
-      "SELECT * FROM Book WHERE \"year\" > 1855 AND id IN (4, 5, 6)",
-      "INSERT INTO Book (id, title, \"year\", author) VALUES (6, 'The Lord of the Rings', 1954, 1)",
-      "INSERT INTO Book (id, title, \"year\", author) VALUES (7, 'The Hobbit', 1937, 1)",
-      "SELECT * FROM Book WHERE \"year\" > 1855 AND id IN (4, 5, 6, 7)",
-      "SELECT * FROM Author WHERE id IN (0, 1)",
-      "SELECT b.id, b.title, b.\"year\", a.fname || ' ' || a.lname FROM Book b\n" +
-        "JOIN Author a ON b.author=a.id\n" +
-        "WHERE b.\"year\" > 1830 AND a.id IN (0, 1) AND b.id IN (1, 2, 3, 4, 5, 6, 7)" +
-        "ORDER BY b.id DESC"
-    ))
+    val generator = Generators.fromList[String](
+      List(
+        "INSERT INTO Author (id, fname, lname) VALUES (0, 'Victor', 'Hugo'), (1, 'Alexandre', 'Dumas')",
+        "INSERT INTO Author (id, fname, lname) VALUES (1, 'Alexandre', 'Dumas')",
+        "INSERT INTO Book (id, title, \"year\", author) VALUES (1, 'Les Miserables', 1862, 0)",
+        "INSERT INTO Book (id, title, \"year\", author) VALUES (2, 'The Hunchback of Notre-Dame', 1829, 0)",
+        "INSERT INTO Book (id, title, \"year\", author) VALUES (3, 'The Last Day of a Condemned Man', 1829, 0)",
+        "INSERT INTO Book (id, title, \"year\", author) VALUES (4, 'The three Musketeers', 1844, 1)",
+        "INSERT INTO Book (id, title, \"year\", author) VALUES (5, 'The Count of Monte Cristo', 1884, 1)",
+        "SELECT * FROM Book WHERE \"year\" > 1855 AND id IN (4, 5, 6)",
+        "INSERT INTO Book (id, title, \"year\", author) VALUES (6, 'The Lord of the Rings', 1954, 1)",
+        "INSERT INTO Book (id, title, \"year\", author) VALUES (7, 'The Hobbit', 1937, 1)",
+        "SELECT * FROM Book WHERE \"year\" > 1855 AND id IN (4, 5, 6, 7)",
+        "SELECT * FROM Author WHERE id IN (0, 1)",
+        "SELECT b.id, b.title, b.\"year\", a.fname || ' ' || a.lname FROM Book b\n" +
+          "JOIN Author a ON b.author=a.id\n" +
+          "WHERE b.\"year\" > 1830 AND a.id IN (0, 1) AND b.id IN (1, 2, 3, 4, 5, 6, 7)" +
+          "ORDER BY b.id DESC"
+      )
+    )
 
     Workflows[String, String]("askerWf")
       .source(generator.stream)

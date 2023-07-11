@@ -1,14 +1,18 @@
 package portals.sql
 
 import java.util.concurrent.LinkedBlockingQueue
+
 import scala.annotation.experimental
 import scala.reflect.ClassTag
+
 import org.apache.calcite.sql.`type`.SqlTypeName
+
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.FlowBuilder
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.Portal
-import portals.application.task.{PerKeyState, PerTaskState}
+import portals.application.task.PerKeyState
+import portals.application.task.PerTaskState
 import portals.application.AtomicPortalRef
 import portals.util.Future
 
@@ -58,14 +62,12 @@ object QueryableWorkflow:
     classOf[String] -> SqlTypeName.VARCHAR,
   )
 
-
-
   // TODO: default primary key to be the first field
   def createTable[T: ClassTag](
       tableName: String,
       primaryField: String,
       dBSerializable: DBSerializable[T],
-      dataWfTransactional:Boolean = false
+      dataWfTransactional: Boolean = false
   )(using ab: ApplicationBuilder) = {
     // get all fields using reflection, then map to Sql type
     val clazz = implicitly[ClassTag[T]].runtimeClass
@@ -75,20 +77,18 @@ object QueryableWorkflow:
 
     val portal = createDataWfPortal(tableName)
 
-    if dataWfTransactional then
-      createDataWorkflowTxn(tableName, portal, dBSerializable)
-    else
-      createDataWorkflow(tableName, portal, dBSerializable)
+    if dataWfTransactional then createDataWorkflowTxn(tableName, portal, dBSerializable)
+    else createDataWorkflow(tableName, portal, dBSerializable)
 
     TableInfo(tableName, primaryField, portal, fieldNames, fieldTypes)
   }
 
   def createDataWorkflowTxn[T](
-                                tableName: String,
-                                portal: AtomicPortalRef[SQLQueryEvent, Result],
-                                dbSerializable: DBSerializable[T],
-                                defaultValue: Any = Array(0)
-                              )(using ab: ApplicationBuilder) = {
+      tableName: String,
+      portal: AtomicPortalRef[SQLQueryEvent, Result],
+      dbSerializable: DBSerializable[T],
+      defaultValue: Any = Array(0)
+  )(using ab: ApplicationBuilder) = {
     Workflows[Nothing, Nothing](tableName + "Wf")
       .source(Generators.empty.stream)
       .replier[Nothing](portal) { _ =>
@@ -105,7 +105,7 @@ object QueryableWorkflow:
               _txn.set(txnId)
               reply(Result(STATUS_OK, op))
             else
-            //              println("precommit txn " + txnId + " key " + key + " fail")
+              //              println("precommit txn " + txnId + " key " + key + " fail")
               reply(Result("error", List()))
           // NOTE: txn id only set at precommit stage
           case SelectOp(tableName, key, txnId) =>
@@ -115,7 +115,7 @@ object QueryableWorkflow:
               val data = state.get()
 //              _txn.set(-1)
               if (data.isDefined)
-              //              println("select " + key + " " + data.get)
+                //              println("select " + key + " " + data.get)
                 reply(Result(STATUS_OK, dbSerializable.toObjectArray(data.get)))
               else
                 reply(Result(STATUS_OK, Array(key.asInstanceOf[Object], 0.asInstanceOf[Object])))
@@ -360,7 +360,17 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
               emit(FirstPhaseResult(-1, txnId, sql, false, succeedOps))
             } else
               emit(
-                FirstPhaseResult(-1, txnId, sql, true, succeedOps, futures, awaitForFutureCond, awaitForFinishCond, result)
+                FirstPhaseResult(
+                  -1,
+                  txnId,
+                  sql,
+                  true,
+                  succeedOps,
+                  futures,
+                  awaitForFutureCond,
+                  awaitForFinishCond,
+                  result
+                )
               )
           }
       }

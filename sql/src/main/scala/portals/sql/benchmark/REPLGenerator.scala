@@ -1,16 +1,16 @@
 package portals.sql.benchmark
 
+import java.util.concurrent.LinkedBlockingQueue
+
 import portals.application.generator.Generator
 import portals.runtime.WrappedEvents
 import portals.runtime.WrappedEvents.WrappedEvent
 import portals.util.Key
 
-import java.util.concurrent.LinkedBlockingQueue
-
 class REPLGeneratorAtom[T] extends Generator[T]:
   val _iter = new REPL[T]().iterator
   var atom_next = false
-  
+
   override def generate(): WrappedEvent[T] =
     if atom_next then
       atom_next = false
@@ -48,4 +48,3 @@ class REPL[R]:
   }
 
   val iterator = new BlockingQueueIterator[R]()
-

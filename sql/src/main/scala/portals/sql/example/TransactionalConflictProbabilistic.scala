@@ -243,7 +243,8 @@ object TransactionalConflictProbabilistic extends App:
                 if !preCommResult.sql.startsWith("INSERT") && preCommResult.result.size() != 0 && preCommResult.result
                     .size() != 4
                 then println("inconsistent result size " + preCommResult.result.size())
-                else if !preCommResult.sql.startsWith("INSERT") then println("consistent result size " + preCommResult.result.size())
+                else if !preCommResult.sql.startsWith("INSERT") then
+                  println("consistent result size " + preCommResult.result.size())
                 preCommResult.result.forEach(row => {
                   //                emit(util.Arrays.toString(row))
                   println(java.util.Arrays.toString(row))
