@@ -1,12 +1,15 @@
-package portals.sql.example
-
+package portals.libraries.sql.examples
 import scala.annotation.experimental
 
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.PortalsApp
-import portals.sql.DBSerializable
-import portals.sql.QueryableWorkflow
+import portals.libraries.sql.calcite.*
+import portals.libraries.sql.examples.Author
+import portals.libraries.sql.examples.Book
+import portals.libraries.sql.querierTransactional
+import portals.libraries.sql.DBSerializable
+import portals.libraries.sql.QueryableWorkflow
 import portals.system.Systems
 
 /** Simulate concurrent queries, in this case insert on key 0 will block select
@@ -23,7 +26,7 @@ object TransactionalConflict extends App:
   import ch.qos.logback.classic.Logger
 
   import portals.api.dsl.ExperimentalDSL.*
-  import portals.sql.*
+  import portals.libraries.sql.*
 
   val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
   logger.setLevel(Level.INFO)
@@ -47,7 +50,7 @@ object TransactionalConflict extends App:
   }
 
 //  val system = Systems.interpreter()
-  val system = new RandomInterpreter()
+  val system = Systems.test()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()

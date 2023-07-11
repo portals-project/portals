@@ -1,4 +1,4 @@
-package portals.sql;
+package portals.libraries.sql.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -78,19 +78,21 @@ public class Calcite {
         List<Object[]> result = new ArrayList<>();
         List<FutureWithResult> futures = new ArrayList<>();
         // calcite: return all asking + cond.await()
-        // portals: awaitAll(futures) { fill in the data + cond.signal() + awaitForResultCond.await() }
+        // portals: awaitAll(futures) { fill in the data + cond.signal() +
+        // awaitForResultCond.await() }
         // calcite: finish the query, fill the output + awaitForResultCond.signal()
-        calcite.executeSQL("INSERT INTO Book (id, title, \"year\", author) VALUES (6, 'The Lord of the Rings', 1954, 1)",
-//        calcite.executeSQL("SELECT * FROM Book WHERE \"year\" > 1829 AND id IN (1, 2, 3)",
+        calcite.executeSQL(
+                "INSERT INTO Book (id, title, \"year\", author) VALUES (6, 'The Lord of the Rings', 1954, 1)",
+                // calcite.executeSQL("SELECT * FROM Book WHERE \"year\" > 1829 AND id IN (1, 2,
+                // 3)",
                 futureReadyCond, awaitForFutureCond, awaitForFinishCond, new LinkedBlockingQueue<>(), futures, result);
         // signal at awaitAll when data is ready
         futureReadyCond.take();
         for (FutureWithResult future : futures) {
-            future.futureResult = new Object[]{1, "Les Miserables", 1862, 0};
+            future.futureResult = new Object[] { 1, "Les Miserables", 1862, 0 };
         }
         awaitForFutureCond.put(1);
         awaitForFinishCond.take();
-
 
         for (Object[] row : result) {
             System.out.println(Arrays.toString(row));
@@ -104,7 +106,8 @@ public class Calcite {
         result = new ArrayList<>();
         futures = new ArrayList<>();
         // calcite: return all asking + cond.await()
-        // portals: awaitAll(futures) { fill in the data + cond.signal() + awaitForResultCond.await() }
+        // portals: awaitAll(futures) { fill in the data + cond.signal() +
+        // awaitForResultCond.await() }
         // calcite: finish the query, fill the output + awaitForResultCond.signal()
         calcite.executeSQL("SELECT * FROM Book WHERE \"year\" > 1829 AND id IN (1, 2, 3)",
                 futureReadyCond, awaitForFutureCond, awaitForFinishCond, new LinkedBlockingQueue<>(), futures, result);
@@ -112,7 +115,7 @@ public class Calcite {
         futureReadyCond.take();
         // at awaitAll
         for (FutureWithResult future : futures) {
-            future.futureResult = new Object[]{1, "Les Miserables", 1862, 0};
+            future.futureResult = new Object[] { 1, "Les Miserables", 1862, 0 };
         }
         awaitForFutureCond.put(1);
         awaitForFinishCond.take();
@@ -125,8 +128,9 @@ public class Calcite {
 
     private CalciteSchema schema;
     private RelDataTypeFactory typeFactory;
-    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(100, 100, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
-//    private ThreadPoolExecutor executor;
+    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(100, 100, 0, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<>());
+    // private ThreadPoolExecutor executor;
     private Map<String, MPFTable> registeredTable = new HashMap<>();
 
     public MPFTable getTable(String tableName) {
@@ -139,12 +143,15 @@ public class Calcite {
         // Create the root schema describing the data model
         schema = CalciteSchema.createRootSchema(true);
         // Instantiate task executor
-//        executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        // executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new
+        // LinkedBlockingQueue<>());
     }
 
-    //    public QTable(String tableName, List<SqlTypeName> columnTypes, List<String> columnNames, int pkIndex, Consumer<Object> queryRow, Consumer<Object[]> insertRow) {
+    // public QTable(String tableName, List<SqlTypeName> columnTypes, List<String>
+    // columnNames, int pkIndex, Consumer<Object> queryRow, Consumer<Object[]>
+    // insertRow) {
     public void registerTable(String tableName, List<SqlTypeName> columnTypes, List<String> columnNames,
-                              int pkIndex) {
+            int pkIndex) {
         RelDataTypeFactory.Builder tableType = new RelDataTypeFactory.Builder(typeFactory);
         for (int i = 0; i < columnNames.size(); i++) {
             tableType.add(columnNames.get(i), columnTypes.get(i));
@@ -174,7 +181,7 @@ public class Calcite {
         SqlParser parser = SqlParser.create(sql);
         SqlNode sqlNode = parser.parseStmt();
     }
-    
+
     public void parseAndPlanLogic(String sql) throws SqlParseException {
         long parsingStartTime = System.nanoTime();
         SqlParser parser = SqlParser.create(sql);
@@ -210,7 +217,8 @@ public class Calcite {
         long validationEndTime = System.nanoTime();
         CalciteStat.recordValidation(validationEndTime - parsingEndTime);
 
-        // Configure and instantiate the converter of the AST to Logical plan (requires opt cluster)
+        // Configure and instantiate the converter of the AST to Logical plan (requires
+        // opt cluster)
         RelOptCluster cluster = newCluster(typeFactory);
         SqlToRelConverter relConverter = new SqlToRelConverter(
                 NOOP_EXPANDER,
@@ -222,14 +230,15 @@ public class Calcite {
 
         // Convert the valid AST into a logical plan
         RelNode logPlan = relConverter.convertQuery(validNode, false, true).rel;
-//        RelNode logPlan = relConverter.convertQuery(sqlNode, false, true).rel;
+        // RelNode logPlan = relConverter.convertQuery(sqlNode, false, true).rel;
     }
-    
-    public void executeSQL(String sql, BlockingQueue<Integer> futureReadyCond, BlockingQueue<Integer> awaitForFutureCond,
-                           BlockingQueue<Integer> awaitForSQLCompletionCond,
-                           BlockingQueue<Integer> tableScanCntCond,
-                           List<FutureWithResult> futures,
-                           List<Object[]> result) throws InterruptedException {
+
+    public void executeSQL(String sql, BlockingQueue<Integer> futureReadyCond,
+            BlockingQueue<Integer> awaitForFutureCond,
+            BlockingQueue<Integer> awaitForSQLCompletionCond,
+            BlockingQueue<Integer> tableScanCntCond,
+            List<FutureWithResult> futures,
+            List<Object[]> result) throws InterruptedException {
         this.futureReadyCond = futureReadyCond;
         this.awaitForFuturesCond = awaitForFutureCond;
         this.awaitForSQLCompletionCond = awaitForSQLCompletionCond;
@@ -242,15 +251,15 @@ public class Calcite {
             } catch (SqlParseException | InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionAbortException e) {
-//                System.out.printf("Execution for [%s] aborted\n", sql);
+                // System.out.printf("Execution for [%s] aborted\n", sql);
             }
         };
         executor.execute(runnable);
-//        (new ArrayList<>()).stream().collect(Collectors.toList())
+        // (new ArrayList<>()).stream().collect(Collectors.toList())
     }
 
     private void executeSQL0(String sql) throws SqlParseException, InterruptedException {
-//        System.out.println("====== Execute SQL: " + sql + " ======");
+        // System.out.println("====== Execute SQL: " + sql + " ======");
 
         // Parse the query into an AST
         long parsingStartTime = System.nanoTime();
@@ -288,7 +297,8 @@ public class Calcite {
         long validationEndTime = System.nanoTime();
         CalciteStat.recordValidation(validationEndTime - parsingEndTime);
 
-        // Configure and instantiate the converter of the AST to Logical plan (requires opt cluster)
+        // Configure and instantiate the converter of the AST to Logical plan (requires
+        // opt cluster)
         RelOptCluster cluster = newCluster(typeFactory);
         SqlToRelConverter relConverter = new SqlToRelConverter(
                 NOOP_EXPANDER,
@@ -303,7 +313,7 @@ public class Calcite {
 
         // report tableScanCnt
         int cnt = getTableOpCnt(logPlan);
-//        System.out.println("Table scan count: " + cnt);
+        // System.out.println("Table scan count: " + cnt);
         tableOpCntCond.put(cnt);
 
         // Display the logical plan
@@ -329,7 +339,7 @@ public class Calcite {
                 // TODO: AND()
                 RexInputRef left = (RexInputRef) cond.operands.get(0);
                 RexLiteral right = (RexLiteral) cond.operands.get(1);
-//                registeredTable.get(tableName).delete(right.getValue());
+                // registeredTable.get(tableName).delete(right.getValue());
                 // TODO: key will be on the right, call delete manually (delete(tableName, key))
             } else if (modify.getOperation() == TableModify.Operation.INSERT) {
                 Bindable executablePlan = enumerableConventionPlanExecution(logPlan, cluster);
@@ -338,7 +348,7 @@ public class Calcite {
 
                 // Run the executable plan using a context simply providing access to the schema
                 for (Object row : executablePlan.bind(new SchemaOnlyDataContext(schema))) {
-                    result.add(new Object[]{row});
+                    result.add(new Object[] { row });
                 }
                 awaitForSQLCompletionCond.put(1);
             } else if (modify.getOperation() == TableModify.Operation.UPDATE) {
@@ -351,7 +361,7 @@ public class Calcite {
 
             // Run the executable plan using a context simply providing access to the schema
             for (Object[] row : phyPlan.bind(new SchemaOnlyDataContext(schema))) {
-//            System.out.println(Arrays.toString(row));
+                // System.out.println(Arrays.toString(row));
                 result.add(row);
             }
             awaitForSQLCompletionCond.put(1);
@@ -386,11 +396,12 @@ public class Calcite {
      * @param logPlan
      * @param cluster
      */
-    private Bindable enumerableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster) throws InterruptedException {
+    private Bindable enumerableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster)
+            throws InterruptedException {
         RelOptPlanner planner = cluster.getPlanner();
         planner.addRule(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
         planner.addRule(CoreRules.PROJECT_TO_CALC);
-//        planner.addRule(CoreRules.FILTER_SCAN);
+        // planner.addRule(CoreRules.FILTER_SCAN);
         planner.addRule(CoreRules.FILTER_TO_CALC);
         planner.addRule(EnumerableRules.ENUMERABLE_CALC_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_JOIN_RULE);
@@ -411,7 +422,8 @@ public class Calcite {
                 cluster.traitSet().replace(EnumerableConvention.INSTANCE));
         planner.setRoot(logPlan);
 
-        // Start the optimization process to obtain the most efficient physical plan based on the
+        // Start the optimization process to obtain the most efficient physical plan
+        // based on the
         // provided rule set.
         EnumerableRel phyPlan = (EnumerableRel) planner.findBestExp();
 
@@ -430,7 +442,8 @@ public class Calcite {
                 EnumerableRel.Prefer.ARRAY);
     }
 
-    private BindableRel bindableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster) throws InterruptedException {
+    private BindableRel bindableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster)
+            throws InterruptedException {
         // Initialize optimizer/planner with the necessary rules
         RelOptPlanner planner = cluster.getPlanner();
         planner.addRule(CoreRules.FILTER_SCAN);
@@ -447,7 +460,8 @@ public class Calcite {
         logPlan = planner.changeTraits(logPlan,
                 cluster.traitSet().replace(BindableConvention.INSTANCE));
         planner.setRoot(logPlan);
-        // Start the optimization process to obtain the most efficient physical plan based on the
+        // Start the optimization process to obtain the most efficient physical plan
+        // based on the
         // provided rule set.
         BindableRel phyPlan = (BindableRel) planner.findBestExp();
 
@@ -472,8 +486,7 @@ public class Calcite {
         return RelOptCluster.create(planner, new RexBuilder(factory));
     }
 
-    private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath
-            , viewPath) -> null;
+    private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath, viewPath) -> null;
 
     /**
      * A simple data context only with schema information.
@@ -512,7 +525,6 @@ public class Calcite {
 
     // TODO: declare table (+register)
 
-
 }
 
 class MyList<T> extends ArrayList<T> {
@@ -536,7 +548,7 @@ class MyList<T> extends ArrayList<T> {
 
         // tell outside that they can get these futures and call awaitAll
         try {
-//            System.out.println("put futureReadyCond");
+            // System.out.println("put futureReadyCond");
             calcite.futureReadyCond.put(1);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -549,9 +561,10 @@ class MyList<T> extends ArrayList<T> {
         }
 
         // future is complete, we can return
-        if (calcite.debug) System.out.println("add " + t);
+        if (calcite.debug)
+            System.out.println("add " + t);
         // but we intercept and add the result
-//        return super.add(t); // comment this will cause the "row affected" to be 0
+        // return super.add(t); // comment this will cause the "row affected" to be 0
         return true;
     }
 }
@@ -561,4 +574,3 @@ class ExecutionAbortException extends RuntimeException {
         super(message);
     }
 }
-

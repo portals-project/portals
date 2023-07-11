@@ -1,6 +1,7 @@
-package portals.sql
-
+package portals.libraries.sql
 import java.util.concurrent.LinkedBlockingQueue
+
+import portals.libraries.sql.calcite.*
 
 trait SQLQueryEvent {
   def tableName: String

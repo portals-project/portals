@@ -1,12 +1,15 @@
-package portals.sql.example
+package portals.libraries.sql.examples
 
 import scala.annotation.experimental
+import portals.libraries.sql.calcite.*
 
 import portals.api.dsl.*
 import portals.api.dsl.DSL.*
 import portals.api.dsl.DSL.PortalsApp
-import portals.sql.DBSerializable
-import portals.sql.QueryableWorkflow
+
+import portals.libraries.sql.querier
+import portals.libraries.sql.DBSerializable
+import portals.libraries.sql.QueryableWorkflow
 import portals.system.Systems
 
 object Book extends DBSerializable[Book]:
@@ -52,7 +55,7 @@ object SQLExample extends App:
   import ch.qos.logback.classic.Logger
 
   import portals.api.dsl.ExperimentalDSL.*
-  import portals.sql.*
+  import portals.libraries.sql.*
 
   val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
   logger.setLevel(Level.INFO)

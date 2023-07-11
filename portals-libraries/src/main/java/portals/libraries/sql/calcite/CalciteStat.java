@@ -1,4 +1,4 @@
-package portals.sql;
+package portals.libraries.sql.calcite;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,7 +12,7 @@ public class CalciteStat {
     static int validationCnt = 0;
     static int planningCnt = 0;
     static int executionCnt = 0;
-    
+
     static int recordInterval = 100;
 
     public static void recordParsing(long time) {
@@ -58,11 +58,11 @@ public class CalciteStat {
     public static double getAvgExecutionTime() {
         return stat.get("execution").stream().mapToLong(Long::longValue).average().orElse(0);
     }
-    
+
     public static void recordMessage() {
         msgCnt += 1;
     }
-    
+
     public static int getMessageCnt() {
         return msgCnt;
     }

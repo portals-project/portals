@@ -1,4 +1,4 @@
-package portals.sql;
+package portals.libraries.sql.calcite;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.DataContext;
@@ -28,7 +28,8 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 
-public class MPFTable extends AbstractTable implements ModifiableTable, ProjectableFilterableTable, Calcite.DeletableTable {
+public class MPFTable extends AbstractTable
+        implements ModifiableTable, ProjectableFilterableTable, Calcite.DeletableTable {
 
     private String tableName;
     private MyList<Object[]> data;
@@ -62,7 +63,8 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
         // TODO: filter
-        if (calcite.debug) System.out.println("scan");
+        if (calcite.debug)
+            System.out.println("scan");
 
         collectPKPredicates(filters);
 
@@ -81,7 +83,7 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
 
         // tell outside that they can get these futures and call awaitAll
         try {
-//            System.out.println("put futureReadyCond " + tableName);
+            // System.out.println("put futureReadyCond " + tableName);
             calcite.futureReadyCond.put(1);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -90,14 +92,14 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
             // wait for awaitAll callback to be called, so the asking is actually executed
             int awaitForFutureResult = calcite.awaitForFuturesCond.take();
             if (awaitForFutureResult == -1) {
-//                throw new RuntimeException("awaitForFutureResult == -1");
+                // throw new RuntimeException("awaitForFutureResult == -1");
                 throw new ExecutionAbortException("");
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-//        System.out.println("return tableScan " + tableName);
+        // System.out.println("return tableScan " + tableName);
 
         return new AbstractEnumerable<Object[]>() {
             public Enumerator<Object[]> enumerator() {
@@ -112,9 +114,10 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
                     public boolean moveNext() {
                         while (++row < pkPredicates.size()) {
                             // await
-//                                Object[] current = data.get(row);
+                            // Object[] current = data.get(row);
                             Object[] current = calcite.tableFutures.get(tableName).get(row).futureResult;
-//                            System.out.println("moveNext " + tableName + " " + row + " " + Arrays.toString(current));
+                            // System.out.println("moveNext " + tableName + " " + row + " " +
+                            // Arrays.toString(current));
                             if (current == null) {
                                 continue;
                             }
@@ -149,7 +152,9 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
     }
 
     @Override
-    public TableModify toModificationRel(RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened) {
+    public TableModify toModificationRel(RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader,
+            RelNode child, TableModify.Operation operation, List<String> updateColumnList,
+            List<RexNode> sourceExpressionList, boolean flattened) {
         return LogicalTableModify.create(table, catalogReader, child, operation,
                 updateColumnList, sourceExpressionList, flattened);
     }
@@ -191,7 +196,8 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
     }
 
     private Set<SqlOperator> leafOperators() {
-        return ImmutableSet.of(SqlStdOperatorTable.EQUALS, SqlStdOperatorTable.AND, SqlStdOperatorTable.OR, SqlStdOperatorTable.SEARCH);
+        return ImmutableSet.of(SqlStdOperatorTable.EQUALS, SqlStdOperatorTable.AND, SqlStdOperatorTable.OR,
+                SqlStdOperatorTable.SEARCH);
     }
 
     // pass in a rexCall, remove all its pk predicates, return the rest
@@ -219,7 +225,8 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
                 if (ref.getIndex() == pkIndex) {
                     return Collections.singletonList((RexLiteral) rexCall.operands.get(1));
                 }
-            } else if (rexCall.operands.get(0) instanceof RexCall && ((RexCall) rexCall.operands.get(0)).op == SqlStdOperatorTable.CAST) {
+            } else if (rexCall.operands.get(0) instanceof RexCall
+                    && ((RexCall) rexCall.operands.get(0)).op == SqlStdOperatorTable.CAST) {
                 RexCall cast = (RexCall) rexCall.operands.get(0);
                 if (cast.operands.get(0) instanceof RexInputRef) {
                     RexInputRef ref = (RexInputRef) cast.operands.get(0);
@@ -247,7 +254,7 @@ public class MPFTable extends AbstractTable implements ModifiableTable, Projecta
             if (ref.getIndex() == pkIndex) {
                 Sarg sarg = (Sarg) ((RexLiteral) rexCall.operands.get(1)).getValue();
                 sarg.rangeSet.asRanges().forEach(range -> {
-//                        String x = range.toString().split();
+                    // String x = range.toString().split();
                     String intStr = range.toString().split("\\.\\.")[0].replace("[", "");
                     ans.add(intToRexLiteral(Integer.parseInt(intStr)));
                 });
