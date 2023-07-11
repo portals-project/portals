@@ -330,8 +330,7 @@ private[portals] class InterpreterWorkflow(wf: Workflow[_, _]) extends Processin
         runner.oc
           .getAskOutput()
           // group by portal
-          //          .groupBy { case Ask(_, portalMeta, _) => (portalMeta.portal) }
-          .map(x => (x.meta.portal, List(x)))
+          .groupBy { case Ask(_, portalMeta, _) => (portalMeta.portal) }
           // map grouping to ask batches
           .map { (k, v) => AskBatch(AskReplyMeta(k, wf.path), v) }
           .toList
