@@ -21,8 +21,8 @@ import portals.application.task.PerTaskState
 import portals.application.AtomicPortalRef
 import portals.libraries.sql
 import portals.libraries.sql.*
-import portals.libraries.sql.internals.calcite.*
 import portals.libraries.sql.internals.*
+import portals.libraries.sql.internals.calcite.*
 import portals.libraries.sql.internals.QueryableWorkflow.clsToSqlTypeMapping
 import portals.libraries.sql.internals.QueryableWorkflow.createDataWfPortal
 import portals.system.Systems
@@ -44,6 +44,14 @@ object sqlDSL:
   //////////////////////////////////////////////////////////////////////////////
 
   private inline val TRANSACTIONAL = false
+
+  /** Transactional is not yet supported. For this we need to port the
+    * transactional query asker and transactional query replier into this file
+    * also. Additionally, we would need to make the choice between the two at
+    * the point when the asker/replier is created (which is not currently
+    * supported.) Ask JS for more details.
+    */
+  if TRANSACTIONAL == true then throw Exception("Transactional SQL is not yet supported.")
 
   //////////////////////////////////////////////////////////////////////////////
   // TYPES
