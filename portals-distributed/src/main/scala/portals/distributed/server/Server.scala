@@ -1,12 +1,13 @@
-package portals.distributed
+package portals.distributed.server
 
 import java.io.File
 
 import portals.application.*
 import portals.application.Application
 import portals.application.AtomicStreamRefKind
-import portals.distributed.ApplicationLoader.PortalsClassLoader
-import portals.distributed.Events.*
+import portals.distributed.server.*
+import portals.distributed.server.ApplicationLoader.*
+import portals.distributed.server.Events.*
 import portals.system.Systems
 
 import upickle.default.*

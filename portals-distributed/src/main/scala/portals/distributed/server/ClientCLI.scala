@@ -1,4 +1,6 @@
-package portals.distributed
+package portals.distributed.server
+
+import portals.distributed.server.Client
 
 import mainargs.ParserForMethods
 
@@ -6,7 +8,7 @@ import mainargs.ParserForMethods
   *
   * Note: to run it from SBT use (don't forget to end with a "):
   * ```
-  * sbt "distributed/runMain portals.distributed.ClientCLI ..."
+  * sbt "distributed/runMain portals.distributed.server.ClientCLI ..."
   * ```
   */
 object ClientCLI:

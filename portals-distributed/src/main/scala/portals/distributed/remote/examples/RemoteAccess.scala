@@ -9,60 +9,12 @@ import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
 import portals.application.*
 import portals.application.task.*
-import portals.distributed.SBTRunServer
-import portals.distributed.Server
+import portals.distributed.server.SBTRunServer
+import portals.distributed.server.Server
 import portals.system.Systems
 import portals.util.Future
 
 import upickle.default.*
-
-object RemoteShared:
-  sealed case class PortalRequest(url: String, path: String, event: String) derives ReadWriter
-  sealed case class PortalResponse(event: String) derives ReadWriter
-
-object RemoteServer extends cask.MainRoutes:
-  import RemoteShared.*
-
-  @cask.post("/remote")
-  def remote(request: cask.Request) =
-    println(request)
-    val bytes = request.readAllBytes()
-    val event = read[PortalRequest](bytes)
-    println(event)
-    val response = event match
-      case PortalRequest(url, path, event) =>
-        val resp = PortalResponse(event.reverse)
-        val bytes = write(resp).getBytes()
-        bytes
-    cask.Response(response, statusCode = 200)
-
-  initialize()
-
-object RemoteSBTRunServer extends cask.Main:
-  // define the routes which this server handles
-  val allRoutes = Seq(RemoteServer)
-
-  // execute the main method of this server
-  this.main(args = Array.empty)
-
-  // sleep so that we don't exit prematurely
-  Thread.sleep(Long.MaxValue)
-
-  // exit before running this servers main method (again)
-  System.exit(0)
-
-object RemoteClient:
-  import RemoteShared.*
-
-  /** Post the Launch `event` to the server. */
-  def postToPortal(event: PortalRequest): String =
-    val bytes = write(event).getBytes()
-    val response = requests.post("http://localhost:8080/remote", data = bytes)
-    response match
-      case r if r.statusCode == 200 =>
-        val resp = read[PortalResponse](r.bytes)
-        resp.event
-      case r => ???
 
 object Extensions:
   import RemoteShared.*

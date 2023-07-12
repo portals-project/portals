@@ -1,4 +1,4 @@
-package portals.distributed
+package portals.distributed.server
 
 import java.io.File
 import java.nio.file.Files
@@ -8,9 +8,9 @@ import java.util.jar.JarFile
 
 import scala.jdk.CollectionConverters.*
 
-import portals.distributed.ApplicationLoader.*
-import portals.distributed.Events.*
-import portals.distributed.Util.*
+import portals.distributed.server.ApplicationLoader.*
+import portals.distributed.server.Events.*
+import portals.distributed.server.Util.*
 
 import upickle.default.*
 

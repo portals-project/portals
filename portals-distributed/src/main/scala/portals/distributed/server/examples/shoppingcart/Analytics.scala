@@ -1,9 +1,10 @@
-package portals.distributed.examples.shoppingcart
+package portals.distributed.server.examples.shoppingcart
 
 import portals.api.dsl.DSL
 import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
 import portals.application.Application
+import portals.distributed.server.SubmittableApplication
 import portals.examples.shoppingcart.tasks.*
 import portals.examples.shoppingcart.ShoppingCartEvents.*
 
@@ -11,12 +12,12 @@ import portals.examples.shoppingcart.ShoppingCartEvents.*
   *
   * @see
   *   for more information on how to run this example:
-  *   [[portals.distributed.examples.shoppingcart.ShoppingCart]]
+  *   [[portals.distributed.server.examples.shoppingcart.ShoppingCart]]
   *
   * @see
   *   [[portals.examples.shoppingcart.ShoppingCart]]
   */
-object Analytics extends portals.distributed.SubmittableApplication:
+object Analytics extends SubmittableApplication:
   override def apply(): portals.application.Application =
     portals.api.dsl.DSL.PortalsApp("Analytics"):
       val ordersStream = Registry.streams.get[OrderOps]("/Orders/workflows/orders/stream")
