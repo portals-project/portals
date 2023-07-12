@@ -24,7 +24,7 @@ object CartTask:
   private def addToCart(event: AddToCart, portal: PortalRef)(using Context): Unit =
     val req = Get(event.item)
     val resp = ask(portal)(req)
-    Await(resp):
+    await(resp):
       resp.value match
         case Some(GetReply(item, true)) =>
           if ShoppingCartConfig.LOGGING then ctx.log.info(s"User ${event.user} added $item to cart")

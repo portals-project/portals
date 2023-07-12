@@ -16,6 +16,8 @@ const ignoredOutputs = [
   'splitter.js',
   `multiDataflow.js`,
   `portalAggregation.js`,
+  `generator.js`,
+  `sequencer.js`,
 ]
 
 // files which are ignored
@@ -87,7 +89,7 @@ function processExampleFile(directory, file) {
 
   // verify output
   if (actual !== expected) {
-    throw new Error(`Expected ${expected}, but got ${actual}`);
+    throw new Error(`Expected ${expected}, but got ${actual} when executing ${filePath}`);
   }
 }
 

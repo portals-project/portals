@@ -1,21 +1,20 @@
-var builder = PortalsJS.ApplicationBuilder("app")
-var generator = builder.generators.fromRange(0, 128, 8)
-var splitter = builder.splitters.empty(generator.stream)
-var split1 = builder.splits.split(splitter, x => x % 2 == 0)
-var split2 = builder.splits.split(splitter, x => x % 2 == 1)
-var _ = builder
-    .workflows
-    .source(split1)
-    .logger("split 1: ")
-    .sink()
-    .freeze()
-var _ = builder
-    .workflows
-    .source(split2)
-    .logger("split 2: ")
-    .sink()
-    .freeze()
-var app = builder.build()
-var system = PortalsJS.System()
-system.launch(app)
-system.stepUntilComplete()
+let builder = PortalsJS.ApplicationBuilder("splitterTest");
+let generator = builder.generators.fromRange(0, 128, 8);
+let splitter = builder.splitters.empty(generator.stream);
+let splitEven = builder.splits.split(splitter, x => x % 2 == 0);
+let splitOdd = builder.splits.split(splitter, x => x % 2 == 1);
+builder.workflows
+  .source(splitEven)
+  .logger("splitEven: ")
+  .sink()
+  .freeze();
+builder.workflows
+  .source(splitOdd)
+  .logger("splitOdd: ")
+  .sink()
+  .freeze();
+let splitterTest = builder.build();
+let system = PortalsJS.System();
+system.launch(splitterTest);
+system.stepUntilComplete();
+system.shutdown();
