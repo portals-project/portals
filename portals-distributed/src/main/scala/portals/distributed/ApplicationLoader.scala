@@ -10,8 +10,11 @@ import portals.distributed.Events.ClassFileInfo
 /** Dynamically load and submit applications using the `ApplicationLoader`.
   *
   * Important: the submitted application must be either a class or object. For
-  * this reason, the submitted application must extend the `LoadableApplication`
-  * trait.
+  * this reason, the submitted application must extend the
+  * `SubmittableApplication` trait.
+  *
+  * @see
+  *   [[portals.distributed.SubmittableApplication]]
   */
 object ApplicationLoader:
   /** Get some class `name` of any type of object `obj` if it exists. */
