@@ -320,19 +320,21 @@ trait FlowBuilder[T, U, CT, CU]:
     * @example
     *   {{{
     * FlowBuilder[_, _, Int, Int]
-    *   .withWrapper{ ctx ?=> wrapped => event =>
-    *     if event < 3 then ctx.emit(0) else wrapped(event)
+    *   .withWrapper[String]{ ctx ?=> wrapped => event =>
+    *     if event < 3 then ctx.emit("0") else wrapped(event)
     *   }
     *   }}}
     *
+    * @tparam V
+    *   additional type for widening the output type by union
     * @param f
     *   the wrapping function
     * @return
     *   the current flow
     */
-  def withWrapper(
-      f: ProcessorTaskContext[CT, CU] ?=> (ProcessorTaskContext[CT, CU] ?=> CT => Unit) => CT => Unit
-  ): FlowBuilder[T, U, CT, CU]
+  def withWrapper[V](
+      f: ProcessorTaskContext[CT, CU | V] ?=> (ProcessorTaskContext[CT, CU | V] ?=> CT => Unit) => CT => Unit
+  ): FlowBuilder[T, U, CT, CU | V]
 
   /** Behavior modifier to step over atoms for current task.
     *

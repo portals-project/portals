@@ -35,7 +35,7 @@ import portals.util.Future
       .source(generator.stream)
       .recursiveAsker[Int](portal) { self => x =>
         val future: Future[Pong] = ask(portal)(Ping(x))
-        future.await {
+        await(future) {
           ctx.emit(future.value.get.x)
           if future.value.get.x > 0 then self(future.value.get.x)
         }

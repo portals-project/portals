@@ -48,7 +48,7 @@ import portals.util.Future
       .asker[Nothing](portal) { x =>
         // query the aggregate
         val future: Future[QueryReply] = ask(portal)(Query())
-        future.await {
+        await(future) {
           future.value.get match
             case QueryReply(x) =>
               // print the aggregate to log

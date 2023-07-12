@@ -222,48 +222,48 @@ object DSL:
     * @tparam Rep
     *   The Portal's type of the reply.
     */
-  def Await[U, Req, Rep](future: Future[Rep])(f: AskerTaskContext[_, U, Req, Rep] ?=> Unit)(using
+  def await[U, Req, Rep](future: Future[Rep])(f: AskerTaskContext[_, U, Req, Rep] ?=> Unit)(using
       ctx: AwaitingTaskContext[U, Req, Rep]
   ): Unit = ctx.await(future)(f)
 
-  extension [Rep](future: Future[Rep]) {
+  // extension [Rep](future: Future[Rep]) {
 
-    /** Await the completion of the `future` and then execute continuation `f`.
-      *
-      * @example
-      *   {{{
-      * // Example 1
-      * future.await {log.info(future.value.get)}
-      *   }}}
-      *
-      * @example
-      *   {{{
-      * // Example 2
-      * val myApp = PortalsApp("myApp") {
-      *   val portal = Registry.portals.get[String, String]("/path/to/external/portal")
-      *   val asker = TaskBuilder.asker[Int, Int, String, String](portal) { x =>
-      *     val future = ask(portal)(x.toString())
-      *     future.await {
-      *       log.info(future.value.get)
-      *     }
-      *   }
-      * }
-      *   }}}
-      *
-      * @param f
-      *   The function to execute.
-      * @tparam T
-      *   The Task's type of the input value.
-      * @tparam U
-      *   The Task's type of the output value.
-      * @tparam Req
-      *   The Portal's type of the request.
-      */
-    def await[T, U, Req](
-        f: AskerTaskContext[T, U, Req, Rep] ?=> Unit
-    )(using ctx: AskerTaskContext[T, U, Req, Rep]): Unit =
-      ctx.await(future)(f)
-  }
+  //   /** Await the completion of the `future` and then execute continuation `f`.
+  //     *
+  //     * @example
+  //     *   {{{
+  //     * // Example 1
+  //     * future.await {log.info(future.value.get)}
+  //     *   }}}
+  //     *
+  //     * @example
+  //     *   {{{
+  //     * // Example 2
+  //     * val myApp = PortalsApp("myApp") {
+  //     *   val portal = Registry.portals.get[String, String]("/path/to/external/portal")
+  //     *   val asker = TaskBuilder.asker[Int, Int, String, String](portal) { x =>
+  //     *     val future = ask(portal)(x.toString())
+  //     *     future.await {
+  //     *       log.info(future.value.get)
+  //     *     }
+  //     *   }
+  //     * }
+  //     *   }}}
+  //     *
+  //     * @param f
+  //     *   The function to execute.
+  //     * @tparam T
+  //     *   The Task's type of the input value.
+  //     * @tparam U
+  //     *   The Task's type of the output value.
+  //     * @tparam Req
+  //     *   The Portal's type of the request.
+  //     */
+  //   def await[T, U, Req](
+  //       f: AskerTaskContext[T, U, Req, Rep] ?=> Unit
+  //   )(using ctx: AskerTaskContext[T, U, Req, Rep]): Unit =
+  //     ctx.await(future)(f)
+  // }
 
   //////////////////////////////////////////////////////////////////////////////
   // Convenient Builder DSL for TaskBuilder
