@@ -26,11 +26,10 @@ If you want to run the server on a kubernetes cluster (e.g. a local minikube set
 
 `kubectl get pods`
 
-If the status is `ImagePullBackOff` and you are using minikube, make sure that minikube can actually use it. Some minikube installations require you to push the build docker image to minikube with the following command:
+Known Issues :
+- If the status is `ImagePullBackOff` and you are using minikube, make sure that minikube can actually use the build container. Some minikube setups require you to push the build docker image to minikube with the following command:
 `minikube image load <image name>`
 
 
-Known Issues :
-For WSL Users the connection to the pod can be a little wonky. 
-A work around for this is using
-`kubectl port-forward <pod-name> 8080:8080` To force k8s to forward the port from the pod to the localhost
+- For WSL/minikube Users the connection to the pod can be a little tricky, the easiest workaround is using something like:
+`kubectl port-forward <pod-name> 8080:8080` To force k8s to forward the port from the pod to  localhost
