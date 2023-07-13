@@ -16,7 +16,6 @@ object BatchedEvents:
       askingWF: String,
       replyingWF: Option[String] = None,
       replyingTask: Option[String] = None,
-      url: Option[String] = None,
   )
 
   /** Atom of ask events. */

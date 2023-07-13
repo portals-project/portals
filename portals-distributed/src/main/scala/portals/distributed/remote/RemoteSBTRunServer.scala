@@ -1,4 +1,4 @@
-package portals.distributed.examples
+package portals.distributed.remote
 
 import scala.util.Failure
 import scala.util.Success
@@ -14,14 +14,31 @@ import portals.distributed.server.Server
 import portals.system.Systems
 import portals.util.Future
 
+import cask.main.Main
+import io.undertow.Undertow
 import upickle.default.*
 
 object RemoteSBTRunServer extends cask.Main:
   // define the routes which this server handles
   val allRoutes = Seq(RemoteServer)
 
-  // execute the main method of this server
-  this.main(args = Array.empty)
+  override def main(args: Array[String]): Unit = {
+    val port = if args.length > 0 then Some(args(0).toInt) else Some(8080)
+    println(port)
+    if (!verbose) Main.silenceJboss()
+    val server = Undertow.builder
+      .addHttpListener(port.get, host)
+      .setHandler(defaultHandler)
+      .build
+    server.start()
+  }
+
+object XX extends App:
+  println(args)
+
+@main def run(port: String) =
+  // Execute the main method of this server
+  RemoteSBTRunServer.main(Array(port))
 
   // sleep so that we don't exit prematurely
   Thread.sleep(Long.MaxValue)

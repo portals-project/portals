@@ -16,6 +16,8 @@ import upickle.default.*
 
 /** Portals distributed `Client` for submitting applications to the `Server`. */
 object Client extends App:
+  var port: String = "8080"
+
   //////////////////////////////////////////////////////////////////////////////
   // POST TO SERVER
   //////////////////////////////////////////////////////////////////////////////
@@ -23,7 +25,7 @@ object Client extends App:
   /** Post the Launch `event` to the server. */
   def postToServer(event: Launch): Unit =
     val bytes = write(event).getBytes()
-    val response = requests.post("http://localhost:8080/launch", data = bytes)
+    val response = requests.post("http://localhost:" + port + "/launch", data = bytes)
     response match
       case r if r.statusCode == 200 => println("success")
       case r => println(s"error: ${r.statusCode}")
@@ -31,7 +33,7 @@ object Client extends App:
   /** Post the SubmitClassFiles `event` to the server. */
   def postToServer(event: SubmitClassFiles): Unit =
     val bytes = write(event).getBytes()
-    val response = requests.post("http://localhost:8080/submitClassFiles", data = bytes)
+    val response = requests.post("http://localhost:" + port + "/submitClassFiles", data = bytes)
     response match
       case r if r.statusCode == 200 => println("success")
       case r => println(s"error: ${r.statusCode}")

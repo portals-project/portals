@@ -1,16 +1,30 @@
-package portals.runtime.test
+package portals.distributed.remote
 
-import scala.util.Random
+import java.io.File
+import java.util.concurrent.ConcurrentLinkedQueue
+
+import scala.concurrent.Future
 
 import portals.application.*
-import portals.runtime.*
+import portals.application.Application
+import portals.application.AtomicStreamRefKind
+import portals.distributed.remote.RemoteShared.*
+import portals.distributed.server.ApplicationLoader
+import portals.distributed.server.ApplicationLoader.PortalsClassLoader
+import portals.distributed.server.Events.*
 import portals.runtime.interpreter.*
+import portals.runtime.test.TestRuntime
 import portals.runtime.BatchedEvents.*
+import portals.runtime.PortalsRuntime
 import portals.runtime.SuspendingRuntime.*
-import portals.util.Common.Types.*
+import portals.system.Systems
+import portals.util.Common.Types.Path
 
-private[portals] class TestRuntime(val seed: Option[Int] = None) extends SteppingRuntime:
-  private val ctx: InterpreterContext = new InterpreterContext(seed)
+import upickle.default.*
+import upickle.default.read
+
+class RemoteRuntime extends PortalsRuntime:
+  private val ctx: InterpreterContext = new InterpreterContext()
   private val interpreter: Interpreter = new Interpreter(ctx)
 
   // TODO: make part of config
@@ -26,7 +40,7 @@ private[portals] class TestRuntime(val seed: Option[Int] = None) extends Steppin
     interpreter.launch(application)
   end launch
 
-  override def canStep(): Boolean =
+  def canStep(): Boolean =
     interpreter.canStep()
   end canStep
 
@@ -47,16 +61,25 @@ private[portals] class TestRuntime(val seed: Option[Int] = None) extends Steppin
         recursiveResume(path, shuffle, newIntermediate ::: intermediate)
   end recursiveResume
 
-  override def step(): Unit =
+  def feed(l: List[EventBatch]): Unit = interpreter.feedAtoms(l)
+
+  def maybeGC(): Unit =
+    if stepN() % GC_INTERVAL == 0 then interpreter.garbageCollect()
+
+  def step(): List[EventBatch] =
     interpreter.step() match
       case Completed(path, outputs) =>
-        interpreter.feedAtoms(outputs)
+        val (remote, local) = outputs.partition(batch => REMOTEFILTER(batch))
+        interpreter.feedAtoms(local)
+        maybeGC()
+        remote
       case Suspended(path, shuffle, outputs) =>
         recursiveResume(path, shuffle, outputs) match
           case Completed(path, outputs) =>
-            interpreter.feedAtoms(outputs)
-
-    if stepN() % GC_INTERVAL == 0 then interpreter.garbageCollect()
+            val (remote, local) = outputs.partition(batch => REMOTEFILTER(batch))
+            interpreter.feedAtoms(local)
+            maybeGC()
+            remote
   end step
 
   override def shutdown(): Unit = () // do nothing

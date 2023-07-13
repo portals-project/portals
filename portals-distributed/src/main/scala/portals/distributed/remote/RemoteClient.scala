@@ -1,4 +1,4 @@
-package portals.distributed.examples
+package portals.distributed.remote
 
 import scala.util.Failure
 import scala.util.Success
@@ -20,11 +20,27 @@ object RemoteClient:
   import RemoteShared.*
 
   /** Post the Launch `event` to the server. */
-  def postToPortal(event: PortalRequest): String =
-    val bytes = write(event).getBytes()
-    val response = requests.post("http://localhost:8080/remote", data = bytes)
-    response match
-      case r if r.statusCode == 200 =>
-        val resp = read[PortalResponse](r.bytes)
-        resp.event
-      case r => ???
+  def postToPortalReq(url: String = "http://localhost:8080", event: PortalRequest): Unit =
+    new Thread(new Runnable {
+      override def run(): Unit =
+        val bytes = write(event).getBytes()
+        val reqURL = url + "/remoteReq"
+        val response = requests.post(reqURL, data = bytes)
+        response match
+          case r if r.statusCode == 200 =>
+            println(r)
+          case r => ???
+    }).start()
+
+  /** Post the Launch `event` to the server. */
+  def postToPortalRes(url: String = "http://localhost:8080", event: PortalResponse): Unit =
+    new Thread(new Runnable {
+      override def run(): Unit =
+        val bytes = write(event).getBytes()
+        val reqURL = url + "/remoteRes"
+        val response = requests.post(reqURL, data = bytes)
+        response match
+          case r if r.statusCode == 200 =>
+            println(r)
+          case r => ???
+    }).start()
