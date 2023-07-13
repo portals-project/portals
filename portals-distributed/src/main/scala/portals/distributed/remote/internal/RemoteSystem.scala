@@ -9,6 +9,7 @@ import portals.system.PortalsSystem
 class RemoteSystem extends PortalsSystem:
   private val runtime: RemoteRuntime = new RemoteRuntime()
   private var _remotes: List[List[EventBatch]] = List.empty
+  var url: String = ""
 
   def launch(application: Application): Unit = runtime.launch(application)
 
@@ -38,12 +39,16 @@ class RemoteSystem extends PortalsSystem:
         batches.foreach { batch =>
           batch match
             case AskBatch(meta, list) =>
-              val url = GET_URL(batch)
-              val e = PortalRequest(List(batch.asInstanceOf[AskBatch[String]]))
-              postToPortalReq(url, e)
+              val _url = GET_URL(batch)
+              // A_1
+              val b = TRANSFORM_ASK_1(batch, url)
+              val e = PortalRequest(List(b.asInstanceOf[AskBatch[String]]))
+              postToPortalReq(_url, e)
             case ReplyBatch(meta, list) =>
               val url = GET_URL(batch)
-              val e = PortalResponse(List(batch.asInstanceOf[ReplyBatch[String]]))
+              // R_1
+              val b = TRANSFORM_REP_1(batch)
+              val e = PortalResponse(List(b.asInstanceOf[ReplyBatch[String]]))
               postToPortalRes(url, e)
             case _ => ???
         }

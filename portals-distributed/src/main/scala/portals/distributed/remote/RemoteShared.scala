@@ -325,30 +325,16 @@ object RemoteShared:
       )
     case _ => ???
 
+  inline def swapApps(str1: String, str2: String): String =
+    val t1 = str2.split("/").toList.tail.head
+    val s1 = "/" + t1 + "/" + "portals/" + str1
+    s1
+
   inline def TRANSFORM_REP_1(batch: EventBatch): EventBatch = batch match
     case ReplyBatch(meta, list) =>
       ReplyBatch(
         meta.copy(
-          portal = REMOTE_PATH(GET_URL(meta.askingWF), meta.portal),
-        ),
-        list.map {
-          case Reply(key, meta, event) =>
-            Reply(
-              key,
-              meta.copy(
-                portal = REMOTE_PATH(GET_URL(meta.askingWF), meta.portal),
-              ),
-              event
-            )
-          case _ => ???
-        }
-      )
-    case _ => ???
-
-  inline def TRANSFORM_REP_2(batch: EventBatch): EventBatch = batch match
-    case ReplyBatch(meta, list) =>
-      ReplyBatch(
-        meta.copy(
+          portal = swapApps(meta.portal, UN_REMOTE_PATH(meta.askingWF)),
           askingWF = UN_REMOTE_PATH(meta.askingWF),
         ),
         list.map {
@@ -356,6 +342,7 @@ object RemoteShared:
             Reply(
               key,
               meta.copy(
+                portal = swapApps(meta.portal, UN_REMOTE_PATH(meta.askingWF)),
                 askingWF = UN_REMOTE_PATH(meta.askingWF),
               ),
               event
@@ -364,6 +351,26 @@ object RemoteShared:
         }
       )
     case _ => ???
+
+  // inline def TRANSFORM_REP_2(batch: EventBatch): EventBatch = batch match
+  //   case ReplyBatch(meta, list) =>
+  //     ReplyBatch(
+  //       meta.copy(
+  //         askingWF = UN_REMOTE_PATH(meta.askingWF),
+  //       ),
+  //       list.map {
+  //         case Reply(key, meta, event) =>
+  //           Reply(
+  //             key,
+  //             meta.copy(
+  //               askingWF = UN_REMOTE_PATH(meta.askingWF),
+  //             ),
+  //             event
+  //           )
+  //         case _ => ???
+  //       }
+  //     )
+  //   case _ => ???
 
 object Test extends App:
   import RemoteShared.given

@@ -12,7 +12,7 @@ object Replier extends SubmittableApplication:
   def apply(): Application =
     PortalsApp("Replier"):
       val portal = Portal[String, String]("reverse")
-      val workflow = Workflows[Nothing, Nothing]()
+      val workflow = Workflows[Nothing, Nothing]("asdf")
         .source(Generators.empty[Nothing].stream)
         .replier[Nothing](portal)(_ => ???): //
           x => //
@@ -31,10 +31,11 @@ object Replier extends SubmittableApplication:
 object ReplierServer extends App:
   val port = "8081"
   Client.port = port
+  RemoteServerRuntime.system.url = s"http://localhost:$port"
   RemoteSBTRunServer.main(Array(port))
 
   Client.launchObject(Replier)
-  Client.launchObject(Requester)
+  // Client.launchObject(Requester)
 
   // sleep so that we don't exit prematurely
   Thread.sleep(Long.MaxValue)

@@ -24,6 +24,12 @@ object RemoteExtensions:
 
   object PortalRemoteRegistryImpl extends RemoteRegistry2[RemotePortalRef]:
     def get[T, R](url: String, path: String)(using builder: ApplicationBuilder): RemotePortalRef[T, R] =
+      val portal = Portal[T, R](path)
+      val workflow = Workflows[Nothing, Nothing]()
+        .source(Generators.empty[Nothing].stream)
+        .replier[Nothing](portal)(_ => ???)(_ => ???)
+        .sink()
+        .freeze()
       RemotePortalRef(REMOTE_PATH(url, path))
 
   object RemoteRegistryBuilder:

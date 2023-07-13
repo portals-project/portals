@@ -53,7 +53,7 @@ object RemoteServerRuntime:
     () => system.launch(application)
 
   // start system and worker
-  private val system = Systems.remote()
+  val system = Systems.remote()
   private val worker = new Worker()
   worker.submitJob(stepJob)
 
@@ -65,8 +65,8 @@ object RemoteServerRuntime:
   def feed(batch: List[EventBatch]): Unit =
     worker.submitJob(() =>
       // clean events
-      val cleanedBatch = batch.map(x => TRANSFORM_BATCH(x))
-      println(cleanedBatch)
+      // val cleanedBatch = batch.map(x => TRANSFORM_BATCH(x))
+      // println(batch)
       // feed events
-      system.feed(cleanedBatch)
+      system.feed(batch)
     )

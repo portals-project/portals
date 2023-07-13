@@ -56,7 +56,9 @@ object RemoteServer extends cask.MainRoutes:
     val event = read[PortalRequest](bytes)
     val response = event match
       case PortalRequest(batch) =>
-        RemoteServerRuntime.feed(batch)
+        // ASK_2
+        val b = batch.map(x => TRANSFORM_ASK_2(x))
+        RemoteServerRuntime.feed(b)
     cask.Response("success", statusCode = 200)
 
   @cask.post("/remoteRes")
