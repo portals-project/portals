@@ -66,6 +66,7 @@ object RemoteServerRuntime:
     worker.submitJob(() =>
       // clean events
       val cleanedBatch = batch.map(x => TRANSFORM_BATCH(x))
+      println(cleanedBatch)
       // feed events
-      system.feed(batch)
+      system.feed(cleanedBatch)
     )

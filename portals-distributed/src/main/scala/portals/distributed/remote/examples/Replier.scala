@@ -6,6 +6,7 @@ import portals.application.*
 import portals.distributed.remote.*
 import portals.distributed.remote.RemoteExtensions.*
 import portals.distributed.server.*
+import portals.system.Systems
 
 object Replier extends SubmittableApplication:
   def apply(): Application =
@@ -33,9 +34,13 @@ object ReplierServer extends App:
   RemoteSBTRunServer.main(Array(port))
 
   Client.launchObject(Replier)
+  Client.launchObject(Requester)
 
   // sleep so that we don't exit prematurely
   Thread.sleep(Long.MaxValue)
 
   // exit before running this servers main method (again)
   System.exit(0)
+
+object XYZ extends App:
+  ASTPrinter.println(Replier())

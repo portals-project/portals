@@ -16,7 +16,7 @@ object Requester extends SubmittableApplication:
       val remotePortal = RemoteRegistry.portals
         .get[String, String](
           "http://localhost:8081",
-          "Replier/portals/reverse",
+          "/Replier/portals/reverse",
         )
 
       val generator = Generators.fromList(List("HelloWorld", "Sophia", "Jonas"))

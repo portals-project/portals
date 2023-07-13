@@ -24,7 +24,6 @@ object RemoteSBTRunServer extends cask.Main:
 
   override def main(args: Array[String]): Unit = {
     val port = if args.length > 0 then Some(args(0).toInt) else Some(8080)
-    println(port)
     if (!verbose) Main.silenceJboss()
     val server = Undertow.builder
       .addHttpListener(port.get, host)
@@ -32,9 +31,6 @@ object RemoteSBTRunServer extends cask.Main:
       .build
     server.start()
   }
-
-object XX extends App:
-  println(args)
 
 @main def run(port: String) =
   // Execute the main method of this server

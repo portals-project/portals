@@ -45,7 +45,7 @@ object RemoteServer extends cask.MainRoutes:
       case Launch(app) =>
         val clazz = ApplicationLoader.loadClassFromName(app)
         val application = ApplicationLoader.createInstanceFromClass(clazz).asInstanceOf[SubmittableApplication].apply()
-        ASTPrinter.println(application)
+        // ASTPrinter.println(application)
         RemoteServerRuntime.launch(application)
     cask.Response("success", statusCode = 200)
 
@@ -54,7 +54,6 @@ object RemoteServer extends cask.MainRoutes:
   def remoteReq(request: cask.Request) =
     val bytes = request.readAllBytes()
     val event = read[PortalRequest](bytes)
-    println(event)
     val response = event match
       case PortalRequest(batch) =>
         RemoteServerRuntime.feed(batch)
@@ -64,7 +63,6 @@ object RemoteServer extends cask.MainRoutes:
   def remoteRes(request: cask.Request) =
     val bytes = request.readAllBytes()
     val event = read[PortalResponse](bytes)
-    println(event)
     val response = event match
       case PortalResponse(batch) =>
         RemoteServerRuntime.feed(batch)

@@ -38,15 +38,12 @@ class RemoteSystem extends PortalsSystem:
         batches.foreach { batch =>
           batch match
             case AskBatch(meta, list) =>
-              println(batch)
               val url = GET_URL(batch)
               val e = PortalRequest(List(batch.asInstanceOf[AskBatch[String]]))
-              println(e)
               postToPortalReq(url, e)
             case ReplyBatch(meta, list) =>
               val url = GET_URL(batch)
               val e = PortalResponse(List(batch.asInstanceOf[ReplyBatch[String]]))
-              println(e)
               postToPortalRes(url, e)
             case _ => ???
         }

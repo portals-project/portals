@@ -28,7 +28,6 @@ object RemoteClient:
         val response = requests.post(reqURL, data = bytes)
         response match
           case r if r.statusCode == 200 =>
-            println(r)
           case r => ???
     }).start()
 
@@ -41,6 +40,5 @@ object RemoteClient:
         val response = requests.post(reqURL, data = bytes)
         response match
           case r if r.statusCode == 200 =>
-            println(r)
           case r => ???
     }).start()

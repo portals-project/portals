@@ -188,7 +188,7 @@ object RemoteShared:
   inline def HAS_PREFIX(inline str: String): Boolean = str.startsWith(PREFIX)
 
   /** Extract the < URL, PATH > from a Remote path. */
-  inline def SPLIT(str: String): (String, String) = { val s = str.split("\\$"); println(s); (s(1), s(2)) }
+  inline def SPLIT(str: String): (String, String) = { val s = str.split("\\$"); (s(1), s(2)) }
 
   inline def GET_URL(str: String): String = SPLIT(str)._1
 
@@ -233,7 +233,18 @@ object RemoteShared:
           portal = UN_REMOTE_PATH(meta.portal),
           askingWF = REMOTE_PATH(GET_URL(meta.portal), meta.askingWF),
         ),
-        list
+        list.map {
+          case Ask(key, meta, event) =>
+            Ask(
+              key,
+              meta.copy(
+                portal = UN_REMOTE_PATH(meta.portal),
+                askingWF = REMOTE_PATH(GET_URL(meta.portal), meta.askingWF),
+              ),
+              event
+            )
+          case _ => ???
+        }
       )
     case _ => ??? // should never happen
 
@@ -245,7 +256,18 @@ object RemoteShared:
           portal = REMOTE_PATH(GET_URL(meta.askingWF), meta.portal),
           askingWF = UN_REMOTE_PATH(meta.askingWF),
         ),
-        list
+        list.map {
+          case Reply(key, meta, event) =>
+            Reply(
+              key,
+              meta.copy(
+                portal = REMOTE_PATH(GET_URL(meta.askingWF), meta.portal),
+                askingWF = UN_REMOTE_PATH(meta.askingWF),
+              ),
+              event
+            )
+          case _ => ???
+        }
       )
     case _ => ??? // should never happen
 
@@ -262,6 +284,86 @@ object RemoteShared:
     case ReplyBatch(meta, _) =>
       GET_URL(meta.askingWF)
     case _ => ??? // should never happen
+
+  inline def TRANSFORM_ASK_1(batch: EventBatch, url: String): EventBatch = batch match
+    case AskBatch(meta, list) =>
+      AskBatch(
+        meta.copy(
+          askingWF = REMOTE_PATH(url, meta.askingWF),
+        ),
+        list.map {
+          case Ask(key, meta, event) =>
+            Ask(
+              key,
+              meta.copy(
+                askingWF = REMOTE_PATH(url, meta.askingWF),
+              ),
+              event
+            )
+          case _ => ???
+        }
+      )
+    case _ => ???
+
+  inline def TRANSFORM_ASK_2(batch: EventBatch): EventBatch = batch match
+    case AskBatch(meta, list) =>
+      AskBatch(
+        meta.copy(
+          portal = GET_PATH(meta.portal),
+        ),
+        list.map {
+          case Ask(key, meta, event) =>
+            Ask(
+              key,
+              meta.copy(
+                portal = GET_PATH(meta.portal),
+              ),
+              event
+            )
+          case _ => ???
+        }
+      )
+    case _ => ???
+
+  inline def TRANSFORM_REP_1(batch: EventBatch): EventBatch = batch match
+    case ReplyBatch(meta, list) =>
+      ReplyBatch(
+        meta.copy(
+          portal = REMOTE_PATH(GET_URL(meta.askingWF), meta.portal),
+        ),
+        list.map {
+          case Reply(key, meta, event) =>
+            Reply(
+              key,
+              meta.copy(
+                portal = REMOTE_PATH(GET_URL(meta.askingWF), meta.portal),
+              ),
+              event
+            )
+          case _ => ???
+        }
+      )
+    case _ => ???
+
+  inline def TRANSFORM_REP_2(batch: EventBatch): EventBatch = batch match
+    case ReplyBatch(meta, list) =>
+      ReplyBatch(
+        meta.copy(
+          askingWF = UN_REMOTE_PATH(meta.askingWF),
+        ),
+        list.map {
+          case Reply(key, meta, event) =>
+            Reply(
+              key,
+              meta.copy(
+                askingWF = UN_REMOTE_PATH(meta.askingWF),
+              ),
+              event
+            )
+          case _ => ???
+        }
+      )
+    case _ => ???
 
 object Test extends App:
   import RemoteShared.given
