@@ -89,6 +89,20 @@ object sqlDSL:
   def TableWorkflow[T: DBSerializable: ClassTag](
       tableName: String,
       primaryField: String,
+      txn: Boolean
+  ): ApplicationBuilder ?=> TableRef =
+    QueryableWorkflow
+      .createTable(
+        tableName,
+        primaryField,
+        summon[DBSerializable[T]],
+        txn,
+      )
+      .ref
+
+  def TableWorkflow[T: DBSerializable: ClassTag](
+      tableName: String,
+      primaryField: String,
   ): ApplicationBuilder ?=> TableRef =
     QueryableWorkflow
       .createTable(
@@ -145,10 +159,12 @@ object sqlDSL:
 
   extension [T, U](wb: FlowBuilder[T, U, String, String]) {
     def query(tables: TableRef*): FlowBuilder[T, U, String, String] =
-      if TRANSACTIONAL then //
-        wb.querierTransactional(tables.map(_.unref): _*).asInstanceOf[FlowBuilder[T, U, String, String]]
-      else //
-        wb.querier(tables.map(_.unref): _*)
+      wb.querier(tables.map(_.unref): _*)
+  }
+
+  extension [T, U](wb: FlowBuilder[T, U, TxnQuery, TxnQuery]) {
+    def queryTxn(tables: TableRef*): FlowBuilder[T, U, TxnQuery, String] =
+      wb.querierTransactional(tables.map(_.unref): _*).asInstanceOf[FlowBuilder[T, U, TxnQuery, String]]
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -176,7 +192,7 @@ object sqlDSL:
         calcite
           .getTable(ti.tableName)
           .setInsertRow(data => {
-            // TODO: assert pk always Int
+            // Note: we assert primary key to be always the first field
             val future = ask(ti.portal.asInstanceOf)(InsertOp(ti.tableName, data.toList, data(0).asInstanceOf[Int]))
             portalFutures.add(future.asInstanceOf)
             new FutureWithResult(future, null)

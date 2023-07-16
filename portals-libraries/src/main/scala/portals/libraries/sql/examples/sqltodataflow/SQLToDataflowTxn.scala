@@ -12,8 +12,12 @@ import portals.libraries.sql.sqlDSL.*
 import portals.system.Systems
 
 /** An example with a queryable Key-Value table using the sql library.
-  *
-  * Uses the TableWorkflow and Query task.
+  * 
+  * Two query workflow send queries to the same table.
+  * 
+  * The query is transactional, but not interactive, it may happen that
+  * one transaction fails, but still proceed to commit.
+  * Such behavior is undefined (and should not be considered).
   *
   * @example
   *   {{{
@@ -25,7 +29,7 @@ import portals.system.Systems
   * @see
   *   [[portals.libraries.sql.examples.sqltodataflow.SQLToRemoteDataflow]]
   */
-object SQLToDataflow extends App:
+object SQLToDataflowTxn extends App:
 
   import org.slf4j.LoggerFactory
   import ch.qos.logback.classic.Level
@@ -38,20 +42,35 @@ object SQLToDataflow extends App:
   val tableApp = PortalsApp("SQLToDataflowTable"):
 
     /** A Table Workflow which serves SQL queries for the table of type KV. */
-    val table = TableWorkflow[Types.KV]("KVTable", "k")
+    val table = TableWorkflow[Types.KV]("KVTable", "k", true)
 
     /** Input queries for the Query task to execute. */
-    val generator = Generators.fromIteratorOfIterators[String](
+    val generator1 = Generators.fromIteratorOfIterators[TxnQuery](
       // iteartor of iterators of queries
-      Data.queryIterOfIter
+      Data.queryIterOfIterTxn1
+    )
+    val generator2 = Generators.fromIteratorOfIterators[TxnQuery](
+      // iteartor of iterators of queries
+      Data.queryIterOfIterTxn2
     )
 
     /** Workflow which consumes the generated queries and runs query task. */
-    val queryWorkflow = Workflows[String, String]("queryWorkflow")
-      .source(generator.stream)
+    val queryWorkflow1 = Workflows[TxnQuery, String]("queryWorkflow1")
+      .source(generator1.stream)
       /** A query task which connects to the `table`. */
-      .query(table)
-      .logger("Results: ")
+      .logger("====== Query: ")
+      .queryTxn(table)
+      .logger("Result: ")
+      .sink()
+      .freeze()
+
+    /** Workflow which consumes the generated queries and runs query task. */
+    val queryWorkflow2 = Workflows[TxnQuery, String]("queryWorkflow2")
+      .source(generator2.stream)
+      /** A query task which connects to the `table`. */
+      .logger("====== Query: ")
+      .queryTxn(table)
+      .logger("Results for query workflow 2: ")
       .sink()
       .freeze()
 
