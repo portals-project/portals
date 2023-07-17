@@ -12,5 +12,5 @@ COPY ./portals-examples/ /app/portals-examples
 WORKDIR /app
 RUN sbt compile 
 EXPOSE 8080
-ENTRYPOINT sbt "~distributed/runMain portals.distributed.Server"
+ENTRYPOINT sbt "distributed/runMain portals.distributed.SBTRunServer"
 

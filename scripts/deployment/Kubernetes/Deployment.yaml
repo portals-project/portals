@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: portals-server
-          image: "test2"
+          image: "test-server"
           imagePullPolicy: Never
           ports:
             - containerPort: 8080

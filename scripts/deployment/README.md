@@ -40,9 +40,9 @@ If you want to run the server on a kubernetes cluster (e.g. a local minikube set
 
 0. Preparation: Start Minikube && Build the images for Client and Server
 
-`minikube start`
-`docker build -f scripts/deployment/docker/Dockerfile-ShoppingCartClient . -t test-client`
-`docker build -f scripts/deployment/docker/Dockerfile-Server . -t test-server`
+```minikube start
+docker build -f scripts/deployment/docker/Dockerfile-ShoppingCartClient . -t test-client
+docker build -f scripts/deployment/docker/Dockerfile-Server . -t test-server```
 
 1. Deploy the Server into the Kubernetes environment. (Adjust the image name in the deployment.yaml)
 
