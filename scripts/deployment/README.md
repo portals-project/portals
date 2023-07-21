@@ -2,13 +2,13 @@
 
 ## Build the Docker Container
 The Dockerfile
-To build the container for the server (exchange test 1 for a more meaningful container tag):
+To build the Docker container for the server, use the following command (replace `test-server` with a more meaningful container tag):
 
-`docker build -f scripts/deployment/docker/Dockerfile-Server . -t test1`
+`docker build -f scripts/deployment/docker/Dockerfile-Server . -t test-server`
 
 To run the container:
 
-`docker run -dp 127.0.0.1:8080:8080 test1`
+`docker run -dp 127.0.0.1:8080:8080 test-server`
 
 ## Kubernetes
 
@@ -18,7 +18,7 @@ If you want to run the server on a kubernetes cluster (e.g. a local minikube set
 
 `minikube start`
 
-1. Deploy the container into the Kubernetes environment. (Remember to change the image name to whatever you have chosen before)
+1. Deploy the container into the Kubernetes environment (Replace <image-name> with the actual image name you have chosen):
 
 `kubectl apply -f scripts/deployment/Kubernetes/Deployment.yaml`
 
@@ -28,26 +28,26 @@ If you want to run the server on a kubernetes cluster (e.g. a local minikube set
 
 
 ## Known Issues :
-- If the status is `ImagePullBackOff` and you are using minikube, make sure that minikube can actually use the build container. Some minikube setups require you to push the build docker image to minikube with the following command:
+- If the status of the pod is `ImagePullBackOff`, and you are using Minikube, ensure that Minikube can use the built container. Some Minikube setups require you to push the built Docker image to Minikube with the following command:
 `minikube image load <image name>`
 
 
-- For WSL/minikube Users the connection to the pod can be a little tricky, the easiest workaround is using something like:
+- For WSL/Minikube users, connecting to the pod can be a little tricky. The easiest workaround is to use port forwarding:
 `kubectl port-forward <pod-name> 8080:8080` To force k8s to forward the port from the pod to  localhost
 
 
 # Full Example
 
-0. Preparation: Start Minikube && Build the images for Client and Server
+Before deploying the Server and the Client into the Kubernetes environment, make sure you have started Minikube and built the Docker images for the Client and Server:
 
 ```minikube start
 docker build -f scripts/deployment/docker/Dockerfile-ShoppingCartClient . -t test-client
 docker build -f scripts/deployment/docker/Dockerfile-Server . -t test-server```
 
-1. Deploy the Server into the Kubernetes environment. (Adjust the image name in the deployment.yaml)
+1. Deploy the Server into the Kubernetes environment (Adjust the image name in the `deployment.yaml` file):
 
 `kubectl apply -f scripts/deployment/Kubernetes/Deployment.yaml`
 
-2. As soon as the Server has started, You can run the ShoppingCartClient.
+2. Once the Server has started, you can run the ShoppingCartClient:
 
 `docker run --network host  test-client`
