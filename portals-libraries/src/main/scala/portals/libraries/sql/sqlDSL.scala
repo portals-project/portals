@@ -135,7 +135,7 @@ object sqlDSL:
       .source(Generators.empty[Nothing].stream)
       .askerreplier[Nothing, Any, Any](tableref.portal.asInstanceOf)(portal.asInstanceOf) { x => ??? } { //
         x =>
-          Utils.queryAsk(tableref.unref)(x.asInstanceOf[String])
+          Utils.queryAsker(tableref.unref)(x.asInstanceOf[String])
       }
       .sink()
       .freeze()
