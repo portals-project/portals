@@ -10,6 +10,7 @@ lazy val requestsVersion = "0.8.0"
 lazy val mainargsVersion = "0.5.0"
 lazy val scalajsstubsVersion = "1.1.0"
 lazy val scalajsdomVersion = "2.6.0"
+lazy val calciteVersion = "1.33.0"
 
 ThisBuild / organization := "org.portals-project"
 ThisBuild / organizationName := "Portals Project"
@@ -91,5 +92,7 @@ lazy val libraries = project
   .in(file("portals-libraries"))
   .settings(
     name := "portals-libraries",
+    libraryDependencies += "com.lihaoyi" %% "cask" % caskVersion,
+    libraryDependencies += "org.apache.calcite" % "calcite-core" % calciteVersion,
   )
   .dependsOn(portals.jvm % "test->test;compile->compile")
