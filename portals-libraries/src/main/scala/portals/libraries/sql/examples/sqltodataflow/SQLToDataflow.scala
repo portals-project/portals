@@ -17,7 +17,7 @@ import portals.system.Systems
   *
   * @example
   *   {{{
-  *  sbt "libraries/runMain portals.libraries.sql.examples.SQLToDataflow"
+  *  sbt "libraries/runMain portals.libraries.sql.examples.sqltodataflow.SQLToDataflow"
   *   }}}
   *
   * @see
@@ -42,7 +42,6 @@ object SQLToDataflow extends App:
 
     /** Input queries for the Query task to execute. */
     val generator = Generators.fromIteratorOfIterators[String](
-      // iteartor of iterators of queries
       Data.queryIterOfIter
     )
 

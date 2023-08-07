@@ -56,6 +56,8 @@ import java.util.function.Function;
  */
 public class Calcite {
 
+    /* JS: Commenting out the following example as it is not needed.
+    
     // An example about how to use this class
     public static void main(String[] args) throws SqlParseException, InterruptedException {
         Calcite calcite = new Calcite();
@@ -122,6 +124,7 @@ public class Calcite {
             System.out.println(Arrays.toString(row));
         }
     }
+    */
 
     private CalciteSchema schema;
     private RelDataTypeFactory typeFactory;

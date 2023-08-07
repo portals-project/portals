@@ -89,7 +89,7 @@ object sqlDSL:
   def TableWorkflow[T: DBSerializable: ClassTag](
       tableName: String,
       primaryField: String,
-      txn: Boolean
+      txn: Boolean = TRANSACTIONAL,
   ): ApplicationBuilder ?=> TableRef =
     QueryableWorkflow
       .createTable(
@@ -97,19 +97,6 @@ object sqlDSL:
         primaryField,
         summon[DBSerializable[T]],
         txn,
-      )
-      .ref
-
-  def TableWorkflow[T: DBSerializable: ClassTag](
-      tableName: String,
-      primaryField: String,
-  ): ApplicationBuilder ?=> TableRef =
-    QueryableWorkflow
-      .createTable(
-        tableName,
-        primaryField,
-        summon[DBSerializable[T]],
-        TRANSACTIONAL,
       )
       .ref
 

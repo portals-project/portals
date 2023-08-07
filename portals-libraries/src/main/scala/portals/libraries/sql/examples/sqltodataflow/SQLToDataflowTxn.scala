@@ -21,7 +21,7 @@ import portals.system.Systems
   *
   * @example
   *   {{{
-  *  sbt "libraries/runMain portals.libraries.sql.examples.SQLToDataflow"
+  *  sbt "libraries/runMain portals.libraries.sql.examples.sqltodataflow.SQLToDataflowTxn"
   *   }}}
   *
   * @see
@@ -46,11 +46,9 @@ object SQLToDataflowTxn extends App:
 
     /** Input queries for the Query task to execute. */
     val generator1 = Generators.fromIteratorOfIterators[TxnQuery](
-      // iteartor of iterators of queries
       Data.queryIterOfIterTxn1
     )
     val generator2 = Generators.fromIteratorOfIterators[TxnQuery](
-      // iteartor of iterators of queries
       Data.queryIterOfIterTxn2
     )
 
