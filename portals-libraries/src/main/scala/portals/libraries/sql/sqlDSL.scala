@@ -159,7 +159,7 @@ object sqlDSL:
   //////////////////////////////////////////////////////////////////////////////
 
   private object Utils:
-    def queryAsk(
+    def queryAsker(
         tableInfos: TableInfo*
     ): AskerReplierTaskContext[Nothing, Nothing, Any, Any] ?=> String => Unit = { sql =>
       val futureReadyCond = PersistentLinkedBlockingQueue[Integer]("futureReadyCond")
@@ -245,7 +245,7 @@ object sqlDSL:
           }(using ctx.asInstanceOf)
       }
     }
-    end queryAsk
+    end queryAsker
 
     def tableReplier[T: DBSerializable](tableInfo: TableInfo): ReplierTask[Any, Any, Any, Any] =
       TaskBuilder
