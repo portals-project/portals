@@ -12,12 +12,12 @@ import portals.libraries.sql.sqlDSL.*
 import portals.system.Systems
 
 /** An example with a queryable Key-Value table using the sql library.
-  * 
+  *
   * Two query workflow send queries to the same table.
-  * 
-  * The query is transactional, but not interactive, it may happen that
-  * one transaction fails, but still proceed to commit.
-  * Such behavior is undefined (and should not be considered).
+  *
+  * The query is transactional, but not interactive, it may happen that one
+  * transaction fails, but still proceed to commit. Such behavior is undefined
+  * (and should not be considered).
   *
   * @example
   *   {{{
@@ -32,6 +32,7 @@ import portals.system.Systems
 object SQLToDataflowTxn extends App:
 
   import org.slf4j.LoggerFactory
+
   import ch.qos.logback.classic.Level
   import ch.qos.logback.classic.Logger
 

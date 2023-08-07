@@ -1,7 +1,7 @@
 package portals.libraries.sql.examples.sqltodataflow
 
-import portals.libraries.sql.internals.TxnQuery
 import portals.libraries.sql.internals.COMMIT_QUERY
+import portals.libraries.sql.internals.TxnQuery
 
 object Data:
   private val queries =
@@ -32,8 +32,8 @@ object Data:
   def queryIterOfIter: Iterator[Iterator[String]] =
     queries.map(_.iterator).iterator
 
-  // Note: Not interactive query here, possible 
-  private val transactionalQueries1 = 
+  // Note: Not interactive query here, possible
+  private val transactionalQueries1 =
     List(
       List(
         TxnQuery("INSERT INTO KVTable (k, v) Values (0, 0)", 1),
@@ -51,8 +51,8 @@ object Data:
         TxnQuery(COMMIT_QUERY, 2),
       ),
     )
-  
-  private val transactionalQueries2 = 
+
+  private val transactionalQueries2 =
     List(
       List(
         TxnQuery("INSERT INTO KVTable (k, v) Values (0, 1)", 3),

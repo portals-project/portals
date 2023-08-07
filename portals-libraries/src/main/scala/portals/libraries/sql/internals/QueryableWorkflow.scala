@@ -112,8 +112,7 @@ object QueryableWorkflow:
             if _txn.get() == -1 || _txn.get() == txnId then
               _txn.set(txnId)
               reply(Result(STATUS_OK, op))
-            else
-              reply(Result("error", List()))
+            else reply(Result("error", List()))
           // first try to ready uncommitted state, if not initialized, then read committed state
           case SelectOp(tableName, key, txnId) =>
             if unCommittedState.get().isDefined then
@@ -185,27 +184,27 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
     import java.math.BigDecimal
     import portals.api.dsl.ExperimentalDSL.*
 
-    /**
-      * Portals                                           Calcite
-      *   1. query arrives
-      *                                                     2. start executing SQL
-      *                                                     3. extract table count info from logical plan and reply
-      *                                                        through tableOptCntCond.put
-      *   4. get table number involved for this query
-      *     through tableOptCntCond.take
-      *                                                     5. call sub-queries for each table, inform when each table's
-      *                                                        futures are ready through futureReadyCond.put
-      *   6. acknolwedge futures for one table are ready
-      *      through futureReadyCond.take
-      *   7. if sub-queries for all tables are sent,
-      *      call awaitAll, in the callback, notify 
-      *      Calcite through awaitForFutureCond.put 
-      *                                                     8. all tableScan nodes ready, continue non-leaf node execution,
-      *                                                          notify Portals when execution completes
-      *   9. read SQL query result
-      */                                                      
+    /*
+     * Portals                                           Calcite
+     *   1. query arrives
+     *                                                     2. start executing SQL
+     *                                                     3. extract table count info from logical plan and reply
+     *                                                        through tableOptCntCond.put
+     *   4. get table number involved for this query
+     *     through tableOptCntCond.take
+     *                                                     5. call sub-queries for each table, inform when each table's
+     *                                                        futures are ready through futureReadyCond.put
+     *   6. acknolwedge futures for one table are ready
+     *      through futureReadyCond.take
+     *   7. if sub-queries for all tables are sent,
+     *      call awaitAll, in the callback, notify
+     *      Calcite through awaitForFutureCond.put
+     *                                                     8. all tableScan nodes ready, continue non-leaf node execution,
+     *                                                          notify Portals when execution completes
+     *   9. read SQL query result
+     */
     wb.asker[String](tableInfos.map(_.portal): _*) { sql =>
-      // all kinds to blocking queues to synchronize between Calcite and Portals 
+      // all kinds to blocking queues to synchronize between Calcite and Portals
       val futureReadyCond = PersistentLinkedBlockingQueue[Integer]("futureReadyCond")
       val awaitForFutureCond = PersistentLinkedBlockingQueue[Integer]("awaitForFutureCond")
       val awaitForFinishCond = PersistentLinkedBlockingQueue[Integer]("awaitForFinishCond")
@@ -257,23 +256,23 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
         // wait for one table's sub-queries to be called and their corresponding Futures ready
         futureReadyCond.take
 
-        // Each tableScan node wait for one awaitForFutureCond message before 
+        // Each tableScan node wait for one awaitForFutureCond message before
         // considering itself to be ready (see awaitForFuturesCond.take in MPFTable.java)
         if i != tableOptCnt then awaitForFutureCond.put(1)
         else
           // All sub-queries for all tables are sent, now we call awaitAll.
-          // In the callback when results are received, 
+          // In the callback when results are received,
           // we need to extract the future's internal value as Object[] and put it
           // into the futureResult field.
           // (don't know how to do this in Java code, so I do it here)
           awaitAll[Result](futures.asScala.map(_.future.asInstanceOf[Future[Result]]).toList: _*) {
-            // extract result from portals.util.Future to the futureResult field as a object array 
+            // extract result from portals.util.Future to the futureResult field as a object array
             futures.forEach(f => {
               val data = f.future.asInstanceOf[Future[Result]].value
               f.futureResult = f.future.asInstanceOf[Future[Result]].value.get.data.asInstanceOf[Array[Object]]
             })
 
-            // All leaf tableScan/tableModify nodes are ready, 
+            // All leaf tableScan/tableModify nodes are ready,
             // send the awaitForFutureCond message for the last table to notify Calcite
             // so the SQL execution (for non-leaf nodes) can start
             awaitForFutureCond.put(1)
@@ -295,12 +294,12 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
 }
 
 // Transactional version contains two asker operators corresponding to two phases of the transaction.
-// Note this is not the desired protocol yet, since each query will be executed twice (one for precommit, 
+// Note this is not the desired protocol yet, since each query will be executed twice (one for precommit,
 // one for execution).
 
 // For example, SELECT * WHERE key = 1 will first precommit and lock the row with key 1,
 // and in the second phase, it will send sub-query to fetch the result.
-// This process could be done in one round. 
+// This process could be done in one round.
 
 // The first asker operator sends precommit sub-queries to all involved keys and check if this lock
 //   aquisition is successful
@@ -317,8 +316,8 @@ extension [T, U](wb: FlowBuilder[T, U, TxnQuery, TxnQuery]) {
     import portals.api.dsl.ExperimentalDSL.*
 
     val tableNameToPortal = tableInfos.map(ti => (ti.tableName, ti.portal)).toMap
-    
-    // TODO don't know how to initialize state for asker operator, 
+
+    // TODO don't know how to initialize state for asker operator,
     // `init` must output GenericTask[CU, CCU, Nothing, Nothing]
     // This is for storing precommitted keys
     val preCommittedOps = PerTaskState("preCommittedOps", java.util.HashMap[Integer, List[SQLQueryEvent]]())
@@ -341,8 +340,7 @@ extension [T, U](wb: FlowBuilder[T, U, TxnQuery, TxnQuery]) {
       val txnId = txnQuery.txnId
       val sql = txnQuery.sql
 
-      if sql.equals(COMMIT_QUERY) then
-        emit(FirstPhaseResult(txnId, sql, true, List()))
+      if sql.equals(COMMIT_QUERY) then emit(FirstPhaseResult(txnId, sql, true, List()))
       else
         tableInfos.foreach(ti => {
           calcite.registerTable(ti.tableName, ti.fieldTypes.toList.asJava, ti.fieldNames.toList.asJava, 0)
@@ -365,7 +363,8 @@ extension [T, U](wb: FlowBuilder[T, U, TxnQuery, TxnQuery]) {
             .getTable(ti.tableName)
             .setGetFutureByRowKeyFunc(key => {
               val intKey = key.asInstanceOf[BigDecimal].toBigInteger.intValueExact()
-              val future = ask(ti.portal)(PreCommitOp(ti.tableName, intKey, txnId, SelectOp(ti.tableName, intKey, txnId)))
+              val future =
+                ask(ti.portal)(PreCommitOp(ti.tableName, intKey, txnId, SelectOp(ti.tableName, intKey, txnId)))
               new FutureWithResult(future, null)
             })
         })
@@ -398,26 +397,32 @@ extension [T, U](wb: FlowBuilder[T, U, TxnQuery, TxnQuery]) {
                 emit(FirstPhaseResult(txnId, sql, false, succeedOps))
               } else
                 emit(
-                  FirstPhaseResult(txnId, sql, true, succeedOps, futures,
-                    awaitForFutureCond, awaitForFinishCond, result
+                  FirstPhaseResult(
+                    txnId,
+                    sql,
+                    true,
+                    succeedOps,
+                    futures,
+                    awaitForFutureCond,
+                    awaitForFinishCond,
+                    result
                   )
                 )
             }
         }
-    }
-    .asker[String](tableInfos.map(_.portal): _*) { (preCommResult: FirstPhaseResult) =>
+    }.asker[String](tableInfos.map(_.portal): _*) { (preCommResult: FirstPhaseResult) =>
       val emit = { (x: String) =>
         ctx.emit(x)
       }
 
       // uncomment this to see the result of precommit for each query
       // println("====== Txn " + preCommResult.txnID
-      //   + " Query " + preCommResult.sql 
+      //   + " Query " + preCommResult.sql
       //   + " Phase 2 | success: " + preCommResult.success + " ======")
 
       val txnId = preCommResult.txnID
 
-      if preCommResult.sql.equals(COMMIT_QUERY) then 
+      if preCommResult.sql.equals(COMMIT_QUERY) then
         var futures = List[Future[Result]]()
         preCommittedOps.get().getOrDefault(txnId, List()).foreach { op =>
           // println("send commit op txn:" + op.txnId + " key:" + op.key)
@@ -429,48 +434,46 @@ extension [T, U](wb: FlowBuilder[T, U, TxnQuery, TxnQuery]) {
           preCommittedOps.get().remove(txnId)
           emit("commit")
         }
-      else
-        if preCommResult.success then 
-          // if precommit succeed, record all involved keys for later usage
-          preCommittedOps.get().putIfAbsent(txnId, List[SQLQueryEvent]())
-          preCommResult.succeedOps.foreach(op => {
-            preCommittedOps.get().put(txnId, preCommittedOps.get().get(txnId) :+ op)
+      else if preCommResult.success then
+        // if precommit succeed, record all involved keys for later usage
+        preCommittedOps.get().putIfAbsent(txnId, List[SQLQueryEvent]())
+        preCommResult.succeedOps.foreach(op => {
+          preCommittedOps.get().put(txnId, preCommittedOps.get().get(txnId) :+ op)
+        })
+
+        // send the actual sub-queries in the second phase
+        var futures = List[Future[Result]]()
+        preCommResult.succeedOps.foreach { op =>
+          futures = futures :+ ask(tableNameToPortal(op.tableName))(op)
+        }
+        // after results for all sub-queries are ready,
+        // send the last awaitForFutureCond message to Calcite so the query execution may continue
+        awaitAll[Result](futures: _*) {
+          for (i <- futures.indices) {
+            preCommResult.preparedOps.get(i).futureResult = futures(i).value.get.data.asInstanceOf[Array[Object]]
+          }
+          preCommResult.awaitForFutureCond.put(1)
+          preCommResult.awaitForFinishCond.take()
+
+          preCommResult.result.forEach(row => {
+            emit(java.util.Arrays.toString(row))
           })
+        }
+      // if first phase failed, rollback all successfully pre-committed sub-queries
+      else
+        var futures = List[Future[Result]]()
+        preCommittedOps.get().getOrDefault(txnId, List()).foreach { op =>
+          println("rollback txn " + op.txnId + " key " + op.key)
+          futures = futures :+ ask(tableNameToPortal(op.tableName))(RollbackOp(op.tableName, op.key, op.txnId))
+        }
 
-          // send the actual sub-queries in the second phase 
-          var futures = List[Future[Result]]()
-          preCommResult.succeedOps.foreach { op =>
-            futures = futures :+ ask(tableNameToPortal(op.tableName))(op)
-          }
-          // after results for all sub-queries are ready, 
-          // send the last awaitForFutureCond message to Calcite so the query execution may continue
+        // clear state after rollback
+        if futures.nonEmpty then
           awaitAll[Result](futures: _*) {
-            for (i <- futures.indices) {
-              preCommResult.preparedOps.get(i).futureResult = futures(i).value.get.data.asInstanceOf[Array[Object]]
-            }
-            preCommResult.awaitForFutureCond.put(1)
-            preCommResult.awaitForFinishCond.take()
-
-            preCommResult.result.forEach(row => {
-              emit(java.util.Arrays.toString(row))
-            })
-          }
-        // if first phase failed, rollback all successfully pre-committed sub-queries
-        else
-          var futures = List[Future[Result]]()
-          preCommittedOps.get().getOrDefault(txnId, List()).foreach { op =>
-            println("rollback txn " + op.txnId + " key " + op.key)
-            futures = futures :+ ask(tableNameToPortal(op.tableName))(RollbackOp(op.tableName, op.key, op.txnId))
-          }
-          
-          // clear state after rollback
-          if futures.nonEmpty then
-            awaitAll[Result](futures: _*) {
-              preCommittedOps.get().remove(txnId)
-              emit("precommit failed")
-            }
-          else
+            preCommittedOps.get().remove(txnId)
             emit("precommit failed")
+          }
+        else emit("precommit failed")
 
     }
   }
