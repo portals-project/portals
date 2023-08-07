@@ -29,17 +29,17 @@ import java.util.*;
 import java.util.function.Function;
 
 public class MPFTable extends AbstractTable
-        implements ModifiableTable, ProjectableFilterableTable, Calcite.DeletableTable {
+        implements ModifiableTable, ProjectableFilterableTable {
 
     private String tableName;
-    private MyList<Object[]> data;
+    private TableStore<Object[]> data;
     private final RelDataType rowType;
     private int pkIndex = 0;
     private List<RexLiteral> pkPredicates = new ArrayList<>();
     private Function<Object, FutureWithResult> getFutureByRowKeyFunc;
     private Calcite calcite;
 
-    MPFTable(String tableName, RelDataType rowType, MyList<Object[]> data, int pkIndex, Calcite calcite) {
+    MPFTable(String tableName, RelDataType rowType, TableStore<Object[]> data, int pkIndex, Calcite calcite) {
         this.tableName = tableName;
         this.data = data;
         this.rowType = rowType;
@@ -53,11 +53,6 @@ public class MPFTable extends AbstractTable
 
     public void setGetFutureByRowKeyFunc(Function<Object, FutureWithResult> getFutureByRowKeyFunc) {
         this.getFutureByRowKeyFunc = getFutureByRowKeyFunc;
-    }
-
-    @Override
-    public void delete(List<Object[]> keys) {
-
     }
 
     @Override
@@ -89,8 +84,8 @@ public class MPFTable extends AbstractTable
             e.printStackTrace();
         }
         try {
-            // wait for awaitAll callback to be called, so the asking is actually executed
-            int awaitForFutureResult = calcite.awaitForFuturesCond.take();
+            // will block here for tableOptCnt times, after the last time, the execution for non-leaf nodes can start
+            int awaitForFutureResult = calcite.awaitForFutureCond.take();
             if (awaitForFutureResult == -1) {
                 // throw new RuntimeException("awaitForFutureResult == -1");
                 throw new ExecutionAbortException("");
@@ -114,7 +109,6 @@ public class MPFTable extends AbstractTable
                     public boolean moveNext() {
                         while (++row < pkPredicates.size()) {
                             // await
-                            // Object[] current = data.get(row);
                             Object[] current = calcite.tableFutures.get(tableName).get(row).futureResult;
                             // System.out.println("moveNext " + tableName + " " + row + " " +
                             // Arrays.toString(current));
@@ -146,6 +140,8 @@ public class MPFTable extends AbstractTable
         };
     }
 
+    // The returned collection will called when insert query is executed
+    // In our case,
     @Override
     public Collection getModifiableCollection() {
         return data;
@@ -153,8 +149,8 @@ public class MPFTable extends AbstractTable
 
     @Override
     public TableModify toModificationRel(RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader,
-            RelNode child, TableModify.Operation operation, List<String> updateColumnList,
-            List<RexNode> sourceExpressionList, boolean flattened) {
+                                         RelNode child, TableModify.Operation operation, List<String> updateColumnList,
+                                         List<RexNode> sourceExpressionList, boolean flattened) {
         return LogicalTableModify.create(table, catalogReader, child, operation,
                 updateColumnList, sourceExpressionList, flattened);
     }

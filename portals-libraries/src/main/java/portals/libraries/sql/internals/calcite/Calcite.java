@@ -1,7 +1,6 @@
 package portals.libraries.sql.internals.calcite;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
@@ -17,24 +16,17 @@ import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.*;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.runtime.Bindable;
-import org.apache.calcite.schema.ModifiableTable;
-import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Schemas;
-import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -45,10 +37,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.util.Sarg;
 
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -57,9 +46,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
- * An end to end example from an SQL query to a plan in Bindable convention.
+ * Most content of this class are similar to this
+ *   https://github.com/zabetak/calcite/blob/demo-january-2021/core/src/test/java/org/apache/calcite/examples/foodmart/java/EndToEndExampleBindable.java
+ * Some noticable points for this class:
+ *   The `registerTable` function needs to be called by the user to create a table,
+ *   This is where we register our MPFTable (Modifiable-Projectable-Filterable Table) to Calcite Schema
+ *   Calcite will call the add/scan function for TableStore/MPFTable, in these two functions we need to
+ *   send out subqueries by calling callbacks given from Portals
  */
 public class Calcite {
+
+    /* JS: Commenting out the following example as it is not needed.
+    
+    // An example about how to use this class
     public static void main(String[] args) throws SqlParseException, InterruptedException {
         Calcite calcite = new Calcite();
         calcite.registerTable("Book",
@@ -125,6 +124,7 @@ public class Calcite {
             System.out.println(Arrays.toString(row));
         }
     }
+    */
 
     private CalciteSchema schema;
     private RelDataTypeFactory typeFactory;
@@ -142,14 +142,9 @@ public class Calcite {
         typeFactory = new JavaTypeFactoryImpl();
         // Create the root schema describing the data model
         schema = CalciteSchema.createRootSchema(true);
-        // Instantiate task executor
-        // executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new
-        // LinkedBlockingQueue<>());
     }
 
-    // public QTable(String tableName, List<SqlTypeName> columnTypes, List<String>
-    // columnNames, int pkIndex, Consumer<Object> queryRow, Consumer<Object[]>
-    // insertRow) {
+    // Register table schema to Calcite
     public void registerTable(String tableName, List<SqlTypeName> columnTypes, List<String> columnNames,
             int pkIndex) {
         RelDataTypeFactory.Builder tableType = new RelDataTypeFactory.Builder(typeFactory);
@@ -158,8 +153,9 @@ public class Calcite {
         }
 
         // Initialize table
+        //
         if (schema.getTable(tableName, false) == null) {
-            MPFTable table = new MPFTable(tableName, tableType.build(), new MyList<>(this), pkIndex, this);
+            MPFTable table = new MPFTable(tableName, tableType.build(), new TableStore<>(this), pkIndex, this);
             registeredTable.put(tableName, table);
             schema.add(tableName, table);
         }
@@ -168,7 +164,7 @@ public class Calcite {
     public boolean printPlan = true;
     public boolean debug = false;
     BlockingQueue<Integer> futureReadyCond;
-    BlockingQueue<Integer> awaitForFuturesCond;
+    BlockingQueue<Integer> awaitForFutureCond;
     BlockingQueue<Integer> awaitForSQLCompletionCond;
     BlockingQueue<Integer> tableOpCntCond;
 
@@ -177,62 +173,26 @@ public class Calcite {
 
     List<Object[]> result;
 
-    public void parseSQL(String sql) throws SqlParseException {
-        SqlParser parser = SqlParser.create(sql);
-        SqlNode sqlNode = parser.parseStmt();
-    }
-
-    public void parseAndPlanLogic(String sql) throws SqlParseException {
-        long parsingStartTime = System.nanoTime();
-        SqlParser parser = SqlParser.create(sql);
-        SqlNode sqlNode = parser.parseStmt();
-
-        long parsingEndTime = System.nanoTime();
-        CalciteStat.recordParsing(parsingEndTime - parsingStartTime);
-
-        // Configure and instantiate validator
-        Properties props = new Properties();
-        props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "false");
-        CalciteConnectionConfig config = new CalciteConnectionConfigImpl(props);
-        CalciteCatalogReader catalogReader = new CalciteCatalogReader(schema,
-                Collections.singletonList(""),
-                typeFactory, config);
-
-        // NOTE: 新增代码
-        // 从 org.apache.calcite.prepare.CalcitePrepareImpl.createSqlValidator 抄来的
-        final SqlOperatorTable opTab0 = SqlStdOperatorTable.instance();
-        final List<SqlOperatorTable> list = new ArrayList<>();
-        list.add(opTab0);
-        list.add(catalogReader);
-        final SqlOperatorTable opTab = SqlOperatorTables.chain(list);
-
-        // NOTE：这里的 newValidator param1 不能用默认的 SqlStdOperatorTable.instance()，其中只有自带的函数
-        SqlValidator validator = SqlValidatorUtil.newValidator(opTab,
-                catalogReader, typeFactory,
-                SqlValidator.Config.DEFAULT);
-
-        // Validate the initial AST
-        SqlNode validNode = validator.validate(sqlNode);
-
-        long validationEndTime = System.nanoTime();
-        CalciteStat.recordValidation(validationEndTime - parsingEndTime);
-
-        // Configure and instantiate the converter of the AST to Logical plan (requires
-        // opt cluster)
-        RelOptCluster cluster = newCluster(typeFactory);
-        SqlToRelConverter relConverter = new SqlToRelConverter(
-                NOOP_EXPANDER,
-                validator,
-                catalogReader,
-                cluster,
-                StandardConvertletTable.INSTANCE,
-                SqlToRelConverter.config());
-
-        // Convert the valid AST into a logical plan
-        RelNode logPlan = relConverter.convertQuery(validNode, false, true).rel;
-        // RelNode logPlan = relConverter.convertQuery(sqlNode, false, true).rel;
-    }
-
+    /**
+     *
+     * @param sql: The SQL query in String
+     * @param futureReadyCond:
+     *   Used by Calcite to notify portals that all sub-queries for
+     *   one table are sent
+     * @param awaitForFutureCond:
+     *   Used by Portals to notify Calcite that all sub-queries
+     *   are returned
+     * @param awaitForSQLCompletionCond:
+     *   Used by Calcite to notify portals that the SQL
+     *   execution is finished
+     * @param tableScanCntCond:
+     *   Used by Calcite to tell Portals how many tables are involved
+     *   in this query
+     * @param futures:
+     *   A container for holding the Futures objects
+     * @param result
+     *   A container for holding the final query result
+     */
     public void executeSQL(String sql, BlockingQueue<Integer> futureReadyCond,
             BlockingQueue<Integer> awaitForFutureCond,
             BlockingQueue<Integer> awaitForSQLCompletionCond,
@@ -240,7 +200,7 @@ public class Calcite {
             List<FutureWithResult> futures,
             List<Object[]> result) throws InterruptedException {
         this.futureReadyCond = futureReadyCond;
-        this.awaitForFuturesCond = awaitForFutureCond;
+        this.awaitForFutureCond = awaitForFutureCond;
         this.awaitForSQLCompletionCond = awaitForSQLCompletionCond;
         this.tableOpCntCond = tableScanCntCond;
         this.futures = futures;
@@ -278,15 +238,12 @@ public class Calcite {
                 Collections.singletonList(""),
                 typeFactory, config);
 
-        // NOTE: 新增代码
-        // 从 org.apache.calcite.prepare.CalcitePrepareImpl.createSqlValidator 抄来的
         final SqlOperatorTable opTab0 = SqlStdOperatorTable.instance();
         final List<SqlOperatorTable> list = new ArrayList<>();
         list.add(opTab0);
         list.add(catalogReader);
         final SqlOperatorTable opTab = SqlOperatorTables.chain(list);
 
-        // NOTE：这里的 newValidator param1 不能用默认的 SqlStdOperatorTable.instance()，其中只有自带的函数
         SqlValidator validator = SqlValidatorUtil.newValidator(opTab,
                 catalogReader, typeFactory,
                 SqlValidator.Config.DEFAULT);
@@ -313,7 +270,6 @@ public class Calcite {
 
         // report tableScanCnt
         int cnt = getTableOpCnt(logPlan);
-        // System.out.println("Table scan count: " + cnt);
         tableOpCntCond.put(cnt);
 
         // Display the logical plan
@@ -325,23 +281,13 @@ public class Calcite {
 
         long planingEndTime = 0;
 
+        // Using different convention for modification and selection queries
+        // is a hack to to make sure Calcite will call MPFTable's scan and TableStore's
+        // add method when select/insert
         if (logPlan instanceof LogicalTableModify) {
             LogicalTableModify modify = (LogicalTableModify) logPlan;
-            if (modify.getOperation() == TableModify.Operation.DELETE) {
-                LogicalProject project = (LogicalProject) modify.getInput();
-                LogicalFilter filter = (LogicalFilter) project.getInput();
-                LogicalTableScan scan = (LogicalTableScan) filter.getInput();
-                String tableName = scan.getTable().getQualifiedName().get(0);
-                RexCall cond = (RexCall) filter.getCondition();
-                if (cond.op != SqlStdOperatorTable.EQUALS) {
-                    throw new RuntimeException("Unsupported condition: " + cond.op);
-                }
-                // TODO: AND()
-                RexInputRef left = (RexInputRef) cond.operands.get(0);
-                RexLiteral right = (RexLiteral) cond.operands.get(1);
-                // registeredTable.get(tableName).delete(right.getValue());
-                // TODO: key will be on the right, call delete manually (delete(tableName, key))
-            } else if (modify.getOperation() == TableModify.Operation.INSERT) {
+            // INSERT is the only supported modification operation by Calcite
+            if (modify.getOperation() == TableModify.Operation.INSERT) {
                 Bindable executablePlan = enumerableConventionPlanExecution(logPlan, cluster);
                 planingEndTime = System.nanoTime();
                 CalciteStat.recordPlanning(planingEndTime - validationEndTime);
@@ -351,8 +297,6 @@ public class Calcite {
                     result.add(new Object[] { row });
                 }
                 awaitForSQLCompletionCond.put(1);
-            } else if (modify.getOperation() == TableModify.Operation.UPDATE) {
-                throw new RuntimeException("Unsupported operation: " + modify.getOperation());
             }
         } else {
             BindableRel phyPlan = bindableConventionPlanExecution(logPlan, cluster);
@@ -361,7 +305,6 @@ public class Calcite {
 
             // Run the executable plan using a context simply providing access to the schema
             for (Object[] row : phyPlan.bind(new SchemaOnlyDataContext(schema))) {
-                // System.out.println(Arrays.toString(row));
                 result.add(row);
             }
             awaitForSQLCompletionCond.put(1);
@@ -369,7 +312,8 @@ public class Calcite {
 
         CalciteStat.recordExecution(System.nanoTime() - planingEndTime);
 
-        init();
+        // re-initiate state after execution
+        initState();
     }
 
     private int getTableOpCnt(RelNode logPlan) {
@@ -386,16 +330,6 @@ public class Calcite {
         }
     }
 
-    /**
-     * output:
-     * x:1844
-     * [4, The three Musketeers, 3688]
-     * x:1884
-     * [5, The Count of Monte Cristo, 3768]
-     *
-     * @param logPlan
-     * @param cluster
-     */
     private Bindable enumerableConventionPlanExecution(RelNode logPlan, RelOptCluster cluster)
             throws InterruptedException {
         RelOptPlanner planner = cluster.getPlanner();
@@ -475,7 +409,7 @@ public class Calcite {
         return phyPlan;
     }
 
-    private void init() {
+    private void initState() {
         futures = new ArrayList<>();
         tableFutures = new HashMap<>();
     }
@@ -518,24 +452,19 @@ public class Calcite {
             return null;
         }
     }
-
-    interface DeletableTable {
-        void delete(List<Object[]> keys);
-    }
-
-    // TODO: declare table (+register)
-
 }
 
-class MyList<T> extends ArrayList<T> {
-    public MyList(Collection<? extends T> c) {
+// We store table rows as Object[] here, the add function is overridden
+// to call subqueries
+class TableStore<T> extends ArrayList<T> {
+    public TableStore(Collection<? extends T> c) {
         super(c);
     }
 
     private Calcite calcite;
     public Function<Object[], FutureWithResult> insertRow;
 
-    public MyList(Calcite calcite) {
+    public TableStore(Calcite calcite) {
         this.calcite = calcite;
     }
 
@@ -546,25 +475,28 @@ class MyList<T> extends ArrayList<T> {
         CalciteStat.recordMessage();
         calcite.futures.add(futureWithResult);
 
-        // tell outside that they can get these futures and call awaitAll
+        // tell portals that all sub-queries are sent
+        // and all corresponding futures are there
         try {
-            // System.out.println("put futureReadyCond");
             calcite.futureReadyCond.put(1);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        // if this is the last TableScan node being executed as leaf nodes,
+        // return from this function means data for all leaf nodes are ready
+        // and the real query execution will start, we want to block here until
+        // portals says we may continue
         try {
             // wait for awaitAll callback to be called, so the asking is actually executed
-            calcite.awaitForFuturesCond.take();
+            calcite.awaitForFutureCond.take();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        // future is complete, we can return
         if (calcite.debug)
             System.out.println("add " + t);
-        // but we intercept and add the result
-        // return super.add(t); // comment this will cause the "row affected" to be 0
+
         return true;
     }
 }

@@ -3,6 +3,8 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import portals.libraries.sql.internals.calcite.*
 
+case class TxnQuery(sql: String, txnId: Int)
+
 trait SQLQueryEvent {
   def tableName: String
   def key: Int
@@ -24,7 +26,6 @@ case class Result(status: String, data: Any)
 val STATUS_OK = "ok"
 
 case class FirstPhaseResult(
-    reqId: Int,
     txnID: Int,
     sql: String,
     success: Boolean,

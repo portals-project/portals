@@ -1,5 +1,8 @@
 package portals.libraries.sql.examples.sqltodataflow
 
+import portals.libraries.sql.internals.TxnQuery
+import portals.libraries.sql.internals.COMMIT_QUERY
+
 object Data:
   private val queries =
     List(
@@ -28,3 +31,48 @@ object Data:
 
   def queryIterOfIter: Iterator[Iterator[String]] =
     queries.map(_.iterator).iterator
+
+  // Note: Not interactive query here, possible 
+  private val transactionalQueries1 = 
+    List(
+      List(
+        TxnQuery("INSERT INTO KVTable (k, v) Values (0, 0)", 1),
+      ),
+      List(
+        TxnQuery("INSERT INTO KVTable (k, v) Values (1, 0)", 1),
+      ),
+      List(
+        TxnQuery(COMMIT_QUERY, 1),
+      ),
+      List(
+        TxnQuery("SELECT * FROM KVTable WHERE k in (0, 1)", 2),
+      ),
+      List(
+        TxnQuery(COMMIT_QUERY, 2),
+      ),
+    )
+  
+  private val transactionalQueries2 = 
+    List(
+      List(
+        TxnQuery("INSERT INTO KVTable (k, v) Values (0, 1)", 3),
+      ),
+      List(
+        TxnQuery("INSERT INTO KVTable (k, v) Values (1, 1)", 3),
+      ),
+      List(
+        TxnQuery(COMMIT_QUERY, 3),
+      ),
+      List(
+        TxnQuery("SELECT * FROM KVTable WHERE k in (0, 1)", 4),
+      ),
+      List(
+        TxnQuery(COMMIT_QUERY, 4),
+      ),
+    )
+
+  def queryIterOfIterTxn1: Iterator[Iterator[TxnQuery]] =
+    transactionalQueries1.map(_.iterator).iterator
+
+  def queryIterOfIterTxn2: Iterator[Iterator[TxnQuery]] =
+    transactionalQueries2.map(_.iterator).iterator
