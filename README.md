@@ -96,6 +96,14 @@ As the example shows, to write applications you need to import the API from the 
 
 With these abstractions, you can define complex multi-dataflow applications, and execute them on the serverless runtime. For more examples, please check out the [examples](/portals-examples) directory, or the [tutorial](https://www.portals-project.org/tutorial).
 
+## Support and Contact
+
+For help or questions, contact the Portals developers and community on the [Portals Google Groups](https://groups.google.com/g/portals-project) mailing list.
+
+If you find a bug in Portals, then [open an issue](https://github.com/portals-project/portals/issues).
+
+For other private questions, please refer to the contact information of the [core team](https://www.portals-project.org/team).
+
 ## Comparison to Other Projects
 
 TODO: Flink; Kafka; Durable Functions; https://github.com/typelevel/feral; Kalix
