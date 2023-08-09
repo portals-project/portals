@@ -5,12 +5,12 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.Await
 import scala.util.Random
 
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.scaladsl.AskPattern.Askable
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.util.Timeout
+import org.apache.pekko.actor.typed.scaladsl.adapter._
+import org.apache.pekko.actor.typed.scaladsl.AskPattern.Askable
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.util.Timeout
 
 import com.typesafe.config.ConfigFactory
 
@@ -59,11 +59,11 @@ private[portals] class ParallelRuntime(nThreads: Int) extends PortalsRuntime:
   private val defaultConfig = ConfigFactory
     .parseString(
       s"""
-      akka.log-dead-letters-during-shutdown = off
-      akka.coordinated-shutdown.terminate-actor-system = off
-      akka.coordinated-shutdown.run-by-actor-system-terminate = off
-      akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
-      akka.cluster.run-coordinated-shutdown-when-down = off
+      org.apache.pekko.log-dead-letters-during-shutdown = off
+      org.apache.pekko.coordinated-shutdown.terminate-actor-system = off
+      org.apache.pekko.coordinated-shutdown.run-by-actor-system-terminate = off
+      org.apache.pekko.coordinated-shutdown.run-by-jvm-shutdown-hook = off
+      org.apache.pekko.cluster.run-coordinated-shutdown-when-down = off
       """
     )
 
@@ -72,19 +72,19 @@ private[portals] class ParallelRuntime(nThreads: Int) extends PortalsRuntime:
       ConfigFactory
         .parseString(
           s"""
-          akka.actor.default-dispatcher.fork-join-executor.parallelism-min = ${parallelism.get}
-          akka.actor.default-dispatcher.fork-join-executor.parallelism-max = ${parallelism.get}
-          akka.actor.default-dispatcher.fork-join-executor.parallelism-factor = 1.0
+          org.apache.pekko.actor.default-dispatcher.fork-join-executor.parallelism-min = ${parallelism.get}
+          org.apache.pekko.actor.default-dispatcher.fork-join-executor.parallelism-max = ${parallelism.get}
+          org.apache.pekko.actor.default-dispatcher.fork-join-executor.parallelism-factor = 1.0
           """
         )
         .withFallback(defaultConfig)
     else defaultConfig
 
-  private val system: akka.actor.ActorSystem = akka.actor.ActorSystem("Portals", cf)
+  private val system: org.apache.pekko.actor.ActorSystem = org.apache.pekko.actor.ActorSystem("Portals", cf)
 
   // FOR BLOCKING AKKA
   given timeout: Timeout = Timeout(3.seconds)
-  given scheduler: akka.actor.typed.Scheduler = system.toTyped.scheduler
+  given scheduler: org.apache.pekko.actor.typed.Scheduler = system.toTyped.scheduler
 
   // SETUP RUNTIMES
   private val runtimes: Map[Int, ActorRef[Command]] =
