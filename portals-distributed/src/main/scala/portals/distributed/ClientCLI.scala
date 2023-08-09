@@ -8,10 +8,14 @@ import mainargs.ParserForMethods
   * ```
   * sbt "distributed/runMain portals.distributed.ClientCLI ..."
   * ```
-  * @param path the path to the classfile to submit
-  * @param directory the directory containing the classfile to submit
-  * @param (optional) ip the IP address of the server
-  * @param (optional) port the port of the server
+  * @param path
+  *   the path to the classfile to submit
+  * @param directory
+  *   the directory containing the classfile to submit
+  * @param (optional)
+  *   ip the IP address of the server
+  * @param (optional)
+  *   port the port of the server
   */
 object ClientCLI:
 
@@ -26,16 +30,16 @@ object ClientCLI:
     *   {{{
     * ClientCLI submit --path portals/distributed/examples/HelloWorld$.class --directory portals-distributed/target/scala-3.3.0/classes
     *   }}}
-    * 
+    *
     * @example
-    *  {{{
+    *   {{{
     * ClientCLI submit --path portals/distributed/examples/HelloWorld$.class --ip localhost --port 8080
-    *  }}}
-    * 
+    *   }}}
+    *
     * @example
-    * {{{
+    *   {{{
     * ClientCLI submit --path portals/distributed/examples/HelloWorld$.class --directory portals-distributed/target/scala-3.3.0/classes --ip localhost --port 8080
-    * }}}
+    *   }}}
     */
   @mainargs.main
   def submit(
@@ -52,11 +56,11 @@ object ClientCLI:
     *   {{{
     * ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes
     *   }}}
-    * 
+    *
     * @example
-    * {{{
+    *   {{{
     * ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes --ip localhost --port 8080
-    * }}}
+    *   }}}
     */
   @mainargs.main
   def submitDir(
@@ -72,11 +76,11 @@ object ClientCLI:
     *   {{{
     * ClientCLI launch --application portals.distributed.examples.HelloWorld$
     *   }}}
-    * 
+    *
     * @example
-    *  {{{
+    *   {{{
     * ClientCLI launch --application portals.distributed.examples.HelloWorld$ --ip localhost --port 8080
-    *  }}}
+    *   }}}
     */
   @mainargs.main
   def launch(
