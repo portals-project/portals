@@ -2,8 +2,8 @@ package portals.libraries.actor.examples
 
 import scala.annotation.experimental
 
-import portals.system.Systems
 import portals.libraries.actor.*
+import portals.system.Systems
 
 @experimental
 object CountingActor:
