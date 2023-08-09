@@ -1,4 +1,4 @@
-package portals.examples.actor
+package portals.libraries.actor
 
 import scala.annotation.experimental
 import scala.collection.mutable.Queue
@@ -6,7 +6,7 @@ import scala.util.Try
 
 import org.junit.Assert._
 
-import portals.examples.actor.ActorBehaviors
+import portals.libraries.actor.ActorBehaviors
 
 @experimental
 object ActorTestUtils:
