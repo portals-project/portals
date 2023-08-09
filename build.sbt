@@ -86,3 +86,11 @@ lazy val portalsjs = crossProject(JSPlatform)
     Compile / scalaJSLinkerConfig ~= { _.withSourceMap(false) },
   )
   .dependsOn(portals % "test->test;compile->compile")
+
+lazy val libraries = project
+  .in(file("portals-libraries"))
+  .settings(
+    name := "portals-libraries",
+    libraryDependencies += "com.novocode" % "junit-interface" % junitInterfaceVersion % "test",
+  )
+  .dependsOn(portals.jvm % "test->test;compile->compile")

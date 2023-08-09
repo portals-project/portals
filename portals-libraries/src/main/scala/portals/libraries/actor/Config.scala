@@ -1,4 +1,4 @@
-package portals.examples.actor
+package portals.libraries.actor
 
 import scala.annotation.implicitNotFound
 

@@ -1,9 +1,10 @@
-package portals.examples.actor
+package portals.libraries.actor.examples
 
 import scala.annotation.experimental
 
 import portals.api.dsl.DSL
 import portals.api.dsl.ExperimentalDSL
+import portals.libraries.actor.*
 import portals.system.Systems
 
 @experimental

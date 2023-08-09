@@ -1,4 +1,4 @@
-package portals.examples.actor
+package portals.libraries.actor
 
 import scala.annotation.experimental
 
@@ -7,6 +7,7 @@ import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Test
 
+import portals.libraries.actor.examples.*
 import portals.system.Systems
 
 @RunWith(classOf[JUnit4])
