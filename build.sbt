@@ -1,7 +1,7 @@
 lazy val scala3Version = "3.3.0"
 lazy val junitInterfaceVersion = "0.11"
 lazy val logbackversion = "1.4.8"
-lazy val akkaVersion = "2.6.20"
+lazy val pekkoVersion = "1.0.0"
 lazy val pprintversion = "0.8.1"
 lazy val nexmarkVersion = "2.48.0"
 lazy val caskVersion = "0.9.1"
@@ -39,7 +39,7 @@ lazy val portals = crossProject(JSPlatform, JVMPlatform)
     name := "portals-core",
     Compile / doc / target := target.value / "api",
     libraryDependencies += "com.lihaoyi" %%% "pprint" % pprintversion,
-    libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
+    libraryDependencies += "org.apache.pekko" % "pekko-actor-typed_3" % pekkoVersion,
     libraryDependencies += "org.scala-js" %% "scalajs-stubs" % scalajsstubsVersion,
   )
   .jvmSettings(
@@ -54,7 +54,7 @@ lazy val benchmark = project
     name := "portals-benchmark",
     resolvers += "confluent" at "https://packages.confluent.io/maven/", // NEXMark benchmark
     libraryDependencies += "org.apache.beam" % "beam-sdks-java-nexmark" % nexmarkVersion, // NEXMark benchmark
-    libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
+    libraryDependencies += "org.apache.pekko" % "pekko-actor-typed_3" % pekkoVersion,
   )
   .dependsOn(portals.jvm % "test->test;compile->compile")
 

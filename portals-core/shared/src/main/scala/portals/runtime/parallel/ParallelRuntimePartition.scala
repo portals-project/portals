@@ -1,10 +1,10 @@
 package portals.runtime.parallel
 
-import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.AbstractBehavior
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
 
 import portals.application.Application
 import portals.runtime.interpreter.*
@@ -22,7 +22,7 @@ object ParallelRuntimePartition:
       */
     sealed trait Message extends Serializable
 
-    /** Akka Actor commands for this behavior. */
+    /** Pekko Actor commands for this behavior. */
     sealed trait Command extends Message
 
     /** Launch the application. */

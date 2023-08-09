@@ -4,18 +4,18 @@ import portals.benchmark.benchmarks.*
 
 @main def BenchmarkCLI(): Unit =
   //////////////////////////////////////////////////////////////////////////////
-  // Akka Benchmarks
+  // Pekko Benchmarks
   //////////////////////////////////////////////////////////////////////////////
   // {
   //   val grid = BenchmarkGrid()
-  //     .setParam("tag", "AkkaBenchmarks")
-  //     .setParam("--sSystem", "Akka")
+  //     .setParam("tag", "PekkoBenchmarks")
+  //     .setParam("--sSystem", "Pekko")
   //     .setParam("--nIterations", 5)
   //     .setParam("--nEvents", 1024 * 1024 * 2)
   //     .setParam("--nActors", 128)
   //     .set("--sWorkload", "pingPong", "threadRing", "countingActor")
   //   grid.configs.foreach { config =>
-  //     val benchmark = AkkaBenchmark
+  //     val benchmark = PekkoBenchmark
   //     val runner = BenchmarkRunner()
   //     runner.warmup(benchmark, config.args)
   //     runner.run(benchmark, config.args)
@@ -23,7 +23,7 @@ import portals.benchmark.benchmarks.*
   // }
   // {
   //   val grid = BenchmarkGrid()
-  //     .setParam("tag", "AkkaBenchmarks")
+  //     .setParam("tag", "PekkoBenchmarks")
   //     .setParam("--sSystem", "async")
   //     .setParam("--nIterations", 5)
   //     .setParam("--nEvents", 1024 * 1024)
@@ -44,7 +44,7 @@ import portals.benchmark.benchmarks.*
   // }
   // {
   //   val grid = BenchmarkGrid()
-  //     .setParam("tag", "AkkaBenchmarks")
+  //     .setParam("tag", "PekkoBenchmarks")
   //     .setParam("--sSystem", "async")
   //     .setParam("--nIterations", 5)
   //     .setParam("--nEvents", 1024 * 1024 * 2)
