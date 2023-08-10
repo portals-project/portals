@@ -14,5 +14,5 @@ RUN sbt compile
 
 ENTRYPOINT sbt "distributed/runMain portals.distributed.ClientCLI submitDir \
                --directory portals-distributed/target/scala-3.3.0/classes" && \
-           sbt "~distributed/runMain portals.distributed.ClientCLI launch \
+           sbt "distributed/runMain portals.distributed.ClientCLI launch \
                --application portals.distributed.examples.HelloWorld$"
