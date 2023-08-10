@@ -283,7 +283,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(8)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
