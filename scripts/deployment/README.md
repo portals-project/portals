@@ -1,7 +1,6 @@
 # Portals
 
 ## Build the Docker Container
-The Dockerfile
 To build the Docker container for the server, use the following command (replace `test-server` with a more meaningful container tag):
 
 `docker build -f scripts/deployment/docker/Dockerfile-Server . -t test-server`
@@ -26,7 +25,6 @@ If you want to run the server on a kubernetes cluster (e.g. a local minikube set
 
 `kubectl get pods`
 
-
 ## Known Issues :
 - If the status of the pod is `ImagePullBackOff`, and you are using Minikube, ensure that Minikube can use the built container. Some Minikube setups require you to push the built Docker image to Minikube with the following command:
 `minikube image load <image name>`
@@ -34,7 +32,6 @@ If you want to run the server on a kubernetes cluster (e.g. a local minikube set
 
 - For WSL/Minikube users, connecting to the pod can be a little tricky. The easiest workaround is to use port forwarding:
 `kubectl port-forward <pod-name> 8080:8080` To force k8s to forward the port from the pod to  localhost
-
 
 # Full Example
 

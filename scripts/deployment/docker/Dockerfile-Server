@@ -1,16 +1,15 @@
 FROM sbtscala/scala-sbt:openjdk-oraclelinux8-11.0.16_1.8.1_3.2.1
 
-# Copy Necessary Files
 COPY ./portals-distributed/ /app/portals-distributed
 COPY ./portals-core/ /app/portals-core
 COPY ./project/ /app/project
 COPY ./build.sbt /app/build.sbt
-# Necessary because of imports in portals-distributed/examples
 COPY ./portals-examples/ /app/portals-examples 
 
-
 WORKDIR /app
-RUN sbt compile 
-EXPOSE 8080
-ENTRYPOINT sbt "distributed/runMain portals.distributed.SBTRunServer"
 
+RUN sbt compile 
+
+EXPOSE 8080
+
+ENTRYPOINT sbt "distributed/runMain portals.distributed.SBTRunServer --port 8080"
