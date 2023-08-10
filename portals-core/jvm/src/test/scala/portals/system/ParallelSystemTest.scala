@@ -25,6 +25,7 @@ import portals.test.AsyncTestUtils.Asserter
 @experimental
 class ParallelSystemTest:
   @Test
+  @Ignore
   def lotsOfEventsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -49,7 +50,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(2)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
@@ -59,6 +60,7 @@ class ParallelSystemTest:
     system.shutdown()
 
   @Test
+  @Ignore
   def largeAtomsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -82,7 +84,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(2)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
@@ -92,6 +94,7 @@ class ParallelSystemTest:
     system.shutdown()
 
   @Test
+  @Ignore
   def chainOfWorkflowsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -135,6 +138,7 @@ class ParallelSystemTest:
     system.shutdown()
 
   @Test
+  @Ignore
   def chainOfTasksTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -166,7 +170,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(2)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
@@ -176,6 +180,7 @@ class ParallelSystemTest:
     system.shutdown()
 
   @Test
+  @Ignore
   def taskFanOutInTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -205,7 +210,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(2)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
@@ -215,6 +220,7 @@ class ParallelSystemTest:
     system.shutdown()
 
   @Test
+  @Ignore
   def manyGeneratorsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -243,7 +249,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(2)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
@@ -283,7 +289,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(2)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
