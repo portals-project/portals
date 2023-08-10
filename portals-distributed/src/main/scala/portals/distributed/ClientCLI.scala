@@ -77,7 +77,7 @@ object ClientCLI:
       ip: String = "localhost",
       port: Int = 8080
   ): Unit =
-    Client.submitClassFilesFromDir(directory)
+    Client.submitClassFilesFromDir(directory, ip, port)
 
   /** Launch an application on the server.
     *
