@@ -49,7 +49,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(4)
+    val system = Systems.parallel(2)
 
     system.launch(application)
 
@@ -82,7 +82,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(4)
+    val system = Systems.parallel(2)
 
     system.launch(application)
 
@@ -166,7 +166,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(4)
+    val system = Systems.parallel(2)
 
     system.launch(application)
 
@@ -205,7 +205,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(4)
+    val system = Systems.parallel(2)
 
     system.launch(application)
 
@@ -243,7 +243,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(4)
+    val system = Systems.parallel(2)
 
     system.launch(application)
 
@@ -283,7 +283,7 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(4)
+    val system = Systems.parallel(2)
 
     system.launch(application)
 
