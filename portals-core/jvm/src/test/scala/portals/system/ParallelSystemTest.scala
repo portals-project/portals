@@ -1,5 +1,6 @@
 package portals.system
 
+import scala.annotation.experimental
 import scala.concurrent.Promise
 
 import org.junit.runner.RunWith
@@ -12,6 +13,7 @@ import portals.api.builder.ApplicationBuilder
 import portals.api.builder.TaskBuilder
 import portals.api.dsl.DSL
 import portals.application.task.PerTaskState
+import portals.application.ASTPrinter
 import portals.application.AtomicStreamRef
 import portals.application.Workflow
 import portals.system.Systems
@@ -20,9 +22,9 @@ import portals.test.AsyncTestUtils
 import portals.test.AsyncTestUtils.Asserter
 
 @RunWith(classOf[JUnit4])
+@experimental
 class ParallelSystemTest:
   @Test
-  @Ignore
   def lotsOfEventsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -47,16 +49,16 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(8)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
     counter.waitForCompletion()
+    Thread.sleep(500)
 
     system.shutdown()
 
   @Test
-  @Ignore
   def largeAtomsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -80,16 +82,16 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(8)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
     counter.waitForCompletion()
+    Thread.sleep(500)
 
     system.shutdown()
 
   @Test
-  @Ignore // currently there are issues with longer chains of workflows
   def chainOfWorkflowsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -128,11 +130,11 @@ class ParallelSystemTest:
     system.launch(application)
 
     completer.waitForCompletion()
+    Thread.sleep(500)
 
     system.shutdown()
 
   @Test
-  @Ignore
   def chainOfTasksTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -164,16 +166,16 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(8)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
     completer.waitForCompletion()
+    Thread.sleep(500)
 
     system.shutdown()
 
   @Test
-  @Ignore
   def taskFanOutInTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -203,16 +205,16 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(8)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
     completer.waitForCompletion()
+    Thread.sleep(500)
 
     system.shutdown()
 
   @Test
-  @Ignore // currently there are issues
   def manyGeneratorsTest(): Unit =
     import portals.api.dsl.DSL.*
 
@@ -241,24 +243,25 @@ class ParallelSystemTest:
 
     val application = builder.build()
 
-    val system = Systems.parallel(8)
+    val system = Systems.parallel(4)
 
     system.launch(application)
 
     counter.waitForCompletion()
+    Thread.sleep(500)
 
     system.shutdown()
 
   @Test
-  @Ignore // currently there are issues with longer chains
+  @Ignore
   def manySequencersTest(): Unit =
     import portals.api.dsl.DSL.*
 
     val completer = AsyncTestUtils.CompletionWatcher()
 
-    val to = 1024 * 128
+    val to = 1024
 
-    val chainLength = 32
+    val chainLength = 128
 
     val builder = ApplicationBuilder("app")
 
@@ -285,5 +288,6 @@ class ParallelSystemTest:
     system.launch(application)
 
     completer.waitForCompletion()
+    Thread.sleep(500)
 
     system.shutdown()
