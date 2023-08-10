@@ -4,18 +4,11 @@ import mainargs.ParserForMethods
 
 /** Command line interface for the client.
   *
-  * Note: to run it from SBT use (don't forget to end with a "):
-  * ```
-  * sbt "distributed/runMain portals.distributed.ClientCLI ..."
-  * ```
-  * @param path
-  *   the path to the classfile to submit
-  * @param directory
-  *   the directory containing the classfile to submit
-  * @param (optional)
-  *   ip the IP address of the server
-  * @param (optional)
-  *   port the port of the server
+  * @example
+  *   Display the help message to see all available commands:
+  *   {{{
+  * sbt "distributed/runMain portals.distributed.ClientCLI --help"
+  *   }}}
   */
 object ClientCLI:
 
@@ -40,6 +33,15 @@ object ClientCLI:
     *   {{{
     * ClientCLI submit --path portals/distributed/examples/HelloWorld$.class --directory portals-distributed/target/scala-3.3.0/classes --ip localhost --port 8080
     *   }}}
+    *
+    * @param path
+    *   the path to the classfile to submit
+    * @param directory
+    *   (optional) the directory containing the classfile to submit
+    * @param ip
+    *   (optional) the IP address of the server
+    * @param port
+    *   (optional) the port of the server
     */
   @mainargs.main
   def submit(
@@ -61,6 +63,13 @@ object ClientCLI:
     *   {{{
     * ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes --ip localhost --port 8080
     *   }}}
+    *
+    * @param directory
+    *   the directory containing the classfile to submit
+    * @param ip
+    *   (optional) the IP address of the server
+    * @param port
+    *   (optional) the port of the server
     */
   @mainargs.main
   def submitDir(
@@ -81,6 +90,13 @@ object ClientCLI:
     *   {{{
     * ClientCLI launch --application portals.distributed.examples.HelloWorld$ --ip localhost --port 8080
     *   }}}
+    *
+    * @param application
+    *   the Java path to the application to launch
+    * @param ip
+    *   (optional) the IP address of the server
+    * @param port
+    *   (optional) the port of the server
     */
   @mainargs.main
   def launch(
