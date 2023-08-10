@@ -3,11 +3,6 @@
 ## Compile, Test, and Run
 The final compiled file is: `portals-portalsjs/js/target/scala-X/portals-portalsjs-opt.js`.
 
-Install packages:
-```
-npm install javascript-obfuscator fs
-```
-
 Compile:
 ```bash
 sh scripts/portalsjs/portalsjs-compile.sh
