@@ -50,7 +50,7 @@ We recommend the following steps to get started.
 * [Install Scala](https://www.scala-lang.org/download/), we recommend working with sbt, together with [Metals](https://scalameta.org/metals/docs/editors/vscode/) on VS Code. 
 * Clone the [Hello World](https://github.com/portals-project/Hello-World) repository.
 * Compile and run the project `sbt compile;`, `sbt run;`.
-* To get some inspiration, check out the [examples](/portals-examples) or read the [tutorial](https://www.portals-project.org/tutorial).
+* To get some inspiration, check out the [examples](/portals-examples) or read the [tutorial](https://www.portals-project.org/learn/tutorial).
 
 ### Examples
 
@@ -74,7 +74,7 @@ object HelloWorld extends App:
   system.shutdown()
 ```
 
-Check out an extensive [Tutorial](https://www.portals-project.org/tutorial) and the [Examples Directory](/portals-examples) for more examples.
+Check out an extensive [Tutorial](https://www.portals-project.org/learn/tutorial) and the [Examples Directory](/portals-examples) for more examples.
 
 ## Support and Contact
 
