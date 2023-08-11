@@ -280,9 +280,9 @@ extension [T, U](wb: FlowBuilder[T, U, String, String]) {
             // wait for the SQL execution to finish
             awaitForFinishCond.take()
 
-            if printResult then
-              println("====== Result for " + sql + " ======")
-              result.forEach(row => println(java.util.Arrays.toString(row)))
+            // if printResult then
+            // println("====== Result for " + sql + " ======")
+            // result.forEach(row => println(java.util.Arrays.toString(row)))
 
             result.forEach(row => {
               emit(java.util.Arrays.toString(row))
@@ -463,7 +463,7 @@ extension [T, U](wb: FlowBuilder[T, U, TxnQuery, TxnQuery]) {
       else
         var futures = List[Future[Result]]()
         preCommittedOps.get().getOrDefault(txnId, List()).foreach { op =>
-          println("rollback txn " + op.txnId + " key " + op.key)
+          // println("rollback txn " + op.txnId + " key " + op.key)
           futures = futures :+ ask(tableNameToPortal(op.tableName))(RollbackOp(op.tableName, op.key, op.txnId))
         }
 

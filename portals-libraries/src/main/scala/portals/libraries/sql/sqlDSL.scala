@@ -8,6 +8,10 @@ import scala.jdk.CollectionConverters.*
 import scala.reflect.ClassTag
 
 import org.apache.calcite.sql.`type`.SqlTypeName
+import org.slf4j.LoggerFactory
+
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
 
 import portals.api.builder.*
 import portals.api.builder.ApplicationBuilder
@@ -39,6 +43,14 @@ import portals.util.Future
   *   - Value
   */
 object sqlDSL:
+  //////////////////////////////////////////////////////////////////////////////
+  // CONFIG
+  //////////////////////////////////////////////////////////////////////////////
+
+  /* The current SQL backend sets the logging to DEBUG, here we set it to INFO by default to avoid log bloat. */
+  val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
+  logger.setLevel(Level.INFO)
+
   //////////////////////////////////////////////////////////////////////////////
   // CONSTANTS
   //////////////////////////////////////////////////////////////////////////////
@@ -271,7 +283,7 @@ object sqlDSL:
                 state.set(Some(summon[DBSerializable[T]].fromObjectArray(data)))
                 reply(Result(STATUS_OK, Array[Object]()))
               case RollbackOp(_, key, txnId) =>
-                println("rollback txn " + txnId + " key " + key)
+                // println("rollback txn " + txnId + " key " + key)
                 _txn.set(-1)
                 reply(Result(STATUS_OK, Array[Object]()))
               case null => reply(Result("error", List()))

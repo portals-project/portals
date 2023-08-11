@@ -4,7 +4,7 @@ import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
 import portals.application.*
 import portals.libraries.sql.*
-import portals.libraries.sql.examples.sqltodataflow.Data
+import portals.libraries.sql.examples.sqltodataflow.Data.*
 import portals.libraries.sql.examples.sqltodataflow.Types
 import portals.libraries.sql.examples.sqltodataflow.Types.given
 import portals.libraries.sql.internals.*
@@ -18,7 +18,7 @@ import portals.system.Systems
   *
   * @example
   *   {{{
-  *  sbt "libraries/runMain portals.libraries.sql.examples.SQLToRemoteDataflow"
+  *  sbt "libraries/runMain portals.libraries.sql.examples.sqltodataflow.SQLToRemoteDataflow"
   *   }}}
   *
   * @see
@@ -49,14 +49,12 @@ object SQLToRemoteDataflow extends App:
     val queryPortal = Registry.portals.get[String, String]("/SQLToDataflowTable/portals/queryPortal")
 
     /** Input queries for the Query task to execute. */
-    val generator = Generators.fromIteratorOfIterators[String](
-      // iteartor of iterators of queries
-      Data.queryIterOfIter
-    )
+    val generator = Generators.generator[String](Data.queriesGenerator)
 
     /** Workflow which sends the consumed SQL requests to the query portal. */
     val queryWorkflow = Workflows[String, String]("queryWorkflow")
       .source(generator.stream)
+      .logger("Query:  ")
       .asker(queryPortal) { x =>
         // ask the query portal to execute the query
         val f = ask(queryPortal)(x)
@@ -73,5 +71,8 @@ object SQLToRemoteDataflow extends App:
   val system = Systems.test()
   system.launch(tableApp)
   system.launch(remoteApp)
-  system.stepUntilComplete()
+  system.stepFor(10_000)
   system.shutdown()
+
+  // Force quit for IDE, as otherwise other Threads might keep the program alive
+  System.exit(0)

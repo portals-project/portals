@@ -4,7 +4,7 @@ import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
 import portals.application.*
 import portals.libraries.sql.*
-import portals.libraries.sql.examples.sqltodataflow.Data
+import portals.libraries.sql.examples.sqltodataflow.Data.*
 import portals.libraries.sql.examples.sqltodataflow.Types
 import portals.libraries.sql.examples.sqltodataflow.Types.given
 import portals.libraries.sql.internals.*
@@ -26,15 +26,6 @@ import portals.system.Systems
   *   [[portals.libraries.sql.examples.sqltodataflow.SQLToRemoteDataflow]]
   */
 object SQLToDataflow extends App:
-
-  import org.slf4j.LoggerFactory
-
-  import ch.qos.logback.classic.Level
-  import ch.qos.logback.classic.Logger
-
-  val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
-  logger.setLevel(Level.INFO)
-
   /** Portals application which runs the queriable KV Table. */
   val tableApp = PortalsApp("SQLToDataflowTable"):
 
@@ -42,13 +33,12 @@ object SQLToDataflow extends App:
     val table = TableWorkflow[Types.KV]("KVTable", "k")
 
     /** Input queries for the Query task to execute. */
-    val generator = Generators.fromIteratorOfIterators[String](
-      Data.queryIterOfIter
-    )
+    val generator = Generators.generator[String](queriesGenerator)
 
     /** Workflow which consumes the generated queries and runs query task. */
     val queryWorkflow = Workflows[String, String]("queryWorkflow")
       .source(generator.stream)
+      .logger("Query:   ")
       /** A query task which connects to the `table`. */
       .query(table)
       .logger("Results: ")
@@ -58,5 +48,8 @@ object SQLToDataflow extends App:
   /** Launch the application. */
   val system = Systems.test()
   system.launch(tableApp)
-  system.stepUntilComplete()
+  system.stepFor(10_000)
   system.shutdown()
+
+  // force quit for IDE, as otherwise other Threads might keep the program alive
+  System.exit(0)
