@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const exampleDirectory = 'portals-portalsjs/js/src/main/resources/examples/'; // the directory containing the examples
-const portalsJS = 'portals-portalsjs/js/target/scala-3.3.0/portals-portalsjs.js'; // the PortalsJS library
+const portalsJS = 'portals-portalsjs/js/target/scala-3.3.0/portals-portalsjs-opt.js'; // the PortalsJS library
 const portalsJSCode = fs.readFileSync(portalsJS, 'utf8');
 
 // files for which the outputs are ignored

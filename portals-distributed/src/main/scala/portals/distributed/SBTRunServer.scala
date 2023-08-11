@@ -1,17 +1,40 @@
 package portals.distributed
 
 import cask.main.Main
+import io.undertow.Undertow
 
-/** An alternative server that can run with `sbt run` without stopping. */
-object SBTRunServer extends cask.Main:
-  // define the routes which this server handles
-  val allRoutes = Seq(Server)
+/** An alternative server that can run with `sbt run` without stopping.
+  *
+  * @example
+  *   {{{
+  * sbt "distributed/runMain portals.distributed.SBTRunServer 8080"
+  *   }}}
+  */
+object SBTRunServer:
+  object InternalSBTRunServer extends cask.Main:
+    // define the routes which this server handles
+    override val allRoutes = Seq(Server)
 
-  // execute the main method of this server
-  this.main(args = Array.empty)
+    // override the default main method to handle the port argument
+    override def main(args: Array[String]): Unit = {
+      println(args)
+      val port = if args.length > 0 then Some(args(0).toInt) else Some(8080)
+      if (!verbose) Main.silenceJboss()
+      val server = Undertow.builder
+        .addHttpListener(port.get, host)
+        .setHandler(defaultHandler)
+        .build
+      server.start()
+    }
 
-  // sleep so that we don't exit prematurely
-  Thread.sleep(Long.MaxValue)
+  // using main method here instead of extending App, see:
+  // https://users.scala-lang.org/t/args-is-null-while-extending-app-even-when-runtime-args-are-provided/8564
+  def main(args: Array[String]): Unit =
+    // execute the main method of the server, starting it
+    InternalSBTRunServer.main(args)
 
-  // exit before running this servers main method (again)
-  System.exit(0)
+    // sleep so we don't exit prematurely
+    Thread.sleep(Long.MaxValue)
+
+    // exit the application (not sure if necessary here)
+    System.exit(0)

@@ -21,17 +21,17 @@ object Client extends App:
   //////////////////////////////////////////////////////////////////////////////
 
   /** Post the Launch `event` to the server. */
-  def postToServer(event: Launch): Unit =
+  def postToServer(event: Launch, ip: String, port: Int): Unit =
     val bytes = write(event).getBytes()
-    val response = requests.post("http://localhost:8080/launch", data = bytes)
+    val response = requests.post("http://" + ip + ":" + port.toString + "/launch", data = bytes)
     response match
       case r if r.statusCode == 200 => println("success")
       case r => println(s"error: ${r.statusCode}")
 
   /** Post the SubmitClassFiles `event` to the server. */
-  def postToServer(event: SubmitClassFiles): Unit =
+  def postToServer(event: SubmitClassFiles, ip: String, port: Int): Unit =
     val bytes = write(event).getBytes()
-    val response = requests.post("http://localhost:8080/submitClassFiles", data = bytes)
+    val response = requests.post("http://" + ip + ":" + port.toString + "/submitClassFiles", data = bytes)
     response match
       case r if r.statusCode == 200 => println("success")
       case r => println(s"error: ${r.statusCode}")
@@ -41,13 +41,13 @@ object Client extends App:
   //////////////////////////////////////////////////////////////////////////////
 
   /** Submit a classfile at `path` within `directory` to the server. */
-  def submitClassFile(path: String, directory: String): Unit =
+  def submitClassFile(path: String, directory: String, ip: String = "localhost", port: Int = 8080): Unit =
     val bytes = Util.getBytes(path, directory)
     val event = SubmitClassFiles(Seq(ClassFileInfo(path, bytes)))
-    postToServer(event)
+    postToServer(event, ip, port)
 
   /** Submit all classfiles within a `directory` to the server. */
-  def submitClassFilesFromDir(directory: String): Unit =
+  def submitClassFilesFromDir(directory: String, ip: String = "localhost", port: Int = 8080): Unit =
     val dir = Paths.get(directory)
     val files = Files
       .walk(dir)
@@ -62,12 +62,12 @@ object Client extends App:
       .asScala
       .toSeq
     val event = SubmitClassFiles(cfs)
-    postToServer(event)
+    postToServer(event, ip, port)
 
   /** Launch an `application` specified by its Java path to the server. */
-  def launch(application: String): Unit =
+  def launch(application: String, ip: String = "localhost", port: Int = 8080): Unit =
     val event = Launch(application)
-    postToServer(event)
+    postToServer(event, ip, port)
 
   //////////////////////////////////////////////////////////////////////////////
   // OBJECT API
@@ -114,6 +114,6 @@ object Client extends App:
     this.submitClassFilesFromDir(classFilesDirectory)
 
   /** Launch an `app` to the server. */
-  def launchObject(app: AnyRef): Unit =
+  def launchObject(app: AnyRef, ip: String = "localhost", port: Int = 8080): Unit =
     val name = ApplicationLoader.getClassName(app)
-    launch(name)
+    launch(name, ip, port)

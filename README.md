@@ -2,40 +2,31 @@
 
 [![Build Status](https://github.com/portals-project/portals/actions/workflows/build-test.yaml/badge.svg)](https://github.com/portals-project/portals/actions/workflows/build-test.yaml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/portals-project/portals/blob/main/LICENSE)
-[![API Docs](https://img.shields.io/badge/API_Docs-orange)](https://portals-project.org/api/)
-[![Website](https://img.shields.io/badge/Portals_Website-teal)](https://portals-project.org/)
+[![API Docs](https://img.shields.io/badge/docs-API_Docs-orange)](https://portals-project.org/api/)
+[![GitHub issues](https://img.shields.io/badge/issues-Github_Issues-orange)](https://github.com/portals-project/portals/issues)
+[![Support](https://img.shields.io/badge/chat-Google_Groups-orange)](https://groups.google.com/g/portals-project)
+[![Website](https://img.shields.io/badge/Website-yellow)](https://portals-project.org/)
+[![Playground](https://img.shields.io/badge/Playground-yellow)](https://portals-project.org/playground/)
 
 ## Project Information
 
-Portals is a framework written in Scala under the Apache 2.0 License for stateful serverless applications.
+Portals is a framework written in Scala under the **Apache 2.0 License** for stateful serverless applications.
 
 The Portals framework aims to unify the distributed dataflow streaming model with the actor model, providing flexibility, data-parallel processing capabilities and strong guarantees. The framework is designed to be used in a serverless environment, where the user can focus on the business logic of the application, while the framework takes care of the infrastructure and failure management.
 
-Among the key features of Portals are:
-
-* Multi-dataflow applications. Portals allows the user to define multiple dataflows, which can be connected to each other. This allows the user to define complex servless applications composed of multiple dataflows (microservices).
-* Inter-dataflow services. Portals introduces a new abstraction: the Portal service. The Portal service abstraction allows dataflows to expose and connect to services, and enables an actor-like communication pattern between the dataflows integrated with a futures API.
-* Decentralized execution on cloud and edge. The runtime is designed to be decentralized; the API provides primitives for connecting to other runtimes, allowing the user to deploy the application on multiple nodes, including edge devices.
+Key features:
+* Multi-dataflow applications: define, connect and compose multiple dataflows into complex services.
+* Inter-dataflow services, the Portal service abstraction: expose/connect to/from dataflows as services.
+* Decentralized cloud/edge execution: API primitives for connecting runtimes, and deploying on edge/cloud devices.
 
 Find out more about Portals at [https://portals-project.org](https://portals-project.org).
 
-> **Disclaimer**
-> Portals is a research project under development and not yet ready for production use.
+> **Note**
+> Disclaimer: Portals is a research project under development and not yet ready for production use.
 
 ## Project Status and Roadmap
 
-The Portals project is currently in the early stages of development, we are currently working towards a first release. To give an idea of the project status, we provide a list of features which will be included for the first release, and highlight features which are yet to be implemented with an asterisk (*).
-
-* Portals Core API. The Portals Core API provides basic abstractions for defining multi dataflow applications and Portal services.
-* PortalsJS API. The PortalsJS API provides a JavaScript API for writing Portals applications. It is also used within the context of the [Playground](https://portals-project.org/playground/).
-* Portals Interpreter. The Portals Interpreter is a runtime for running Portals applications locally and for testing applications.
-* Portals Examples. There are several examples and use cases available in the examples directory, which show how to build Portals applications.
-* Portals Benchmark. The Portals Benchmark features some microbenchmarks for testing the performance of Portals applications. Due to the recent restructuring of the project, the benchmark is currently not available, and is currently under development.
-* \*Portals Libraries. There are two Portals Libraries, one SQL library for exposing SQL queries as Portal services, and one Actor library for writing actor programs on Portals. These are currently under development.
-
-The following features are planned for the next releases, with target to be finished by the end of 2023.
-
-* \* Portals Runtime. A fault-tolerant, elastically scalable runtime for running Portals applications on multiple nodes across edge and cloud.
+The Portals project is currently in the early stages of development. We are working towards a first release, which in addition to the current state, will include a distributed, decentralized runtime. We have planned a release for this fall 2023. Besides these new developments, we have a stable Scala API, JS API, Interpreter, Benchmarks, and Examples.
 
 > **Note**
 > Features that are currently in development are marked as *experimental* and are likely to change.
@@ -50,13 +41,16 @@ libraryDependencies += "org.portals-project" %% "portals" % "0.1.0-RC1"
 
 A full project setup with instructions for executing a hello world example is available at [https://github.com/portals-project/Hello-World](https://github.com/portals-project/Hello-World).
 
+> **Note**
+> Portals has not yet been published to Maven Central. The Portals Project can be published locally using the `sbt publishLocal` command. To use Portals in your project, import the local snapshot instead: `libraryDependencies += "org.portals-project" %% "portals-core" % "0.1.0-SNAPSHOT"`.
+
 ## Getting Started Guide
 
 We recommend the following steps to get started.
 * [Install Scala](https://www.scala-lang.org/download/), we recommend working with sbt, together with [Metals](https://scalameta.org/metals/docs/editors/vscode/) on VS Code. 
 * Clone the [Hello World](https://github.com/portals-project/Hello-World) repository.
 * Compile and run the project `sbt compile;`, `sbt run;`.
-* To get some inspiration, check out the [examples](/portals-examples) or read the [tutorial](https://www.portals-project.org/tutorial).
+* To get some inspiration, check out the [examples](/portals-examples) or read the [tutorial](https://www.portals-project.org/learn/tutorial).
 
 ### Examples
 
@@ -65,43 +59,30 @@ The Portals library comes with an API for defining multi-dataflow applications, 
 ```scala
 import portals.api.dsl.DSL.*
 import portals.system.Systems
-
 object HelloWorld extends App:
   val app = PortalsApp("HelloWorld"):
-
     val generator = Generators.fromList(List("Hello World!"))
-
     val workflow = Workflows[String, String]()
       .source(generator.stream)
       .map(_.toUpperCase())
       .logger()
       .sink()
       .freeze()
-  
   val system = Systems.test()
   system.launch(app)
   system.stepUntilComplete()
   system.shutdown()
 ```
 
-As the example shows, to write applications you need to import the API from the DSL, and to run the applications you need a system. But, there are many more abstractions and concepts in Portals. The main abstractions of the Portals API are the following:
-* Workflows: for processing atomic streams.
-* Per-key stateful tasks: the processing units within workflows are stateful tasks sharded over a key.
-* Generators: for generating atomic streams.
-* Sequencers: for sequencing atomic streams.
-* Splitters: for splitting atomic streams.
-* Portals: for exposing services with a futures API.
-* Registry: for connecting to streams and portals in other applications.
+Check out an extensive [Tutorial](https://www.portals-project.org/learn/tutorial) and the [Examples Directory](/portals-examples) for more examples.
 
-With these abstractions, you can define complex multi-dataflow applications, and execute them on the serverless runtime. For more examples, please check out the [examples](/portals-examples) directory, or the [tutorial](https://www.portals-project.org/tutorial).
+## Support and Contact
 
-## Comparison to Other Projects
+For help or questions, contact the Portals developers and community on the [Portals Google Groups](https://groups.google.com/g/portals-project) mailing list.
 
-TODO: Flink; Kafka; Durable Functions; https://github.com/typelevel/feral; Kalix
+If you find a bug in Portals, then [open an issue](https://github.com/portals-project/portals/issues).
 
-## Project Structure
-
-The Portals framework is licensed under Apache 2.0 and is maintained by the [Portals Project Committee](https://www.portals-project.org/team).
+## Contributing
 
 If you are interested in contributing to the project, please check out our [contributing guidelines](CONTRIBUTING.md).
 

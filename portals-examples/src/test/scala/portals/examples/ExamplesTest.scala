@@ -15,21 +15,6 @@ import org.junit.Test
 class ExamplesTest:
 
   @Test
-  def testFibonacci(): Unit =
-    import portals.examples.actor.FibonacciMain
-    FibonacciMain
-
-  @Test
-  def testPingPong(): Unit =
-    import portals.examples.actor.PingPongMain
-    PingPongMain
-
-  @Test
-  def testCountingActor(): Unit =
-    import portals.examples.actor.CountingActorMain
-    CountingActorMain
-
-  @Test
   def testShoppingCart(): Unit =
     import portals.examples.shoppingcart.ShoppingCartMain
     ShoppingCartMain

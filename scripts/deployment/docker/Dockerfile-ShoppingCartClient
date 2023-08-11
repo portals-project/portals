@@ -1,0 +1,28 @@
+FROM sbtscala/scala-sbt:openjdk-oraclelinux8-11.0.16_1.8.1_3.2.1
+
+COPY ./portals-distributed/ /app/portals-distributed
+COPY ./portals-core/ /app/portals-core
+COPY ./project/ /app/project
+COPY ./build.sbt /app/build.sbt
+COPY ./portals-examples/ /app/portals-examples 
+
+WORKDIR /app
+
+RUN sbt compile 
+
+ENTRYPOINT \
+  sbt "distributed/runMain portals.distributed.ClientCLI submitDir \
+  --directory portals-distributed/target/scala-3.3.0/classes \
+  --ip host.docker.internal --port 8080" && \
+  sbt "distributed/runMain portals.distributed.ClientCLI launch \
+  --application portals.distributed.examples.shoppingcart.Inventory$ \
+  --ip host.docker.internal --port 8080" &&  \
+  sbt "distributed/runMain portals.distributed.ClientCLI launch \ 
+  --application portals.distributed.examples.shoppingcart.Cart$ \
+  --ip host.docker.internal --port 8080" && \
+  sbt "distributed/runMain portals.distributed.ClientCLI launch \
+  --application portals.distributed.examples.shoppingcart.Orders$ \
+  --ip host.docker.internal --port 8080" && \
+  sbt "distributed/runMain portals.distributed.ClientCLI launch \
+  --application portals.distributed.examples.shoppingcart.Analytics$ \
+  --ip host.docker.internal --port 8080"
