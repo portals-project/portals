@@ -77,6 +77,7 @@ lazy val distributed = project
   )
   .dependsOn(portals.jvm % "test->test;compile->compile")
   .dependsOn(examples % "test->test;compile->compile")
+  .dependsOn(libraries % "test->test;compile->compile")
 
 lazy val portalsjs = crossProject(JSPlatform)
   .in(file("portals-portalsjs"))
