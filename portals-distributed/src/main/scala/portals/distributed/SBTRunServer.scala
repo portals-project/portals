@@ -7,7 +7,7 @@ import io.undertow.Undertow
   *
   * @example
   *   {{{
-  * sbt "distributed/runMain portals.distributed.SBTRunServer 8080"
+  * sbt "distributed/runMain portals.distributed.SBTRunServer localhost 8080"
   *   }}}
   */
 object SBTRunServer:
@@ -18,10 +18,11 @@ object SBTRunServer:
     // override the default main method to handle the port argument
     override def main(args: Array[String]): Unit = {
       println(args)
-      val port = if args.length > 0 then Some(args(0).toInt) else Some(8080)
+      val host = if args.length > 0 then Some(args(0).toString) else Some("localhost")
+      val port = if args.length > 1 then Some(args(1).toInt) else Some(8080)
       if (!verbose) Main.silenceJboss()
       val server = Undertow.builder
-        .addHttpListener(port.get, host)
+        .addHttpListener(port.get, host.get)
         .setHandler(defaultHandler)
         .build
       server.start()
