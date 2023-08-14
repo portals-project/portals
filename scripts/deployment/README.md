@@ -1,52 +1,122 @@
 # Portals
 
-## Build the Docker Container
-To build the Docker container for the server, use the following command (replace `test-server` with a more meaningful container tag):
+## Docker
 
-`docker build -f scripts/deployment/docker/Dockerfile-Server . -t test-server`
+### Build the Docker Container
+To build the Docker container for the server and client, use the following command. 
 
-To run the container:
+```bash
+docker build -f scripts/deployment/docker/Dockerfile . -t portals
+```
 
-`docker run -dp 127.0.0.1:8080:8080 test-server`
+### Run the Server
+
+To run the portals server from a container, run the following command.
+
+```bash
+docker run --rm -d -p 8080:8080 portals
+```
+
+This maps the port 8080 from the container to the port 8080 on the host machine. Additionally, the container is run in detached mode, so that the container runs in the background. To instead run the container in interactive mode, replace the `-d` with `-it`. The `--rm` flag removes the container after it is stopped.
+
+```bash
+docker run --rm -it -p 8080:8080 portals
+```
+
+The container can also be run with entrypoint to the bash shell.
+
+```bash
+docker run --rm -it -p 8080:8080 portals bash
+```
+
+### Run the Server and Client with Docker
+
+To run both a server and a client, we need to be able to get the IP address of the server, so that the client can connect to it. The following commands will run the server, get its IP adress, and start a client which connects to the server.
+  
+```bash
+# Start the server in one terminal window
+docker run --rm -it -p 8080:8080 --name PORTALS-SERVER portals
+```
+
+```bash
+# Start the clients in another terminal window
+# Get the IP address of the server
+ip_address=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' PORTALS-SERVER)
+echo "IP Address: $ip_address"
+# Run a client to submit the class files
+docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes --ip ${ip_address} --port 8080"
+# Run a client to launch the application
+docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI  launch --application portals.distributed.examples.HelloWorld$ --ip ${ip_address} --port 8080"
+```
+
+### Remove the Docker Images
+
+To remove the Docker images, use the following command.
+
+```bash
+docker rmi portals
+```
 
 ## Kubernetes
 
 If you want to run the server on a kubernetes cluster (e.g. a local minikube setup)
 
-0. Make sure your cluster/minikube setup is running
+1. Preparations.
+  
+Make sure your cluster/minikube setup is running.
 
-`minikube start`
-
-1. Deploy the container into the Kubernetes environment (Replace <image-name> with the actual image name you have chosen):
-
-`kubectl apply -f scripts/deployment/Kubernetes/Deployment.yaml`
-
-2. Wait for a bit and check if the pods have started
-
-`kubectl get pods`
-
-## Known Issues :
-- If the status of the pod is `ImagePullBackOff`, and you are using Minikube, ensure that Minikube can use the built container. Some Minikube setups require you to push the built Docker image to Minikube with the following command:
-`minikube image load <image name>`
-
-
-- For WSL/Minikube users, connecting to the pod can be a little tricky. The easiest workaround is to use port forwarding:
-`kubectl port-forward <pod-name> 8080:8080` To force k8s to forward the port from the pod to  localhost
-
-# Full Example
-
-Before deploying the Server and the Client into the Kubernetes environment, make sure you have started Minikube and built the Docker images for the Client and Server:
-
-```
+```bash
 minikube start
-docker build -f scripts/deployment/docker/Dockerfile-ShoppingCartClient . -t test-client
-docker build -f scripts/deployment/docker/Dockerfile-Server . -t test-server
 ```
 
-1. Deploy the Server into the Kubernetes environment (Adjust the image name in the `deployment.yaml` file):
+Load the docker image into minikube.
 
-`kubectl apply -f scripts/deployment/Kubernetes/Deployment.yaml`
+```bash
+minikube image load portals
+```
 
-2. Once the Server has started, you can run the ShoppingCartClient:
+2. Deploy the container into the Kubernetes environment.
 
-`docker run --network host  test-client`
+```bash
+kubectl apply -f scripts/deployment/Kubernetes/Deployment.yaml
+```
+
+(Setup port forwarding.)
+
+```bash
+kubectl port-forward service/portals-service 8080:8080
+```
+
+Check to see if the container is running.
+
+```bash
+kubectl get pods
+```
+
+Start inspecting the logs of the server (in a separate terminal window)
+
+```bash
+watch -n1 kubectl logs --tail 50 service/portals-service
+```
+
+4. Connect to the server from a client.
+
+There are many options for this, choose one of them.
+```bash
+# == Docker:
+# Run a client to submit the class files
+docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes --ip host.docker.internal --port 8080"
+# Run a client to launch the application
+docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI  launch --application portals.distributed.examples.HelloWorld$ --ip host.docker.internal --port 8080"
+# == SBT:
+# Submit the class files
+sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes"
+# Launch the application
+sbt "distributed/runMain portals.distributed.ClientCLI  launch --application portals.distributed.examples.HelloWorld$ --port 8080"
+```
+
+5. Remove the deployment.
+
+```bash
+kubectl delete -f scripts/deployment/Kubernetes/Deployment.yaml
+```
