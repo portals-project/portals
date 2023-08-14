@@ -34,10 +34,9 @@ docker run --rm -it -p 8080:8080 portals bash
 The following commands will run both a server and a client, and submit the applications from the client to the server.
   
 ```bash
-# Start the server in one terminal window
+# == Start the server in one terminal window
 docker run --rm -it -p 8080:8080 portals
-# Start the clients in another terminal window
-# Get the IP address of the server
+# == Start the client in another terminal window
 # Run a client to submit the class files
 docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes --ip host.docker.internal --port 8080"
 # Run a client to launch the application
