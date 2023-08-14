@@ -7,7 +7,7 @@ import io.undertow.Undertow
   *
   * @example
   *   {{{
-  * sbt "distributed/runMain portals.distributed.SBTRunServer 8080"
+  * sbt "distributed/runMain portals.distributed.SBTRunServer localhost 8080"
   *   }}}
   */
 object SBTRunServer:
