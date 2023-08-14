@@ -31,22 +31,17 @@ docker run --rm -it -p 8080:8080 portals bash
 
 ### Run the Server and Client with Docker
 
-To run both a server and a client, we need to be able to get the IP address of the server, so that the client can connect to it. The following commands will run the server, get its IP adress, and start a client which connects to the server.
+The following commands will run both a server and a client, and submit the applications from the client to the server.
   
 ```bash
 # Start the server in one terminal window
-docker run --rm -it -p 8080:8080 --name PORTALS-SERVER portals
-```
-
-```bash
+docker run --rm -it -p 8080:8080 portals
 # Start the clients in another terminal window
 # Get the IP address of the server
-ip_address=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' PORTALS-SERVER)
-echo "IP Address: $ip_address"
 # Run a client to submit the class files
-docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes --ip ${ip_address} --port 8080"
+docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI submitDir --directory portals-distributed/target/scala-3.3.0/classes --ip host.docker.internal --port 8080"
 # Run a client to launch the application
-docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI  launch --application portals.distributed.examples.HelloWorld$ --ip ${ip_address} --port 8080"
+docker run --rm -it portals sbt "distributed/runMain portals.distributed.ClientCLI  launch --application portals.distributed.examples.HelloWorld$ --ip host.docker.internal --port 8080"
 ```
 
 ### Remove the Docker Images
