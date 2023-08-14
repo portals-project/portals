@@ -12,6 +12,8 @@ WORKDIR /app
 
 RUN sbt compile
 
+RUN sbt publishLocal
+
 EXPOSE 8080
 
 CMD sbt "distributed/runMain portals.distributed.SBTRunServer 0.0.0.0 8080"
