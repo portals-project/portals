@@ -12,4 +12,4 @@ RUN sbt compile
 
 EXPOSE 8080
 
-ENTRYPOINT sbt "distributed/runMain portals.distributed.SBTRunServer --port 8080"
+ENTRYPOINT sbt "distributed/runMain portals.distributed.SBTRunServer 8080"
