@@ -1,4 +1,4 @@
-package portals.distributed
+package portals.distributed.server
 
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -8,8 +8,9 @@ import scala.concurrent.Future
 import portals.application.*
 import portals.application.Application
 import portals.application.AtomicStreamRefKind
-import portals.distributed.ApplicationLoader.PortalsClassLoader
-import portals.distributed.Events.*
+import portals.distributed.server.ApplicationLoader
+import portals.distributed.server.ApplicationLoader.PortalsClassLoader
+import portals.distributed.server.Events.*
 import portals.system.Systems
 
 import upickle.default.*

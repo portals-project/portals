@@ -61,7 +61,7 @@ end ShuffleTask // trait
 private[portals] trait ExtensibleTask[T, U, Req, Rep] extends GenericTask[T, U, Req, Rep]
 end ExtensibleTask // trait
 
-private[portals] sealed trait AskerTaskKind[T, U, Req, Rep] extends BaseTask[T, U, Req, Rep]
+private[portals] trait AskerTaskKind[T, U, Req, Rep] extends BaseTask[T, U, Req, Rep]
 
 private[portals] case class AskerTask[T, U, Req, Rep](f: TaskContextImpl[T, U, Req, Rep] => T => Unit)(
     val portals: AtomicPortalRefKind[Req, Rep]*

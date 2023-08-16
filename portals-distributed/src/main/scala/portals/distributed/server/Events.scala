@@ -1,4 +1,4 @@
-package portals.distributed
+package portals.distributed.server
 
 import upickle.default._
 

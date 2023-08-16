@@ -1,4 +1,6 @@
-package portals.distributed
+package portals.distributed.server
+
+import portals.distributed.server.Server
 
 import cask.main.Main
 import io.undertow.Undertow
