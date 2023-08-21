@@ -46,7 +46,7 @@ trait FlowBuilder[T, U, CT, CU]:
   /** End the flow in the sink.
     *
     * @note
-    *   The output type of the current flowbuilder shas to have the same type as
+    *   The output type of the current flowbuilder has to have the same type as
     *   the sink / workflow output.
     * @return
     *   a new flow builder
