@@ -1,4 +1,4 @@
-package portals.distributed.server
+package portals.distributed
 
 import java.io.File
 import java.nio.file.Files

@@ -11,11 +11,11 @@ import portals.application.*
 import portals.application.task.*
 import portals.application.Application
 import portals.application.AtomicStreamRefKind
-import portals.distributed.server.*
-import portals.distributed.server.ApplicationLoader.*
-import portals.distributed.server.Events.*
-import portals.distributed.server.SBTRunServer
-import portals.distributed.server.Server
+import portals.distributed.*
+import portals.distributed.ApplicationLoader.*
+import portals.distributed.Events.*
+import portals.distributed.SBTRunServer
+import portals.distributed.Server
 import portals.system.Systems
 import portals.util.Future
 
@@ -30,6 +30,7 @@ object RemoteServer extends cask.MainRoutes:
     val bytes = request.readAllBytes()
     read[SubmitClassFiles](bytes) match
       case SubmitClassFiles(classFiles) =>
+        println(s"Received ${classFiles.length} class files")
         classFiles.foreach:
           case cfi @ ClassFileInfo(_, _) =>
             PortalsClassLoader.addClassFile(cfi)
@@ -45,7 +46,7 @@ object RemoteServer extends cask.MainRoutes:
       case Launch(app) =>
         val clazz = ApplicationLoader.loadClassFromName(app)
         val application = ApplicationLoader.createInstanceFromClass(clazz).asInstanceOf[SubmittableApplication].apply()
-        // ASTPrinter.println(application)
+        ASTPrinter.println(application)
         RemoteServerRuntime.launch(application)
     cask.Response("success", statusCode = 200)
 
@@ -56,11 +57,11 @@ object RemoteServer extends cask.MainRoutes:
     val event = read[PortalRequest](bytes)
     val response = event match
       case PortalRequest(batch) =>
-        // ASK_2
         val b = batch.map(x => TRANSFORM_ASK_2(x))
         RemoteServerRuntime.feed(b)
     cask.Response("success", statusCode = 200)
 
+  /** Handle a `PortalResponse` remote event. */
   @cask.post("/remoteRes")
   def remoteRes(request: cask.Request) =
     val bytes = request.readAllBytes()

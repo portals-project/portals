@@ -1,12 +1,12 @@
-package portals.distributed.server
+package portals.distributed
 
 import java.io.File
 import java.net.URL
 import java.net.URLClassLoader
 import java.nio.file.Files
 
-import portals.distributed.server.Events.*
-import portals.distributed.server.Server
+import portals.distributed.Events.*
+import portals.distributed.Server
 
 /** Dynamically load and submit applications using the `ApplicationLoader`.
   *

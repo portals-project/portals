@@ -9,8 +9,8 @@ import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
 import portals.application.*
 import portals.application.task.*
-import portals.distributed.server.SBTRunServer
-import portals.distributed.server.Server
+import portals.distributed.SBTRunServer
+import portals.distributed.Server
 import portals.runtime.BatchedEvents.*
 import portals.runtime.WrappedEvents.*
 import portals.system.Systems
@@ -38,14 +38,13 @@ object RemoteShared:
   // EVENT SERIALIZATION
   //////////////////////////////////////////////////////////////////////////////
 
-  // implicit def OptionReader[T: Reader]: Reader[Option[T]] = reader[ujson.Value].map[Option[T]] {
-  //   case ujson.Null => None
-  //   case jsValue => Some(read[T](jsValue))
-  // }
-  // implicit def OptionWriter[T: Writer]: Writer[Option[T]] = writer[ujson.Value].comap {
-  //   case Some(value) => write(value)
-  //   case None => ujson.Null
-  // }
+  // The following serialization scheme is used for the upickle library, and
+  // serializes PortalRequests and PortalResponses to/from some binary
+  // representation.
+  // To extend this to cover all event types, it would require to add
+  // `Reader`s and `Writer`s for these additional types.
+  // NOTE: The current scheme only serializes the `String` type for
+  // PortalRequests and PortalResponses. FIXME.
 
   given optionReadWriter[T: Reader: Writer]: ReadWriter[Option[T]] =
     readwriter[ujson.Value].bimap[Option[T]](
@@ -178,17 +177,22 @@ object RemoteShared:
   //////////////////////////////////////////////////////////////////////////////
   // HELPER METHODS FOR MANAGING AND FILTERING OUT REMOTE EVENTS
   //////////////////////////////////////////////////////////////////////////////
+
+  // NOTE: We have chosen the delimiter to be `%` because it does not overlap
+  // with the `$` which is used for anonymous generated names in the runtime,
+  // for now.
+
   /** The prefix of a remote path. */
-  inline val PREFIX = "REMOTE$"
+  inline val PREFIX = "REMOTE%"
 
   /** Create a remote path from the `url` and `path`. */
-  inline def REMOTE_PATH(url: String, path: String): String = PREFIX + url + "$" + path
+  inline def REMOTE_PATH(url: String, path: String): String = PREFIX + url + "%" + path
 
   /** Check if `str` has the prefix. */
   inline def HAS_PREFIX(inline str: String): Boolean = str.startsWith(PREFIX)
 
   /** Extract the < URL, PATH > from a Remote path. */
-  inline def SPLIT(str: String): (String, String) = { val s = str.split("\\$"); (s(1), s(2)) }
+  inline def SPLIT(str: String): (String, String) = { val s = str.split("\\%"); (s(1), s(2)) }
 
   inline def GET_URL(str: String): String = SPLIT(str)._1
 
@@ -200,30 +204,9 @@ object RemoteShared:
     case ReplyBatch(AskReplyMeta(_, askingWF, _, _), _) if HAS_PREFIX(askingWF) => true
     case _ => false
 
-  // /** Replace with the provided `url` for a remote meta. */
-  // inline def REPLACE_URL(meta: AskReplyMeta, url: String): AskReplyMeta =
-  //   val (oldUrl, oldPath) = SPLIT(meta.portal)
-  //   meta.copy(portal = REMOTE_PATH(url, oldPath))
-
-  // /** Replace with the provided `url` for a batch of remote events. */
-  // inline def REPLACE_URL(batch: EventBatch, url: String): EventBatch = batch match
-  //   case AskBatch(meta, list) =>
-  //     AskBatch(REPLACE_URL(meta, url), list)
-  //   case ReplyBatch(meta, list) =>
-  //     ReplyBatch(REPLACE_URL(meta, url), list)
-  //   case _ => ??? // should never happen
-
   /** Remove the remote prefix and url from a path. */
   inline def UN_REMOTE_PATH(path: String): String =
     GET_PATH(path)
-
-  // /** Remove the remote prefix and url from a batch. */
-  // inline def UN_REMOTE_BATCH(batch: EventBatch): EventBatch = batch match
-  //   case AskBatch(meta, list) =>
-  //     AskBatch(meta.copy(portal = UN_REMOTE_PATH(meta.portal)), list)
-  //   case ReplyBatch(meta, list) =>
-  //     ReplyBatch(meta.copy(portal = UN_REMOTE_PATH(meta.portal)), list)
-  //   case _ => ??? // should never happen
 
   /** Transform an event batch, to be run on the replier before feeding. */
   inline def TRANSFORM_REQ_TO_REP(batch: EventBatch): EventBatch = batch match
@@ -351,55 +334,3 @@ object RemoteShared:
         }
       )
     case _ => ???
-
-  // inline def TRANSFORM_REP_2(batch: EventBatch): EventBatch = batch match
-  //   case ReplyBatch(meta, list) =>
-  //     ReplyBatch(
-  //       meta.copy(
-  //         askingWF = UN_REMOTE_PATH(meta.askingWF),
-  //       ),
-  //       list.map {
-  //         case Reply(key, meta, event) =>
-  //           Reply(
-  //             key,
-  //             meta.copy(
-  //               askingWF = UN_REMOTE_PATH(meta.askingWF),
-  //             ),
-  //             event
-  //           )
-  //         case _ => ???
-  //       }
-  //     )
-  //   case _ => ???
-
-object Test extends App:
-  import RemoteShared.given
-
-  def serDeser[T: Reader: Writer](arm: T): T =
-    println(arm)
-    val x = write[T](arm)
-    println(x)
-    val y = read[T](x)
-    println(y)
-    y
-
-  val arm = AskReplyMeta("a", "b", Some("c"), None)
-  val arm2 = serDeser(arm)
-  // val arm2 = AskReplyMeta("a", "b", None, None)
-  val arm3 = serDeser(arm2)
-
-  val ask1 = Ask[Int](
-    Key(0),
-    PortalMeta(
-      "a",
-      "b",
-      Key(0),
-      1,
-      "askingwf"
-    ),
-    12
-  )
-
-  val askBatch = AskBatch(arm, List(ask1, ask1))
-
-  serDeser(askBatch)

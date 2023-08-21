@@ -1,4 +1,4 @@
-package portals.distributed.server
+package portals.distributed
 
 import java.io.File
 import java.nio.file.Files
@@ -8,9 +8,9 @@ import java.util.jar.JarFile
 
 import scala.jdk.CollectionConverters.*
 
-import portals.distributed.server.ApplicationLoader.*
-import portals.distributed.server.Events.*
-import portals.distributed.server.Util.*
+import portals.distributed.ApplicationLoader.*
+import portals.distributed.Events.*
+import portals.distributed.Util.*
 
 import upickle.default.*
 
@@ -102,9 +102,9 @@ object Client extends App:
     *
     * NOTE: this is not stable.
     */
-  def submitObjectWithDependencies(obj: AnyRef): Unit =
+  def submitObjectWithDependencies(obj: AnyRef, ip: String = "localhost", port: Int = 8080): Unit =
     val dir = ApplicationLoader.getClassFileDirectory(obj)
-    this.submitClassFilesFromDir(dir)
+    this.submitClassFilesFromDir(dir, ip, port)
 
   /** Submit an object with all its dependencies to the server.
     *

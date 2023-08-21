@@ -5,9 +5,9 @@ import scala.util.*
 import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
 import portals.application.*
+import portals.distributed.*
 import portals.distributed.remote.*
 import portals.distributed.remote.RemoteExtensions.*
-import portals.distributed.server.*
 
 // /CHATGPT
 def numberToString(n: Int): String = {
@@ -56,7 +56,7 @@ object Requester extends SubmittableApplication:
       val generator = Generators.fromRange(0, 1024 * 1024, 1)
 
       // FIXME: breaks if not named, due to conflict with dollar symbol.
-      val workflow = Workflows[Int, String]("asjdasdfkj")
+      val workflow = Workflows[Int, String]()
         .source(generator.stream)
         .map(x => numberToString(x))
         .asker(remotePortal): //
@@ -71,18 +71,16 @@ object Requester extends SubmittableApplication:
         .freeze()
 
 object RequesterClient extends App:
+  val host = "localhost"
   val port = "8082"
-  Client.port = port
-  RemoteServerRuntime.system.url = s"http://localhost:$port"
-  RemoteSBTRunServer.main(Array(port))
 
-  Client.launchObject(Requester)
+  RemoteSBTRunServer.InternalRemoteSBTRunServer.main(Array(host, port))
+
+  Thread.sleep(1000)
+  Client.launchObject(Requester, host, port.toInt)
 
   // sleep so that we don't exit prematurely
   Thread.sleep(Long.MaxValue)
 
   // exit before running this servers main method (again)
   System.exit(0)
-
-object AKSJD extends App:
-  ASTPrinter.println(Requester())

@@ -10,9 +10,9 @@ import portals.application.Application
 import portals.application.AtomicStreamRefKind
 import portals.distributed.remote.RemoteExtensions.*
 import portals.distributed.remote.RemoteShared.TRANSFORM_BATCH
-import portals.distributed.server.ApplicationLoader
-import portals.distributed.server.ApplicationLoader.PortalsClassLoader
-import portals.distributed.server.Events.*
+import portals.distributed.ApplicationLoader
+import portals.distributed.ApplicationLoader.PortalsClassLoader
+import portals.distributed.Events.*
 import portals.runtime.BatchedEvents.EventBatch
 import portals.system.Systems
 
@@ -64,9 +64,6 @@ object RemoteServerRuntime:
   /** Ingest remote events on the server runtime. */
   def feed(batch: List[EventBatch]): Unit =
     worker.submitJob(() =>
-      // clean events
-      // val cleanedBatch = batch.map(x => TRANSFORM_BATCH(x))
-      // println(batch)
       // feed events
       system.feed(batch)
     )

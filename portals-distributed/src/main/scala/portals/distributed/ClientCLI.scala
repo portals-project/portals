@@ -1,6 +1,6 @@
-package portals.distributed.server
+package portals.distributed
 
-import portals.distributed.server.Client
+import portals.distributed.Client
 
 import mainargs.ParserForMethods
 

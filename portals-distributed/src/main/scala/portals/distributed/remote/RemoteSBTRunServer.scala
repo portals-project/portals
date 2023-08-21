@@ -9,8 +9,8 @@ import portals.api.dsl.DSL.*
 import portals.api.dsl.ExperimentalDSL.*
 import portals.application.*
 import portals.application.task.*
-import portals.distributed.server.SBTRunServer
-import portals.distributed.server.Server
+import portals.distributed.SBTRunServer
+import portals.distributed.Server
 import portals.system.Systems
 import portals.util.Future
 
@@ -18,26 +18,34 @@ import cask.main.Main
 import io.undertow.Undertow
 import upickle.default.*
 
-object RemoteSBTRunServer extends cask.Main:
-  // define the routes which this server handles
-  val allRoutes = Seq(RemoteServer)
+object RemoteSBTRunServer:
 
-  override def main(args: Array[String]): Unit = {
-    val port = if args.length > 0 then Some(args(0).toInt) else Some(8080)
-    if (!verbose) Main.silenceJboss()
-    val server = Undertow.builder
-      .addHttpListener(port.get, host)
-      .setHandler(defaultHandler)
-      .build
-    server.start()
-  }
+  object InternalRemoteSBTRunServer extends cask.Main:
+    // define the routes which this server handles
+    val allRoutes = Seq(RemoteServer)
 
-@main def run(port: String) =
-  // Execute the main method of this server
-  RemoteSBTRunServer.main(Array(port))
+    // override the default main method to handle the port argument
+    override def main(args: Array[String]): Unit = {
+      val host = if args.length > 0 then Some(args(0).toString) else Some("localhost")
+      val port = if args.length > 1 then Some(args(1).toInt) else Some(8080)
 
-  // sleep so that we don't exit prematurely
-  Thread.sleep(Long.MaxValue)
+      // hack
+      RemoteServerRuntime.system.url = s"http://${host.get}:${port.get}"
 
-  // exit before running this servers main method (again)
-  System.exit(0)
+      if (!verbose) Main.silenceJboss()
+      val server = Undertow.builder
+        .addHttpListener(port.get, host.get)
+        .setHandler(defaultHandler)
+        .build
+      server.start()
+    }
+
+  def main(args: Array[String]): Unit =
+    // execute the main method of the server, starting it
+    InternalRemoteSBTRunServer.main(args)
+
+    // sleep so we don't exit prematurely
+    Thread.sleep(Long.MaxValue)
+
+    // exit the application (not sure if necessary here)
+    System.exit(0)
