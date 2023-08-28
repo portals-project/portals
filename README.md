@@ -20,7 +20,7 @@ Key features:
 Find out more about Portals at [https://portals-project.org](https://portals-project.org).
 
 > **Note**
-> Disclaimer: Portals is a research project under development and not yet ready for production use.
+> Disclaimer: Portals is a research project under development and not yet ready for production use. This repository contains a single-node runtime for testing and development purposes. A distributed runtime is currently under development.
 
 ## Project Status and Roadmap
 
