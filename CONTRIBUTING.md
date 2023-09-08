@@ -1,5 +1,4 @@
 # Contributing
-
 We warmly welcome contributions to our project! Please follow these guidelines to make the process as smooth as possible.
 
 ## Getting Started
@@ -56,3 +55,18 @@ All external dependencies must have a Apache 2.0 compatible license.
 
 ## Releases, Tags, Branches
 TODO
+
+## Useful Commands
+```bash
+# Format Code
+sbt scalafmtAll;
+sbt scalafmtSbt;
+# Portals Tests/Checks
+sbt test;
+sbt doc;
+sbt scalafmtCheckAll; 
+sbt scalafmtSbtCheck;
+# PortalsJS Tests/Checks
+sh scripts/portalsjs/portalsjs-compile.sh;
+sh scripts/portalsjs/portalsjs-test-runner.sh;
+```
