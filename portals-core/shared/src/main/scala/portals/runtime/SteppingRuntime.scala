@@ -27,4 +27,12 @@ trait SteppingRuntime extends PortalsRuntime:
       step()
       i += 1
 
+  /** Take steps for `millis` milliseconds and then stop. */
+  def stepFor(millis: Long): Unit =
+    val start = System.currentTimeMillis()
+    while System.currentTimeMillis() - start < millis do
+      if canStep()
+      then step()
+      else Thread.sleep(100)
+
 end SteppingRuntime

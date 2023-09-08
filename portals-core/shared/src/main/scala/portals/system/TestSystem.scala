@@ -27,5 +27,8 @@ class TestSystem(seed: Option[Int] = None) extends PortalsSystem:
   /** Take steps until completion or until reaching the max number of steps. */
   def stepUntilComplete(max: Int): Unit = runtime.stepUntilComplete(max)
 
+  /** Take steps for `millis` milliseconds and then stop. */
+  def stepFor(millis: Long): Unit = runtime.stepFor(millis)
+
   /** Terminate the system and cleanup. */
   def shutdown(): Unit = runtime.shutdown()
