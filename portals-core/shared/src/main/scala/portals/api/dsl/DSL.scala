@@ -1,6 +1,9 @@
 package portals.api.dsl
 
 import scala.annotation.experimental
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 import portals.api.builder.ApplicationBuilder
 import portals.api.builder.ConnectionBuilder
@@ -264,6 +267,36 @@ object DSL:
   //   )(using ctx: AskerTaskContext[T, U, Req, Rep]): Unit =
   //     ctx.await(future)(f)
   // }
+
+  extension [Rep](future: Future[Rep]) {
+
+    /** Execute the provided function `f` when the future is completed.
+      *
+      * Note: The onComplete method is not a blocking method, it is executed
+      * when the future is completed (this happens when the reply is received).
+      * The execution is ordered serially with any other events, ensuring that
+      * there are no concurrently processed events for the task.
+      *
+      * @example
+      *   {{{
+      * future.onComplete:
+      *   case Success(value) => println(value)
+      *   case Failure(exception) => println(exception)
+      *   }}}
+      *
+      * @param f
+      *   The function to execute when the future completes
+      * @param Rep
+      *   The type of the expected reply
+      */
+    def onComplete[T, U, Req](f: (Try[Rep]) => Unit)(using AskerTaskContext[T, U, Req, Rep]): Unit =
+      // TODO: deprecate await in favour of onComplete
+      await(future):
+        val tried = Try(future.value.get) match
+          case Success(value) => Success(value)
+          case Failure(exception) => Failure(exception)
+        f(tried)
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Convenient Builder DSL for TaskBuilder

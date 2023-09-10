@@ -21,8 +21,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 19
-      - name: Install Node.js Packages
-        run: npm install javascript-obfuscator fs
       - name: Build
         run: sh scripts/portalsjs/portalsjs-compile.sh
       - name: Test
