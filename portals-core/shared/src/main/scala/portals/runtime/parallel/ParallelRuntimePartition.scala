@@ -221,10 +221,12 @@ class ParallelRuntimePartition(
     batch match
       case AtomBatch(path, events) =>
         splitEvents(events).view.mapValues(AtomBatch(path, _)).toMap
-      case AskBatch(meta, events) =>
-        splitEvents(events).view.mapValues(AskBatch(meta, _)).toMap
-      case ReplyBatch(meta, events) =>
-        splitEvents(events).view.mapValues(ReplyBatch(meta, _)).toMap
+      case ebatch @ AskBatch(meta, events) =>
+        val prepared = _ictx.rctx.portals(meta.portal).setKeyAndMeta(ebatch).asInstanceOf[AskBatch[_]]
+        splitEvents(prepared.list).view.mapValues(AskBatch(prepared.meta, _)).toMap
+      case ebatch @ ReplyBatch(meta, events) =>
+        val prepared = _ictx.rctx.portals(meta.portal).setKeyAndMeta(ebatch).asInstanceOf[ReplyBatch[_]]
+        splitEvents(prepared.list).view.mapValues(ReplyBatch(prepared.meta, _)).toMap
       case ShuffleBatch(path, task, events) =>
         splitEvents(events).view.mapValues(ShuffleBatch(path, task, _)).toMap
 
