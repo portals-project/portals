@@ -22,7 +22,7 @@ private[portals] class InterpreterPortal(
   private val queue: ArrayDeque[EventBatch] = ArrayDeque.empty
 
   /** Set the key correctly if a key function exists. */
-  private def setKeyAndMeta(ta: EventBatch): EventBatch =
+  private[portals] def setKeyAndMeta(ta: EventBatch): EventBatch =
     if !portal.key.isDefined then
       ta match
         case AskBatch(meta, list) =>
