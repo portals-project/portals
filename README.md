@@ -19,14 +19,14 @@ Key features:
 
 Find out more about Portals at [https://portals-project.org](https://portals-project.org).
 
-> **Note**
+> [!NOTE]
 > Disclaimer: Portals is a research project under development and not yet ready for production use. This repository contains a single-node runtime for testing and development purposes. A distributed runtime is currently under development.
 
 ## Project Status and Roadmap
 
 The Portals project is currently in the early stages of development. We are working towards a first release with ongoing work on a distributed decentralized runtime. Some of this preliminary work is done in parallel on other (private) repositories. We have planned a release for this fall 2023. Besides these ongoing developments, the release will include a Scala API, JS API, Interpreter, Compiler, Benchmarks, and Examples.
 
-> **Note**
+> [!NOTE]
 > Features that are currently in development are marked as *experimental* and are likely to change.
 
 ## Project Setup
@@ -39,7 +39,7 @@ libraryDependencies += "org.portals-project" %% "portals" % "0.1.0-RC1"
 
 A full project setup with instructions for executing a hello world example is available at [https://github.com/portals-project/Hello-World](https://github.com/portals-project/Hello-World).
 
-> **Note**
+> [!NOTE]
 > Portals has not yet been published to Maven Central. It can be published locally using the `sbt publishLocal` command. To use Portals in your project, import the local snapshot instead: `libraryDependencies += "org.portals-project" %% "portals-core" % "0.1.0-SNAPSHOT"`.
 
 ## Getting Started Guide
